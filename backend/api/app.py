@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import logging
+import os
+import threading
+import time
 from pathlib import Path
 from typing import Any
 
@@ -55,6 +58,13 @@ def create_app(settings: Settings | None = None) -> Flask:
     app.register_blueprint(auth_bp)
     register_api_blueprints(app)
 
+    from backend.api.blueprints.mail import complete_outlook_oauth_callback
+
+    @app.get("/api/msal/callback")
+    def msal_oauth_callback() -> Any:
+        """Azure-Redirect-Alias (häufig in App-Registrierungen so eingetragen)."""
+        return complete_outlook_oauth_callback()
+
     if cfg.flask_env == "production":
         static_dir = Path(cfg.frontend_build_dir)
         if not static_dir.is_absolute():
@@ -93,7 +103,42 @@ def create_app(settings: Settings | None = None) -> Flask:
         logger.exception("API error")
         return jsonify({"error": str(err), "code": 500}), 500
 
+    _start_dev_mail_poll(app, cfg)
+
     return app
+
+
+def _start_dev_mail_poll(app: Flask, settings: Settings) -> None:
+    """Startet Mail-Polling im Dev-Modus (Hintergrund-Thread)."""
+    if settings.flask_env != "development":
+        return
+    if app.debug and os.environ.get("WERKZEUG_RUN_MAIN") != "true":
+        return
+
+    def _loop() -> None:
+        from backend.features.mail.mail_poll_service import (
+            build_mail_poll_service_from_context,
+        )
+
+        interval = max(30, settings.mail_poll_interval_seconds)
+        logger.info("Dev mail poll thread started (interval=%ss)", interval)
+        while True:
+            try:
+                with app.app_context():
+                    ctx = app.extensions["ctx"]
+                    service = build_mail_poll_service_from_context(ctx, settings)
+                    result = service.run_all()
+                    logger.info(
+                        "Dev mail poll: accounts=%s processed=%s",
+                        result.accounts_polled,
+                        result.total_processed,
+                    )
+            except Exception:
+                logger.exception("Dev mail poll failed")
+            time.sleep(interval)
+
+    thread = threading.Thread(target=_loop, daemon=True, name="dev-mail-poll")
+    thread.start()
 
 
 def get_app_context(app: Flask) -> AppContext:

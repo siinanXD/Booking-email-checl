@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   CalendarCheck,
@@ -8,14 +8,26 @@ import {
 } from "lucide-react";
 import { fetchCosts } from "@/lib/api/costs";
 import { fetchDashboardStats } from "@/lib/api/dashboard";
+import { syncMailConnection } from "@/lib/api/mail";
 import { CostChart } from "@/shared/components/CostChart";
 import { StatCard } from "@/shared/components/StatCard";
+import { Button } from "@/shared/ui/Button";
 import { Card } from "@/shared/ui/Card";
 
 export function DashboardPage() {
+  const queryClient = useQueryClient();
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: fetchDashboardStats,
+  });
+
+  const syncMut = useMutation({
+    mutationFn: syncMailConnection,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      void queryClient.invalidateQueries({ queryKey: ["emails"] });
+      void queryClient.invalidateQueries({ queryKey: ["review-queue"] });
+    },
   });
 
   const weekAgo = new Date();
@@ -33,7 +45,33 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-slate-800">Übersicht</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-xl font-semibold text-slate-800">Übersicht</h2>
+        <div className="flex flex-col items-end gap-1">
+          <Button
+            variant="secondary"
+            className="inline-flex items-center gap-2"
+            onClick={() => syncMut.mutate()}
+            disabled={syncMut.isPending}
+          >
+            <RefreshCw
+              size={16}
+              className={syncMut.isPending ? "animate-spin" : ""}
+            />
+            Postfach synchronisieren
+          </Button>
+          {syncMut.data && (
+            <p
+              className={`text-xs ${syncMut.data.success ? "text-green-700" : "text-amber-700"}`}
+            >
+              {syncMut.data.message}
+            </p>
+          )}
+          {syncMut.isError && (
+            <p className="text-xs text-red-600">Synchronisation fehlgeschlagen.</p>
+          )}
+        </div>
+      </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Buchungs-Mails erkannt"

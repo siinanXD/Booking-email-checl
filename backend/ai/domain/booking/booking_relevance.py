@@ -195,6 +195,35 @@ def has_booking_signals(
     return False
 
 
+def infer_beds24_intent(subject: str) -> BookingIntent | None:
+    """Leitet Intent aus typischen Beds24-Betreffzeilen ab (Fallback bei LLM=other)."""
+    subject_line = (subject or "").strip()
+    if re.match(r"^Buchung\s*:", subject_line, re.IGNORECASE):
+        return BookingIntent.NEW_BOOKING
+    if re.match(r"^Stornierung\s*:", subject_line, re.IGNORECASE):
+        return BookingIntent.CANCELLATION
+    if re.match(r"^Buchungsänderung\s*:", subject_line, re.IGNORECASE):
+        return BookingIntent.CHANGE
+    if re.match(r"^Nachricht vom Gast\s*:", subject_line, re.IGNORECASE):
+        return BookingIntent.GUEST_INQUIRY
+    return None
+
+
+def effective_booking_intent(
+    email: EmailLike,
+    extraction: BookingExtraction | None,
+) -> BookingIntent | None:
+    """Intent für Listen/Review: Extraktion, sonst Beds24-Betreff-Heuristik."""
+    if extraction and extraction.intent and extraction.intent != BookingIntent.OTHER:
+        return extraction.intent
+    inferred = infer_beds24_intent(email.subject or "")
+    if inferred is not None:
+        return inferred
+    if extraction and extraction.intent:
+        return extraction.intent
+    return None
+
+
 def classify_booking_mail(
     email: EmailLike,
     extraction: BookingExtraction | None = None,
@@ -246,46 +275,3 @@ def mongo_noise_exclusion() -> dict[str, object]:
     if not nor:
         return {}
     return {"$nor": nor}
-
-
-def count_booking_mails(
-    email_repo: object,
-    extraction_repo: object,
-    *,
-    since_iso: str | None = None,
-    account_id: str | None = None,
-) -> tuple[int, int, dict[str, int]]:
-    """Zählt (gesamt, booking, nach Intent) optional seit received_at."""
-    from backend.infrastructure.repositories.email_repository import EmailRepository
-    from backend.infrastructure.repositories.extraction_repository import (
-        ExtractionRepository,
-    )
-
-    emails = email_repo if isinstance(email_repo, EmailRepository) else None
-    extr = (
-        extraction_repo if isinstance(extraction_repo, ExtractionRepository) else None
-    )
-    if emails is None or extr is None:
-        return 0, 0, {}
-
-    match: dict[str, object] = {}
-    if since_iso:
-        match["received_at"] = {"$gte": since_iso}
-    if account_id:
-        match["account_id"] = account_id
-    total = 0
-    booking = 0
-    by_intent: dict[str, int] = {}
-    for doc in emails._col.find(match):
-        total += 1
-        email = StoredEmail.from_mongo(doc)
-        ext = extr.get_by_correlation_id(
-            email.correlation_id,
-            account_id=account_id,
-        )
-        verdict = classify_booking_mail(email, ext)
-        if verdict.is_booking:
-            booking += 1
-            key = ext.intent.value if ext and ext.intent else "heuristic"
-            by_intent[key] = by_intent.get(key, 0) + 1
-    return total, booking, by_intent

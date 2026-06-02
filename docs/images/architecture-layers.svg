@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 420" role="img" aria-label="Backend-Schichten">
+  <defs>
+    <style>
+      .title { font: 600 18px system-ui, Segoe UI, sans-serif; fill: #0f172a; }
+      .label { font: 600 13px system-ui, Segoe UI, sans-serif; fill: #0f172a; }
+      .sub { font: 12px system-ui, Segoe UI, sans-serif; fill: #334155; }
+      .box { rx: 10; stroke: #cbd5e1; stroke-width: 1.5; }
+    </style>
+  </defs>
+  <text x="24" y="32" class="title">Backend  geschichtete Architektur</text>
+  <rect x="40" y="52" width="640" height="56" class="box" fill="#e0f2fe"/>
+  <text x="56" y="78" class="label">backend/api</text>
+  <text x="56" y="96" class="sub">Flask, JWT, Blueprints, REST-Schemas</text>
+  <rect x="40" y="120" width="640" height="56" class="box" fill="#dcfce7"/>
+  <text x="56" y="146" class="label">backend/features</text>
+  <text x="56" y="164" class="sub">Mail-Polling, Benachrichtigungen, Mandanten-Einstellungen</text>
+  <rect x="40" y="188" width="640" height="56" class="box" fill="#fef3c7"/>
+  <text x="56" y="214" class="label">backend/ai</text>
+  <text x="56" y="232" class="sub">LangGraph-Workflow, LLM-Services, Prompts, Booking-Domäne</text>
+  <rect x="40" y="256" width="640" height="56" class="box" fill="#f3e8ff"/>
+  <text x="56" y="282" class="label">backend/infrastructure</text>
+  <text x="56" y="300" class="sub">MongoDB-Repositories, Outlook-Adapter, Langfuse</text>
+  <rect x="40" y="324" width="640" height="56" class="box" fill="#f1f5f9"/>
+  <text x="56" y="350" class="label">backend/core</text>
+  <text x="56" y="368" class="sub">Config, Pydantic-Modelle, Utils (PII, Text)</text>
+  <text x="40" y="404" class="sub">Import-Richtung: oben ’ unten · Details in docs/ARCHITECTURE.md</text>
+</svg>

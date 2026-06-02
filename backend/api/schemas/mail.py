@@ -29,6 +29,7 @@ class MailConnectionResponse(BaseModel):
     imap_use_ssl: bool = True
     outlook_auth_mode: str = "application"
     outlook_mailbox: str = ""
+    outlook_oauth_connected: bool = False
     last_error: str | None = None
     last_sync_at: str | None = None
     onboarding_completed: bool = False
@@ -57,3 +58,15 @@ class MailTestResponse(BaseModel):
     success: bool
     message: str
     mailbox_count: int | None = None
+
+
+class MailSyncResponse(BaseModel):
+    """Ergebnis manueller Postfach-Synchronisation."""
+
+    success: bool
+    processed: int = 0
+    duplicates: int = 0
+    error_count: int = 0
+    reprocessed: int = 0
+    message: str
+    last_sync_at: str | None = None

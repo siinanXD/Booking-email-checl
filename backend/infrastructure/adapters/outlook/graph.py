@@ -13,11 +13,17 @@ from urllib.request import Request, urlopen
 from backend.core.config.settings import Settings
 from backend.infrastructure.adapters.outlook.auth import (
     ApplicationAuth,
+    CachedDelegatedAuth,
     DelegatedAuth,
 )
 from backend.infrastructure.adapters.outlook.message_mapper import map_graph_message
+from backend.infrastructure.repositories.mail_connection_repository import (
+    MailConnectionRecord,
+)
 
 logger = logging.getLogger(__name__)
+
+TokenProvider = DelegatedAuth | ApplicationAuth | CachedDelegatedAuth
 
 GRAPH_ROOT = "https://graph.microsoft.com/v1.0"
 _MESSAGE_SELECT = (
@@ -36,10 +42,10 @@ class OutlookGraphClient:
         *,
         auth_mode: str,
         mailbox: str | None,
-        token_provider: DelegatedAuth | ApplicationAuth,
+        token_provider: TokenProvider,
     ) -> None:
         mode = auth_mode.strip().lower()
-        if mode not in ("delegated", "application"):
+        if mode not in ("delegated", "application", "oauth"):
             msg = f"Unsupported OUTLOOK_AUTH_MODE: {auth_mode}"
             raise ValueError(msg)
         self._auth_mode = mode
@@ -78,6 +84,61 @@ class OutlookGraphClient:
             auth_mode=mode,
             mailbox=settings.outlook_mailbox,
             token_provider=token_provider,
+        )
+
+    @classmethod
+    def from_mail_record(
+        cls,
+        record: MailConnectionRecord,
+        settings: Settings,
+    ) -> OutlookGraphClient:
+        """Graph-Client aus Mandanten-Postfach-Konfiguration."""
+        if not settings.azure_client_id:
+            msg = "AZURE_CLIENT_ID is required for Outlook ingestion"
+            raise ValueError(msg)
+        mode = (record.outlook_auth_mode or "application").strip().lower()
+        mailbox = record.outlook_mailbox.strip() or record.email_address.strip() or None
+        if mode == "oauth":
+            if not record.outlook_token_cache.strip():
+                msg = "Outlook OAuth ist nicht verbunden"
+                raise ValueError(msg)
+            if not settings.azure_client_secret:
+                msg = "AZURE_CLIENT_SECRET is required for OAuth"
+                raise ValueError(msg)
+            token_provider: TokenProvider = CachedDelegatedAuth(
+                settings.azure_client_id,
+                settings.azure_authority,
+                settings.azure_client_secret,
+                record.outlook_token_cache,
+            )
+            return cls(
+                auth_mode="oauth", mailbox=mailbox, token_provider=token_provider
+            )
+        if mode == "application":
+            if not settings.azure_tenant_id:
+                msg = "AZURE_TENANT_ID is required for application auth"
+                raise ValueError(msg)
+            if not settings.azure_client_secret:
+                msg = "AZURE_CLIENT_SECRET is required for application auth"
+                raise ValueError(msg)
+            if not mailbox:
+                msg = "Outlook mailbox is required for application auth"
+                raise ValueError(msg)
+            token_provider = ApplicationAuth(
+                settings.azure_tenant_id,
+                settings.azure_client_id,
+                settings.azure_client_secret,
+            )
+            return cls(
+                auth_mode="application", mailbox=mailbox, token_provider=token_provider
+            )
+        token_provider = DelegatedAuth(
+            settings.azure_client_id,
+            settings.azure_authority,
+            Path(settings.outlook_token_cache_path),
+        )
+        return cls(
+            auth_mode="delegated", mailbox=mailbox, token_provider=token_provider
         )
 
     def _resource_prefix(self) -> str:

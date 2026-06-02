@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from backend.ai.domain.booking.booking_relevance import count_booking_mails
+from backend.ai.domain.booking.booking_mail_counts import count_booking_mails
 from backend.ai.domain.booking.taxonomy import BookingIntent
 from backend.api.schemas.costs import CostSeriesPoint, CostsResponse
 from backend.api.schemas.dashboard import DashboardStats

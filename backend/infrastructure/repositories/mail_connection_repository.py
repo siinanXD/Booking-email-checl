@@ -29,6 +29,7 @@ class MailConnectionRecord(BaseModel):
     imap_use_ssl: bool = True
     outlook_auth_mode: str = "application"
     outlook_mailbox: str = ""
+    outlook_token_cache: str = ""
     last_error: str | None = None
     last_sync_at: datetime | None = None
     onboarding_completed: bool = False
@@ -108,8 +109,13 @@ class MailConnectionRepository:
             return bool(
                 record.imap_host.strip() and username and record.imap_password.strip()
             )
-        mailbox = record.outlook_mailbox.strip() or record.email_address.strip()
-        return bool(mailbox)
+        if record.provider == "outlook":
+            mode = record.outlook_auth_mode.strip().lower()
+            if mode == "oauth":
+                return bool(record.outlook_token_cache.strip())
+            mailbox = record.outlook_mailbox.strip() or record.email_address.strip()
+            return bool(mailbox)
+        return False
 
     def list_pollable(self) -> list[MailConnectionRecord]:
         """Mandanten mit abgeschlossenem Onboarding und gültiger Konfiguration."""

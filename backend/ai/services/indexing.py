@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import Protocol
 
 from langfuse.decorators import langfuse_context, observe
 
 from backend.ai.domain.booking.extraction import BookingExtraction
 from backend.infrastructure.repositories.embedding_repository import EmbeddingRepository
+
+logger = logging.getLogger(__name__)
 
 
 class EmbeddingFn(Protocol):
@@ -93,7 +96,10 @@ class IndexingService:
                 name=f"index-{correlation_id}",
             )
         except RuntimeError:
-            asyncio.run(self._index_async(correlation_id, body, extraction))
+            try:
+                asyncio.run(self._index_async(correlation_id, body, extraction))
+            except Exception:
+                logger.exception("Indexing failed for %s", correlation_id)
 
     async def _index_async(
         self,

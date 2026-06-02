@@ -44,13 +44,23 @@ def create_refresh_token(user: UserRecord, settings: Settings) -> str:
     return _encode(payload, settings, expires_seconds=settings.jwt_refresh_expires)
 
 
+def _jwt_secret(settings: Settings) -> str:
+    secret = settings.flask_secret_key.strip()
+    if secret:
+        return secret
+    if settings.app_env == "development" or settings.flask_env == "development":
+        return "dev-only-change-me"
+    msg = "FLASK_SECRET_KEY is not configured"
+    raise ValueError(msg)
+
+
 def decode_token(token: str, settings: Settings) -> dict[str, Any]:
     """Dekodiert und validiert JWT."""
-    secret = settings.flask_secret_key
-    if not secret:
-        msg = "FLASK_SECRET_KEY is not configured"
-        raise ValueError(msg)
-    payload: dict[str, Any] = jwt.decode(token, secret, algorithms=["HS256"])
+    payload: dict[str, Any] = jwt.decode(
+        token,
+        _jwt_secret(settings),
+        algorithms=["HS256"],
+    )
     return payload
 
 
@@ -60,10 +70,7 @@ def _encode(
     *,
     expires_seconds: int,
 ) -> str:
-    secret = settings.flask_secret_key
-    if not secret:
-        msg = "FLASK_SECRET_KEY is not configured"
-        raise ValueError(msg)
+    secret = _jwt_secret(settings)
     data = {
         **payload,
         "exp": _now() + timedelta(seconds=expires_seconds),

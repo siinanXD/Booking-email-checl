@@ -1,6 +1,7 @@
 import { Link, Navigate, useSearchParams } from "react-router-dom";
 import { Card } from "@/shared/ui/Card";
 import { useAuthStore } from "@/features/auth/authStore";
+import { useAuthHydrated } from "@/features/auth/useAuthHydrated";
 import { ConfigStep } from "./ConfigStep";
 import { ProviderStep } from "./ProviderStep";
 import { TestStep } from "./TestStep";
@@ -8,10 +9,19 @@ import { isAccountAdmin } from "./types";
 import { useOnboardingForm } from "./useOnboardingForm";
 
 export function OnboardingPage() {
+  const hydrated = useAuthHydrated();
   const [searchParams] = useSearchParams();
   const isEditMode = searchParams.has("edit");
   const user = useAuthStore((s) => s.user);
-  const form = useOnboardingForm(isAccountAdmin(user?.role));
+  const form = useOnboardingForm(hydrated && isAccountAdmin(user?.role));
+
+  if (!hydrated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-100 text-slate-500">
+        Lade…
+      </div>
+    );
+  }
 
   if (!isAccountAdmin(user?.role)) {
     return <Navigate to="/" replace />;
@@ -55,6 +65,7 @@ export function OnboardingPage() {
             outlookAuthMode={form.outlookAuthMode}
             error={form.error}
             savePending={form.saveMut.isPending}
+            oauthPending={form.oauthPending}
             data={form.data}
             onEmailChange={form.setEmail}
             onPresetChange={form.setPreset}
@@ -64,6 +75,7 @@ export function OnboardingPage() {
             onImapPortChange={form.setImapPort}
             onOutlookMailboxChange={form.setOutlookMailbox}
             onOutlookAuthModeChange={form.setOutlookAuthMode}
+            onOutlookConnect={form.handleOutlookConnect}
             onBack={() => form.setStep("provider")}
             onSubmit={form.handleSaveConfig}
           />

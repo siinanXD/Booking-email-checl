@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 340" role="img" aria-label="Multi-Tenant-Plattform">
+  <defs>
+    <style>
+      .title { font: 600 18px system-ui, Segoe UI, sans-serif; fill: #0f172a; }
+      .label { font: 600 13px system-ui, Segoe UI, sans-serif; fill: #0f172a; }
+      .sub { font: 12px system-ui, Segoe UI, sans-serif; fill: #475569; }
+      .box { rx: 10; stroke: #cbd5e1; stroke-width: 1.5; fill: #fff; }
+      .line { stroke: #94a3b8; stroke-width: 1.5; fill: none; }
+    </style>
+  </defs>
+  <text x="24" y="32" class="title">Multi-Tenant SaaS  Überblick</text>
+  <rect x="40" y="56" width="200" height="88" class="box" fill="#e0f2fe"/>
+  <text x="56" y="84" class="label">React-Dashboard</text>
+  <text x="56" y="104" class="sub">Login · Onboarding · Review</text>
+  <text x="56" y="122" class="sub">KPIs · Kosten · Einstellungen</text>
+  <rect x="280" y="56" width="180" height="88" class="box" fill="#dcfce7"/>
+  <text x="296" y="84" class="label">Flask API</text>
+  <text x="296" y="104" class="sub">JWT · Mandanten-Scope</text>
+  <text x="296" y="122" class="sub">/api/* · Human Review</text>
+  <rect x="500" y="56" width="180" height="88" class="box" fill="#f3e8ff"/>
+  <text x="516" y="84" class="label">MongoDB Atlas</text>
+  <text x="516" y="104" class="sub">Mails · Extraktionen</text>
+  <text x="516" y="122" class="sub">Embeddings · Review</text>
+  <path d="M240 100 H280" class="line"/>
+  <path d="M460 100 H500" class="line"/>
+  <rect x="120" y="180" width="480" height="72" class="box" fill="#fef3c7"/>
+  <text x="136" y="208" class="label">Mail-Poll-Worker</text>
+  <text x="136" y="228" class="sub">Alle freigegebenen Mandanten (active) · Intervall via MAIL_POLL_INTERVAL_SECONDS</text>
+  <path d="M360 144 L360 180" class="line"/>
+  <rect x="40" y="272" width="640" height="52" class="box" fill="#f8fafc"/>
+  <text x="56" y="296" class="label">Observability</text>
+  <text x="56" y="314" class="sub">Langfuse-Traces · Kosten pro Mail · keine Roh-PII in Logs</text>
+</svg>

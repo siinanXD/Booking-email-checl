@@ -139,6 +139,7 @@ class MailConnectionService:
             imap_use_ssl=record.imap_use_ssl,
             outlook_auth_mode=record.outlook_auth_mode,
             outlook_mailbox=record.outlook_mailbox or record.email_address,
+            outlook_oauth_connected=bool(record.outlook_token_cache.strip()),
             last_error=record.last_error,
             last_sync_at=last_sync,
             onboarding_completed=record.onboarding_completed,

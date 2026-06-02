@@ -6,10 +6,26 @@ ist die Buchungswelt (Airbnb, Booking.com, Expedia, VRBO, Direktbuchung); das
 System ist über austauschbare **Domänen-Packs** auch für andere Branchen wie
 E-Commerce-Bestellungen oder Support ausgelegt.
 
-> Diese README ist für Menschen. Die operativen Regeln für KI-Coding-Agenten
-> stehen in `AGENTS.md` (Repo-Kontext) und in `.cursor/` (Cursor-spezifisch).
-> Architektur: `docs/SPEC.md` · Kickoff-Checkliste: `docs/KICKOFF.md`.
-> Sie wird hier bewusst nicht wiederholt, um Doppelpflege zu vermeiden.
+Die Plattform läuft als **Multi-Tenant-SaaS**: Mandanten registrieren sich,
+richten das Postfach im Onboarding ein, und ein Hintergrund-Worker holt Mails
+periodisch ab.
+
+> Diese README ist für Menschen. Operative Regeln für KI-Agenten: `AGENTS.md`.
+> Architektur im Detail: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) ·
+> fachliche Spezifikation: [`docs/SPEC.md`](docs/SPEC.md) ·
+> Kickoff: [`docs/KICKOFF.md`](docs/KICKOFF.md).
+
+## Überblick
+
+![Multi-Tenant-Plattform](docs/images/saas-platform.svg)
+
+| Komponente | Rolle |
+|------------|--------|
+| **React-Dashboard** | Login, Mail-Onboarding, Review-Queue, KPIs, Kosten |
+| **Flask-API** | JWT, Mandanten-Scope, REST — kein Auto-Versand |
+| **LangGraph / LLM** | Triage, Klassifikation, Extraktion, Antwortentwurf |
+| **Mail-Poll-Worker** | Periodischer Abruf für alle aktiven Mandanten |
+| **MongoDB Atlas** | Dokumente, Vektoren, Review-Status |
 
 ## Was das System tut
 
@@ -22,221 +38,227 @@ speichert, ohne den Antwortpfad zu verlangsamen. Ein vorgeschaltetes
 **Triage-Gate** sortiert Spam und irrelevante Mails günstig aus, bevor ein
 teures Modell überhaupt anläuft.
 
+![E-Mail-Pipeline](docs/images/email-pipeline.svg)
+
+## Architektur im Repository
+
+Geschichtetes Backend und feature-basiertes Frontend — Import-Regeln und
+Dateigrößen-Limit (max. 300 Zeilen) sind in der Architektur-Doku festgehalten.
+
+![Backend-Schichten](docs/images/architecture-layers.svg)
+
+```
+booking-email-checl/
+├── backend/                 # Python-Anwendung
+│   ├── api/                 # HTTP (Flask, Auth, Blueprints, Schemas)
+│   ├── ai/                  # LangGraph, LLM-Services, Prompts, Domäne
+│   ├── features/            # Mail, Benachrichtigungen, Plattform
+│   ├── infrastructure/      # Repositories, Adapter, Observability
+│   ├── core/                # Config, Modelle, Utils
+│   └── application/         # Ingestion- & Review-Ports
+├── frontend/                # React + Vite + TypeScript
+│   └── src/
+│       ├── app/             # Router-Einstieg
+│       ├── features/        # Screens pro Fachbereich
+│       ├── lib/             # API-Clients, Typen
+│       ├── shared/          # Layout, UI-Komponenten
+│       └── routes/          # Guards (Auth, Platform-Admin)
+├── scripts/                 # CLI, Backfills, Wartung
+├── tests/                   # Pytest (Unit, Web-API, Integration)
+└── docs/                    # SPEC, ARCHITECTURE, Outlook, Langfuse, …
+```
+
+**Neuen Code ablegen:** siehe Tabelle in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#where-to-put-new-code).
+
 ## Technologie
 
-Python 3.11, LangGraph (zustandsbehafteter Workflow mit Human-in-the-Loop),
-OpenAI Embeddings, MongoDB Atlas (Dokumente, Vektor- und Hybrid-Suche),
-Langfuse (Observability), Pydantic (Datenmodelle), PyTest, Docker.
+| Bereich | Stack |
+|---------|--------|
+| Backend | Python 3.11, Flask, LangGraph, Pydantic, PyTest |
+| KI | OpenAI (Klassifikation, Extraktion, Embeddings, Draft) |
+| Daten | MongoDB Atlas (Dokument + Vektor/Hybrid) |
+| Observability | Langfuse |
+| Frontend | React, TypeScript, Vite, Zustand, Tailwind |
+| Betrieb | Docker Compose, Gunicorn, GitHub Actions CI |
 
 ## Schnellstart
 
-Voraussetzungen: Python 3.11, Docker, ein MongoDB-Atlas-Cluster sowie API-Keys
-für OpenAI und Langfuse.
+Voraussetzungen: Python 3.11, Node.js 20 (für das Dashboard), Docker optional,
+MongoDB Atlas sowie API-Keys für OpenAI und Langfuse.
 
 1. Repository klonen und ins Verzeichnis wechseln.
 2. Virtuelle Umgebung anlegen und Abhängigkeiten installieren:
-   `python3.11 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"`
-3. `.env` aus `.env.example` erzeugen und die Keys eintragen. **Keine Secrets
-   committen** – `.env` steht in `.gitignore`. Die App lädt `.env` immer aus dem
-   **Projektroot** (unabhängig vom Terminal-Verzeichnis).
-4. Git-Hooks aktivieren (einmalig):
-   `pre-commit install && pre-commit install --hook-type commit-msg`
-5. Tests laufen lassen: `pytest -q`.
+
+   ```bash
+   python3.11 -m venv .venv && source .venv/bin/activate
+   pip install -e ".[dev]"
+   ```
+
+   Windows (PowerShell): `.venv\Scripts\Activate.ps1` statt `source`.
+
+3. `.env` aus `.env.example` erzeugen und Keys eintragen. **Keine Secrets
+   committen** — `.env` steht in `.gitignore`. Die App lädt `.env` immer aus dem
+   **Projektroot**.
+4. Git-Hooks (einmalig):
+
+   ```bash
+   pre-commit install && pre-commit install --hook-type commit-msg
+   ```
+
+5. Tests: `pytest -q` · Zeilenlimit: `python scripts/check_max_file_lines.py`
+
+### Web-API (Dev)
+
+```powershell
+python scripts/seed_admin.py
+flask --app backend.api.app:create_app run --debug --port 5000
+```
+
+Optional: `pip install langgraph-checkpoint-mongodb==0.1.4` für durable
+LangGraph-Checkpoints in Mongo. Sonst `WEB_USE_MEMORY_CHECKPOINTER=true` nur
+für Tests.
+
+API: `GET /health`, `POST /api/auth/login`, geschützte Routes unter
+`/api/dashboard`, `/api/emails`, `/api/review`, `/api/costs`, `/api/mail`, …
+
+### React-Dashboard (Dev)
+
+Zwei Terminals: Flask (Port 5000) und Vite (Port 5173). Vite proxied `/api`
+und `/health` zum Backend.
+
+```powershell
+# Terminal 1 – Backend (Projektroot, .venv aktiv)
+python scripts/seed_admin.py
+flask --app backend.api.app:create_app run --debug --port 5000
+
+# Terminal 2 – Frontend
+cd frontend
+npm ci
+npm run dev
+```
+
+Browser: `http://localhost:5173` — Login mit `ADMIN_EMAIL` / `ADMIN_PASSWORD`
+aus `.env` (nach `seed_admin.py`).
+
+Frontend-Tests: `cd frontend && npm test`.
 
 ### Outlook-Ingestion (optional)
 
-Siehe `docs/OUTLOOK.md`. Unter Windows immer die **Projekt-venv** nutzen
-(nicht das globale `python`):
+Siehe [`docs/OUTLOOK.md`](docs/OUTLOOK.md). Unter Windows die **Projekt-venv**
+nutzen:
 
 ```powershell
 .\scripts\run_outlook_ingest.ps1
 ```
-
-Oder nach `Activate.ps1`: `python scripts/run_outlook_ingest.py`.
 
 Einzelmandant-Debug: `INGEST_ACCOUNT_ID` in `.env` setzen.
 
 ### Automatisches Mail-Polling
 
 Der Poll-Worker holt periodisch Mails für **alle freigegebenen Mandanten**
-(`active`) mit konfiguriertem Postfach (Onboarding abgeschlossen).
+(`active`) mit abgeschlossenem Onboarding.
 
-**Docker (Produktion)** – startet Web, Mongo und Poll-Worker:
+**Docker (Produktion)** — Web, Mongo und Poll-Worker:
 
 ```powershell
 docker compose up -d
 ```
 
-Intervall in `.env`: `MAIL_POLL_INTERVAL_SECONDS=300` (Standard: 5 Minuten).
+Intervall: `MAIL_POLL_INTERVAL_SECONDS=300` (Standard: 5 Minuten).
 
-**Lokal (Windows, Dev)** – separates Terminal:
+**Lokal (Windows, Dev)**:
 
 ```powershell
 .\scripts\run_mail_poll_loop.ps1
 ```
 
-Einmaliger Lauf ohne Schleife:
-
-```powershell
-.\scripts\run_mail_poll.ps1
-```
-
-Voraussetzungen: Mandant vom Plattform-Admin freigegeben, Postfach im
-Onboarding eingerichtet (oder unter Einstellungen → Postfach bearbeiten).
+Einmaliger Lauf: `.\scripts\run_mail_poll.ps1`
 
 ### LLM-Modus und Hilfsskripte
 
 | Variable | Wirkung |
 |----------|---------|
-| `LLM_MODE=live` | Echte OpenAI-API (Klassifikation, Extraktion, Draft, Embeddings) |
+| `LLM_MODE=live` | Echte OpenAI-API |
 | `LLM_MODE=mock` | Platzhalter ohne API-Kosten (nur Dev) |
 
-- `python scripts/diagnose_env.py` – zeigt geladene `.env`-Pfade und Modellnamen (ohne Secrets)
-- `python scripts/test_live_openai.py` – Smoke-Test Embedding + Workflow (live)
-- `python scripts/check_booking_mails.py` – letzte Buchungs-Mails in MongoDB
+- `python scripts/diagnose_env.py` — geladene `.env`-Pfade und Modellnamen
+- `python scripts/test_live_openai.py` — Smoke-Test Embedding + Workflow
+- `python scripts/check_booking_mails.py` — letzte Buchungs-Mails in MongoDB
 
-Langfuse (`@observe` ohne Rohprompt-Capture): siehe `docs/LANGFUSE.md`.
+Langfuse: [`docs/LANGFUSE.md`](docs/LANGFUSE.md).
 
-### Web-API (Dev)
+### Production (Docker + Gunicorn)
 
-Flask-Backend für das Dashboard (JWT, Review ohne Auto-Versand):
+Multi-Stage-Image: React-Build + Gunicorn auf Port **8000**.
 
 ```powershell
-python scripts/seed_admin.py
-flask --app backend.api.app:create_app run --debug --port 5000
+docker compose up --build
 ```
 
-Optional: `pip install langgraph-checkpoint-mongodb==0.1.4` für durable LangGraph-Checkpoints in Mongo (nicht im Standard-Resolver wegen `langgraph` 0.2.x). Sonst `WEB_USE_MEMORY_CHECKPOINTER=true` nur für Tests.
+- UI + API: `http://localhost:8000`
+- Atlas: `MONGODB_URI` in `.env`; optionalen `mongo`-Service in Compose weglassen
+- Start: `scripts/seed_admin.py`, wenn `ADMIN_EMAIL` / `ADMIN_PASSWORD` gesetzt
+- Lokal ohne Docker: `pip install -e ".[prod]"` und
+  `gunicorn -c gunicorn.conf.py wsgi:app` (nach `npm run build` in `frontend/`)
 
-API: `GET /health`, `POST /api/auth/login`, geschützte Routes unter `/api/dashboard`, `/api/emails`, `/api/review`, `/api/costs`.
-
-### React-Dashboard (Dev)
-
-Zwei Terminals: Flask (Port 5000) und Vite (Port 5173). Vite proxied `/api` und `/health` zum Backend.
-
-```powershell
-# Terminal 1 – Backend (aus Projektroot, .venv aktiv)
-python scripts/seed_admin.py
-flask --app backend.api.app:create_app run --debug --port 5000
-
-# Terminal 2 – Frontend
-cd frontend
-npm install
-npm run dev
-```
-
-Browser: `http://localhost:5173` — Login mit `ADMIN_EMAIL` / `ADMIN_PASSWORD` aus `.env` (nach `seed_admin.py`).
-
-Dashboard-KPI „Eingegangen“ zählt nach `received_at`. Kategorie-Listen filtern Marketing (z. B. Comigo/Lumigita) und Stornos ohne Buchungsnummer. **Nachrichten** = `guest_inquiry` mit Buchungsbezug. Review zeigt LLM-Entwürfe (Testmodus, kein Versand).
-
-Backfill (optional):
+Dashboard-KPI „Eingegangen“ zählt nach `received_at`. Review zeigt
+LLM-Entwürfe (Testmodus, **kein Versand**). Optional Backfill:
 
 ```powershell
-.\.venv\Scripts\Activate.ps1
 python scripts/fix_noise_intents.py
 python scripts/backfill_mail_metrics.py
 python scripts/backfill_review_drafts.py
 ```
 
-Ohne venv schlägt es fehl (`ModuleNotFoundError: langfuse`). Alternativ:
-`.\.venv\Scripts\python.exe scripts\backfill_review_drafts.py`
+## Konfiguration
 
-Produktion: `cd frontend && npm run build` erzeugt `frontend/dist/`; Flask liefert das Bundle aus, wenn `FLASK_ENV=production` und der Ordner existiert.
-
-Frontend-Tests: `cd frontend && npm test`.
-
-### Production (Docker + Gunicorn)
-
-Multi-Stage-Image: baut das React-Bundle, startet Flask über Gunicorn auf Port **8000** (SPA + API aus einem Container).
-
-```powershell
-# .env mit MONGODB_URI, OPENAI_*, LANGFUSE_*, FLASK_SECRET_KEY, ADMIN_* usw.
-docker compose up --build
-```
-
-- UI + API: `http://localhost:8000`
-- Optionaler MongoDB-Service in `docker-compose.yml` (Default-URI `mongodb://mongo:27017/email_platform`). Für Atlas nur `MONGODB_URI` in `.env` setzen und den `mongo`-Service entfernen oder nicht starten.
-- Beim Start wird `scripts/seed_admin.py` ausgeführt, wenn `ADMIN_EMAIL` und `ADMIN_PASSWORD` gesetzt sind.
-- Lokal ohne Docker: `pip install -e ".[prod]"` und `gunicorn -c gunicorn.conf.py wsgi:app` (nach `npm run build` im Ordner `frontend/`).
-
-## Konfiguration (Environment-Variablen)
-
-Alle Secrets ausschließlich über Umgebungsvariablen, nie im Code. Erwartet
-werden u. a. `OPENAI_API_KEY`, `MONGODB_URI`, `LANGFUSE_PUBLIC_KEY`,
-`LANGFUSE_SECRET_KEY`, `LLM_MODE`. Die vollständige Liste steht in `.env.example`.
+Secrets nur über Umgebungsvariablen. Vollständige Liste: `.env.example`
+(u. a. `OPENAI_API_KEY`, `MONGODB_URI`, `LANGFUSE_*`, `LLM_MODE`,
+`FLASK_SECRET_KEY`, `MAIL_POLL_INTERVAL_SECONDS`).
 
 Modelle (Beispiel): `OPENAI_MODEL_CLASSIFY` / `EXTRACT` = `gpt-4o-mini`,
-`OPENAI_MODEL_DRAFT` = `gpt-5-mini` oder `gpt-4o-mini`. Bei `gpt-5-*` wird
-`temperature` automatisch weggelassen (API-Vorgabe).
+`OPENAI_MODEL_DRAFT` = `gpt-5-mini` oder `gpt-4o-mini`. Bei `gpt-5-*` entfällt
+`temperature` automatisch (API-Vorgabe).
 
-## Qualitäts- und Sicherheitsschichten
+## Qualitätssicherung
 
-Das Projekt sichert Codequalität und Git-Disziplin auf mehreren Ebenen ab, die
-absichtlich ineinandergreifen. Es hilft, sie als Kette von der schnellsten und
-billigsten bis zur unumgehbaren Schranke zu verstehen.
+| Ebene | Was passiert |
+|-------|----------------|
+| **Cursor-Hooks** | Format nach Edit; Push auf `main` blockiert |
+| **pre-commit** | Ruff, Black, MyPy, Conventional Commits |
+| **CI** | Dieselben Checks in GitHub Actions (`.github/workflows/ci.yml`) |
+| **Release** | semantic-release auf `main` → Version, Tag, Changelog |
 
-Wenn das Projekt in **Cursor** bearbeitet wird, formatiert der
-`afterFileEdit`-Hook jede vom Agenten geänderte Python-Datei sofort mit Ruff
-und Black, und der `beforeShellExecution`-Hook blockiert einen versehentlichen
-Direkt-Push auf `main`. Das ist die erste, sofort wirksame Ebene.
-
-Beim eigentlichen Commit greift das **pre-commit-Framework**: Ruff, Black und
-MyPy müssen durchlaufen, und Commitizen erzwingt das Conventional-Commit-Format
-der Nachricht. Schlägt etwas fehl, entsteht gar kein Commit. Das ist günstiger,
-als die CI rot werden zu lassen.
-
-Die **CI** (GitHub Actions, `.github/workflows/ci.yml`) fährt dieselben Checks
-serverseitig erneut – als Backstop für den Fall, dass lokal jemand die Hooks
-mit `--no-verify` umgangen hat. Über die Branch-Protection von `main` ist der
-Merge an eine grüne CI gebunden; das ist die unumgehbare Schranke.
-
-Nach dem Merge auf `main` erzeugt der **Release-Workflow**
-(`.github/workflows/release.yml`) mit python-semantic-release automatisch die
-nächste Version, den Git-Tag und das Changelog – abgeleitet aus den
-Conventional Commits. Deshalb sind diese Commit-Typen Pflicht und nicht bloß
-Stilfrage: `fix:` ergibt einen Patch, `feat:` eine Minor, `BREAKING CHANGE`
-eine Major.
+Frontend in CI: `npm ci`, `npm test`, `npm run build`.
 
 ## Git-Workflow
 
-Arbeite auf Feature-Branches und committe in kleinen, atomaren Schritten.
-`main` ist geschützt; der Weg dorthin führt ausschließlich über einen Pull
-Request mit grüner CI. Force-Push auf `main` ist gesperrt.
+Feature-Branches, kleine Commits (`feat:`, `fix:`, `chore:`). `main` ist
+geschützt; Merge über Pull Request mit grüner CI. Kein Force-Push auf `main`.
 
-## Projektstruktur
+## Domänen-Pack hinzufügen
 
-```
-routers/        Eingänge (z. B. Outlook-Ingestion)
-services/       Geschäftslogik (Klassifikation, Extraktion, Retrieval, ...)
-repositories/   Datenzugriff (MongoDB Atlas)
-models/         Pydantic-Datenmodelle
-schemas/        Domänen-Pack-Schemata (Booking, später Orders, ...)
-workflows/      LangGraph-Workflow und Nodes
-prompts/        Prompt-Templates und Few-Shot-Beispiele
-observability/  Langfuse-Anbindung, Alerts
-config/         Einstellungen, Environment-Handling
-tests/          Unit-, Integrations-, Edge-Case-, Sicherheits-Tests
-utils/          Hilfsfunktionen
-```
-
-## Eine neue Branche (Domänen-Pack) hinzufügen
-
-Die Engine bleibt unverändert. Ein neues Pack besteht aus einer
-Klassifikations-Taxonomie, einem Pydantic-Extraktionsschema mit Few-Shot-
-Beispielen, den Entitätstypen samt Auflösungsregeln und den Prompt-Templates.
-Es wird ergänzt, ohne Engine oder `AGENTS.md` anzufassen.
+Die Engine bleibt unverändert. Ein neues Pack bringt Taxonomie, Extraktionsschema,
+Entitätstypen und Prompts unter `backend/ai/domain/` und `backend/ai/prompts/` —
+ohne `AGENTS.md` oder die Schichten-Regeln zu brechen.
 
 ## Tests
 
-`pytest -q` für den vollen Lauf. Die Suite deckt Unit-Tests (Klassifikation,
-Extraktion, Retrieval, Prompting, Antwortgenerierung, Datenmodelle),
-Integrationstests entlang der Pipeline, Edge Cases (leere Mail, kaputtes HTML,
-fehlende Felder, Doppelbuchung, unbekannte Plattform/Sprache) sowie
-Sicherheits- und Kostentests ab.
+`pytest -q` — Unit, Pipeline, Edge Cases, Sicherheit/Kosten, Web-API unter
+`tests/web/`. Marker: `integration`, `live_eval`, `live_graph` (siehe
+`pyproject.toml`).
 
 ## Sicherheit und Datenschutz
 
-API-Keys nur über Environment-Variablen; keine Secrets im Repository; keine
-personenbezogenen Daten im Logging. Vor dem Tracing in Langfuse werden
-PII maskiert. Für die DSGVO-konforme Löschung gilt: Daten werden über MongoDB,
-den Vektorindex **und** die Traces hinweg entfernt.
+Keine Secrets im Repo; PII vor Langfuse maskieren; **kein automatischer
+Mailversand**. DSGVO-Löschung über MongoDB, Vektorindex und Langfuse-Traces.
+
+## Dokumentation
+
+| Datei | Inhalt |
+|-------|--------|
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Layern, Imports, Entrypoints |
+| [`docs/SPEC.md`](docs/SPEC.md) | Fachliche Spezifikation |
+| [`docs/OUTLOOK.md`](docs/OUTLOOK.md) | Microsoft Graph / Ingestion |
+| [`docs/LANGFUSE.md`](docs/LANGFUSE.md) | Tracing und Observability |
+| [`docs/images/`](docs/images/) | Architektur-Diagramme für diese README |

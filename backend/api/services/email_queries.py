@@ -5,7 +5,10 @@ from __future__ import annotations
 from math import ceil
 from typing import Any
 
-from backend.ai.domain.booking.booking_relevance import classify_booking_mail
+from backend.ai.domain.booking.booking_relevance import (
+    classify_booking_mail,
+    effective_booking_intent,
+)
 from backend.api.schemas.emails import EmailDetail, EmailListItem, EmailListResponse
 from backend.api.schemas.review import ReviewQueueItem
 from backend.core.config.factory import AppContext
@@ -27,11 +30,17 @@ def list_emails(
 ) -> EmailListResponse:
     fetch_limit = 500 if booking_related else limit
     fetch_page = 1 if booking_related else page
+    intent_filter: list[str] = []
+    if intents:
+        intent_filter = intents
+    elif intent:
+        intent_filter = [intent]
+
     emails, total = ctx.email_repo.list_filtered(
         account_id=account_id,
         status=status,
-        intent=intent,
-        intents=intents,
+        intent=None if booking_related else intent,
+        intents=None if booking_related else intents,
         platform=platform,
         search=search,
         booking_related=booking_related,
@@ -45,8 +54,13 @@ def list_emails(
                 email.correlation_id,
                 account_id=account_id,
             )
-            if classify_booking_mail(email, ext).is_booking:
-                strict.append(email)
+            if not classify_booking_mail(email, ext).is_booking:
+                continue
+            if intent_filter:
+                eff = effective_booking_intent(email, ext)
+                if eff is None or eff.value not in intent_filter:
+                    continue
+            strict.append(email)
         total = len(strict)
         offset = max(page - 1, 0) * limit
         emails = strict[offset : offset + limit]
@@ -57,7 +71,8 @@ def list_emails(
             account_id=account_id,
         )
         review = ctx.review_repo.get(email.correlation_id, account_id=account_id)
-        intent_val = ext.intent.value if ext and ext.intent else None
+        intent_val = effective_booking_intent(email, ext)
+        intent_str = intent_val.value if intent_val else None
         items.append(
             EmailListItem(
                 correlation_id=email.correlation_id,
@@ -68,7 +83,7 @@ def list_emails(
                     email.received_at.isoformat() if email.received_at else None
                 ),
                 platform=email.platform or (ext.platform if ext else None),
-                intent=intent_val,
+                intent=intent_str,
                 booking_number=ext.booking_number if ext else None,
                 processing_state=email.processing_state.value,
                 review_status=review.review_status if review else None,

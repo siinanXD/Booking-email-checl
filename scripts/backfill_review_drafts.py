@@ -13,8 +13,10 @@ from _bootstrap import require_project_venv, safe_print
 
 require_project_venv()
 
-from backend.ai.domain.booking.booking_relevance import is_booking_relevant
-from backend.ai.domain.booking.taxonomy import BookingIntent
+from backend.ai.domain.booking.booking_relevance import (
+    effective_booking_intent,
+    is_booking_relevant,
+)
 from backend.core.models.email import ProcessingState
 
 
@@ -48,11 +50,14 @@ def main() -> int:
         if ctx.review_repo.get(email.correlation_id) is not None:
             skipped += 1
             continue
-        ext = ctx.extraction_repo.get_by_correlation_id(email.correlation_id)
+        ext = ctx.extraction_repo.get_by_correlation_id(
+            email.correlation_id,
+            account_id=email.account_id,
+        )
         if not is_booking_relevant(email, ext):
             skipped += 1
             continue
-        if ext and ext.intent == BookingIntent.OTHER:
+        if effective_booking_intent(email, ext) is None:
             skipped += 1
             continue
         try:

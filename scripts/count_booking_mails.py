@@ -15,7 +15,7 @@ require_project_venv()
 
 from datetime import UTC, datetime, timedelta
 
-from backend.ai.domain.booking.booking_relevance import count_booking_mails
+from backend.ai.domain.booking.booking_mail_counts import count_booking_mails
 from backend.core.config.factory import build_app_context
 from backend.core.config.settings import get_settings
 

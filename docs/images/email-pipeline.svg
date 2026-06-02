@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 200" role="img" aria-label="E-Mail-Verarbeitung">
+  <defs>
+    <style>
+      .title { font: 600 18px system-ui, Segoe UI, sans-serif; fill: #0f172a; }
+      .node { font: 600 12px system-ui, Segoe UI, sans-serif; fill: #0f172a; }
+      .hint { font: 11px system-ui, Segoe UI, sans-serif; fill: #475569; }
+      .box { rx: 8; stroke: #94a3b8; stroke-width: 1.5; fill: #fff; }
+      .arrow { stroke: #64748b; stroke-width: 2; fill: none; marker-end: url(#m); }
+    </style>
+    <marker id="m" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#64748b"/>
+    </marker>
+  </defs>
+  <text x="20" y="28" class="title">Antwort-Pfad (synchron)  immer mit Human Review</text>
+  <rect x="20" y="48" width="100" height="52" class="box"/>
+  <text x="38" y="72" class="node">Postfach</text>
+  <text x="30" y="88" class="hint">Outlook/IMAP</text>
+  <rect x="150" y="48" width="90" height="52" class="box" fill="#fef9c3"/>
+  <text x="168" y="72" class="node">Triage</text>
+  <text x="158" y="88" class="hint">günstig</text>
+  <rect x="270" y="48" width="100" height="52" class="box" fill="#e0f2fe"/>
+  <text x="286" y="72" class="node">Klassifik.</text>
+  <rect x="400" y="48" width="100" height="52" class="box" fill="#e0f2fe"/>
+  <text x="420" y="72" class="node">Extraktion</text>
+  <rect x="530" y="48" width="90" height="52" class="box" fill="#dcfce7"/>
+  <text x="548" y="72" class="node">RAG</text>
+  <rect x="650" y="48" width="90" height="52" class="box" fill="#fce7f3"/>
+  <text x="662" y="72" class="node">Entwurf</text>
+  <rect x="760" y="48" width="40" height="52" class="box" fill="#fee2e2"/>
+  <text x="768" y="78" class="node">=d</text>
+  <path d="M120 74 H150" class="arrow"/>
+  <path d="M240 74 H270" class="arrow"/>
+  <path d="M370 74 H400" class="arrow"/>
+  <path d="M500 74 H530" class="arrow"/>
+  <path d="M620 74 H650" class="arrow"/>
+  <path d="M740 74 H760" class="arrow"/>
+  <rect x="20" y="130" width="780" height="48" class="box" fill="#f8fafc"/>
+  <text x="36" y="152" class="node">Indexierung (asynchron)</text>
+  <text x="36" y="168" class="hint">Chunks · Embeddings · Entitäten  blockiert den Antwortpfad nicht</text>
+</svg>

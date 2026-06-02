@@ -37,6 +37,7 @@ export interface MailConnectionResponse {
   imap_use_ssl: boolean;
   outlook_auth_mode: string;
   outlook_mailbox: string;
+  outlook_oauth_connected?: boolean;
   last_error?: string | null;
   last_sync_at?: string | null;
   onboarding_completed: boolean;
@@ -47,6 +48,16 @@ export interface MailTestResponse {
   success: boolean;
   message: string;
   mailbox_count?: number | null;
+}
+
+export interface MailSyncResponse {
+  success: boolean;
+  processed: number;
+  duplicates: number;
+  error_count: number;
+  reprocessed?: number;
+  message: string;
+  last_sync_at?: string | null;
 }
 
 export interface RegisterRequest {

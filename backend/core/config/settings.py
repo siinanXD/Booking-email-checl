@@ -91,6 +91,11 @@ class Settings(BaseSettings):
         default="http://localhost:5173",
         alias="CORS_ORIGINS",
     )
+    frontend_url_env: str = Field(default="", alias="FRONTEND_URL")
+    outlook_oauth_redirect_uri_env: str = Field(
+        default="",
+        alias="OUTLOOK_OAUTH_REDIRECT_URI",
+    )
     flask_env: str = Field(default="development", alias="FLASK_ENV")
     flask_port: int = Field(default=5000, alias="FLASK_PORT")
     frontend_build_dir: str = Field(
@@ -136,6 +141,23 @@ class Settings(BaseSettings):
         default=300, alias="MAIL_POLL_INTERVAL_SECONDS"
     )
     mail_poll_run_once: bool = Field(default=False, alias="MAIL_POLL_RUN_ONCE")
+
+    @property
+    def frontend_url(self) -> str:
+        """Basis-URL des React-Frontends (OAuth-Rückleitung)."""
+        if self.frontend_url_env.strip():
+            return self.frontend_url_env.strip().rstrip("/")
+        first = self.cors_origins.split(",")[0].strip()
+        return first.rstrip("/") if first else "http://localhost:5173"
+
+    @property
+    def outlook_oauth_redirect_uri(self) -> str:
+        """Redirect-URI für Microsoft OAuth (Backend-Callback)."""
+        if self.outlook_oauth_redirect_uri_env.strip():
+            return self.outlook_oauth_redirect_uri_env.strip().replace(
+                "127.0.0.1", "localhost"
+            )
+        return f"http://localhost:{self.flask_port}/api/mail/outlook/callback"
 
 
 def get_settings() -> Settings:

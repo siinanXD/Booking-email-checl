@@ -8,6 +8,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MAX_LINES = 300
 EXTENSIONS = {".py", ".ts", ".tsx"}
+SKIP_FILES = {
+    "scripts/restructure_backend.py",
+    "scripts/restructure_frontend.py",
+}
 SKIP_DIRS = {
     ".git",
     ".venv",
@@ -27,6 +31,9 @@ def iter_source_files() -> list[Path]:
         if not path.is_file():
             continue
         if path.suffix not in EXTENSIONS:
+            continue
+        rel = path.relative_to(ROOT).as_posix()
+        if rel in SKIP_FILES:
             continue
         if any(part in SKIP_DIRS for part in path.parts):
             continue

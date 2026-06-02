@@ -18,12 +18,25 @@ den bestehenden `EmailWorkflow` (inkl. Human Review – kein Auto-Versand).
 
 ## Auth-Modi
 
-| Modus | Env | Graph-Pfad |
-|-------|-----|------------|
-| `delegated` (Default) | `AZURE_CLIENT_ID`, optional `AZURE_AUTHORITY=common` | `/me/...` |
+| Modus | Env / UI | Graph-Pfad |
+|-------|----------|------------|
+| `oauth` (Onboarding) | `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, Redirect-URI in Entra | `/me/...` |
+| `delegated` (CLI) | `AZURE_CLIENT_ID`, optional `AZURE_AUTHORITY=common` | `/me/...` |
 | `application` | + `AZURE_TENANT_ID`, `AZURE_CLIENT_SECRET`, `OUTLOOK_MAILBOX` | `/users/{mailbox}/...` |
 
-Delegated nutzt **Device Code** und speichert Tokens in
+### Browser-OAuth (Dashboard)
+
+Im Onboarding **Microsoft Outlook** → **Mit Microsoft anmelden**:
+
+1. Azure-App als **Web**-Plattform mit Redirect-URI  
+   `http://localhost:5001/api/msal/callback` (Port anpassen; Alias: `/api/mail/outlook/callback`)
+2. Delegated permissions: `Mail.Read`, `User.Read`
+3. `.env`: `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, optional  
+   `OUTLOOK_OAUTH_REDIRECT_URI`, `FRONTEND_URL` (wenn Vite nicht auf 5173 läuft)
+
+Tokens werden pro Mandant in Mongo (`mail_connections.outlook_token_cache`) gespeichert.
+
+Delegated (CLI) nutzt **Device Code** und speichert Tokens in
 `.outlook_token_cache.json` (gitignored). MSAL speichert Refresh-Token automatisch
 (`offline_access` wird intern ergänzt, nicht in `DELEGATED_SCOPES` eintragen).
 

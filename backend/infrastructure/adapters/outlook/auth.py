@@ -26,6 +26,41 @@ def authority_host(authority: str) -> str:
     return f"https://login.microsoftonline.com/{segment}"
 
 
+class CachedDelegatedAuth:
+    """OAuth Authorization-Code: MSAL-Cache pro Mandant (DB)."""
+
+    def __init__(
+        self,
+        client_id: str,
+        authority: str,
+        client_secret: str,
+        cache_json: str,
+    ) -> None:
+        self._client_id = client_id
+        self._authority = authority_host(authority)
+        self._client_secret = client_secret
+        self._cache = msal.SerializableTokenCache()
+        if cache_json.strip():
+            self._cache.deserialize(cache_json)
+
+    def get_token(self) -> str:
+        app = msal.ConfidentialClientApplication(
+            self._client_id,
+            authority=self._authority,
+            client_credential=self._client_secret,
+            token_cache=self._cache,
+        )
+        accounts = app.get_accounts()
+        if not accounts:
+            msg = "Kein Microsoft-Konto verbunden. Bitte erneut anmelden."
+            raise RuntimeError(msg)
+        result = app.acquire_token_silent(DELEGATED_SCOPES, account=accounts[0])
+        if not result or "access_token" not in result:
+            err = (result or {}).get("error_description") or "Token refresh failed"
+            raise RuntimeError(f"Outlook OAuth token failed: {err}")
+        return str(result["access_token"])
+
+
 class DelegatedAuth:
     """Device Code + MSAL-Token-Cache (wiederholte Läufe ohne Re-Login)."""
 

@@ -71,7 +71,7 @@ export function RegisterPage() {
             </Link>
           </div>
         ) : (
-          <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+          <form className="mt-6 space-y-4" onSubmit={handleSubmit} autoComplete="off">
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-sm text-slate-600">
@@ -100,11 +100,14 @@ export function RegisterPage() {
                 E-Mail
               </label>
               <Input
+                id="register-email"
+                name="platform-register-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                autoComplete="username"
+                autoComplete="off"
+                placeholder="ihre@email.de"
               />
             </div>
 

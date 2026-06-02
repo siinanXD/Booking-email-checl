@@ -101,6 +101,64 @@ def test_mail_test_connection(client: object, auth_headers: dict[str, str]) -> N
     assert data["mailbox_count"] == 42
 
 
+def test_mail_sync_requires_pollable_connection(
+    client: object, auth_headers: dict[str, str]
+) -> None:
+    resp = client.post("/api/mail/sync", headers=auth_headers)  # type: ignore[union-attr]
+    assert resp.status_code == 400
+    assert resp.get_json()["success"] is False
+
+
+def test_mail_sync_runs_poll(
+    client: object, auth_headers: dict[str, str], tenant_account_id: str
+) -> None:
+    client.put(  # type: ignore[union-attr]
+        "/api/mail/connection",
+        headers=auth_headers,
+        json={
+            "provider": "outlook",
+            "outlook_auth_mode": "oauth",
+            "onboarding_completed": True,
+        },
+    )
+    app = client.application  # type: ignore[union-attr]
+    ctx = app.extensions["ctx"]
+    record = ctx.mail_connection_repo.get_or_create(tenant_account_id)
+    record.outlook_token_cache = '{"AccessToken": {"secret": "x"}}'
+    ctx.mail_connection_repo.save(record)
+
+    with patch(
+        "backend.api.blueprints.mail.build_mail_poll_service_from_context"
+    ) as mock_build:
+        poll = MagicMock()
+        from backend.features.mail.mail_poll_service import (
+            AccountPollSummary,
+            MailPollBatchResult,
+        )
+
+        poll.run_all.return_value = MailPollBatchResult(
+            accounts_polled=1,
+            total_processed=2,
+            summaries=[
+                AccountPollSummary(
+                    account_id=tenant_account_id,
+                    provider="outlook",
+                    processed=2,
+                    duplicates=1,
+                )
+            ],
+        )
+        mock_build.return_value = poll
+        resp = client.post("/api/mail/sync", headers=auth_headers)  # type: ignore[union-attr]
+
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["success"] is True
+    assert data["processed"] == 2
+    assert data["duplicates"] == 1
+    poll.run_all.assert_called_once_with(account_ids=[tenant_account_id])
+
+
 def test_auth_me_includes_mail_onboarding(
     client: object, auth_headers: dict[str, str]
 ) -> None:
@@ -118,3 +176,62 @@ def test_auth_me_includes_mail_onboarding(
     )
     resp = client.get("/api/auth/me", headers=auth_headers)  # type: ignore[union-attr]
     assert resp.get_json()["mail_onboarding_completed"] is True
+
+
+def test_outlook_authorize_url_requires_admin(
+    client: object, member_auth_headers: dict[str, str]
+) -> None:
+    resp = client.get(  # type: ignore[union-attr]
+        "/api/mail/outlook/authorize-url",
+        headers=member_auth_headers,
+    )
+    assert resp.status_code == 403
+
+
+def test_outlook_authorize_url_error(
+    client: object, auth_headers: dict[str, str]
+) -> None:
+    mock_service = MagicMock()
+    mock_service.build_authorize_url.side_effect = ValueError(
+        "AZURE_CLIENT_ID ist nicht konfiguriert"
+    )
+    with patch(
+        "backend.api.blueprints.mail._oauth_service",
+        return_value=mock_service,
+    ):
+        resp = client.get(  # type: ignore[union-attr]
+            "/api/mail/outlook/authorize-url",
+            headers=auth_headers,
+        )
+    assert resp.status_code == 400
+
+
+def test_outlook_authorize_url_success(
+    client: object, auth_headers: dict[str, str]
+) -> None:
+    mock_service = MagicMock()
+    mock_service.build_authorize_url.return_value = (
+        "https://login.microsoftonline.com/authorize"
+    )
+    with patch(
+        "backend.api.blueprints.mail._oauth_service",
+        return_value=mock_service,
+    ):
+        resp = client.get(  # type: ignore[union-attr]
+            "/api/mail/outlook/authorize-url",
+            headers=auth_headers,
+        )
+    assert resp.status_code == 200
+    assert resp.get_json()["authorize_url"].startswith("https://")
+
+
+def test_outlook_oauth_callback_invalid_state(client: object) -> None:
+    resp = client.get("/api/mail/outlook/callback?state=unknown")  # type: ignore[union-attr]
+    assert resp.status_code == 302
+    assert "outlook=error" in resp.headers.get("Location", "")
+
+
+def test_msal_oauth_callback_alias(client: object) -> None:
+    resp = client.get("/api/msal/callback?state=unknown")  # type: ignore[union-attr]
+    assert resp.status_code == 302
+    assert "outlook=error" in resp.headers.get("Location", "")

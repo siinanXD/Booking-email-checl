@@ -68,15 +68,7 @@ class OutlookMailConnector:
         self._settings = settings
 
     def _client(self) -> OutlookGraphClient:
-        merged = self._settings.model_copy(
-            update={
-                "outlook_auth_mode": self._record.outlook_auth_mode or "application",
-                "outlook_mailbox": self._record.outlook_mailbox
-                or self._record.email_address
-                or self._settings.outlook_mailbox,
-            }
-        )
-        return OutlookGraphClient.from_settings(merged)
+        return OutlookGraphClient.from_mail_record(self._record, self._settings)
 
     def test_connection(self) -> MailTestResult:
         try:

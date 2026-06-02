@@ -121,6 +121,9 @@ class MetaCloudWhatsAppClient:
             data = response.json()
             msg_id = _extract_message_id(data)
             return WhatsAppSendResult(success=True, provider_message_id=msg_id)
+        except httpx.HTTPStatusError as exc:
+            logger.exception("Meta WhatsApp send failed")
+            return WhatsAppSendResult(success=False, error=_meta_api_error(exc))
         except Exception as exc:
             logger.exception("Meta WhatsApp send failed")
             return WhatsAppSendResult(success=False, error=str(exc))
@@ -161,6 +164,12 @@ class MetaCloudWhatsAppClient:
             data = response.json()
             msg_id = _extract_message_id(data)
             return WhatsAppSendResult(success=True, provider_message_id=msg_id)
+        except httpx.HTTPStatusError as exc:
+            logger.exception("Meta WhatsApp hello_world test failed")
+            return WhatsAppSendResult(
+                success=False,
+                error=_meta_api_error(exc),
+            )
         except Exception as exc:
             logger.exception("Meta WhatsApp hello_world test failed")
             return WhatsAppSendResult(success=False, error=str(exc))
@@ -179,6 +188,23 @@ def build_whatsapp_client(settings: Settings) -> WhatsAppClient:
     if not settings.whatsapp_enabled:
         return DisabledWhatsAppClient()
     return MetaCloudWhatsAppClient(settings)
+
+
+def _meta_api_error(exc: httpx.HTTPStatusError) -> str:
+    """Lesbare Meta-Graph-Fehlermeldung (z. B. abgelaufener Token)."""
+    try:
+        body = exc.response.json()
+        err = body.get("error") if isinstance(body, dict) else None
+        if isinstance(err, dict):
+            message = err.get("message") or err.get("error_user_msg")
+            code = err.get("code")
+            if message and code:
+                return f"Meta API ({exc.response.status_code}, code {code}): {message}"
+            if message:
+                return f"Meta API ({exc.response.status_code}): {message}"
+    except Exception:
+        pass
+    return str(exc)
 
 
 def _normalize_e164_digits(phone: str) -> str:
