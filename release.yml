@@ -1,0 +1,35 @@
+# Automatische Versionierung: laeuft NACH erfolgreichem Merge auf 'main'.
+# python-semantic-release liest die Conventional-Commit-History, bestimmt die
+# naechste SemVer-Version, setzt den Git-Tag, schreibt das CHANGELOG und legt
+# einen GitHub-Release an. Niemand pflegt Versionsnummern von Hand.
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+# Nur ein Release-Lauf gleichzeitig, sonst kollidieren Tags.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # noetig, um Tag, CHANGELOG-Commit und Release zu schreiben.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0          # volle History, damit Commits seit letztem Tag sichtbar sind.
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Python 3.11 einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: semantic-release ausfuehren
+        uses: python-semantic-release/python-semantic-release@v9
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
