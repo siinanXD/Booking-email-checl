@@ -37,13 +37,33 @@ für OpenAI und Langfuse.
 2. Virtuelle Umgebung anlegen und Abhängigkeiten installieren:
    `python3.11 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"`
 3. `.env` aus `.env.example` erzeugen und die Keys eintragen. **Keine Secrets
-   committen** – `.env` steht in `.gitignore`.
+   committen** – `.env` steht in `.gitignore`. Die App lädt `.env` immer aus dem
+   **Projektroot** (unabhängig vom Terminal-Verzeichnis).
 4. Git-Hooks aktivieren (einmalig):
    `pre-commit install && pre-commit install --hook-type commit-msg`
 5. Tests laufen lassen: `pytest -q`.
 
-Outlook-/Graph-Ingestion (optional): siehe `docs/OUTLOOK.md` und
-`python scripts/run_outlook_ingest.py`.
+### Outlook-Ingestion (optional)
+
+Siehe `docs/OUTLOOK.md`. Unter Windows immer die **Projekt-venv** nutzen
+(nicht das globale `python`):
+
+```powershell
+.\scripts\run_outlook_ingest.ps1
+```
+
+Oder nach `Activate.ps1`: `python scripts/run_outlook_ingest.py`.
+
+### LLM-Modus und Hilfsskripte
+
+| Variable | Wirkung |
+|----------|---------|
+| `LLM_MODE=live` | Echte OpenAI-API (Klassifikation, Extraktion, Draft, Embeddings) |
+| `LLM_MODE=mock` | Platzhalter ohne API-Kosten (nur Dev) |
+
+- `python scripts/diagnose_env.py` – zeigt geladene `.env`-Pfade und Modellnamen (ohne Secrets)
+- `python scripts/test_live_openai.py` – Smoke-Test Embedding + Workflow (live)
+- `python scripts/check_booking_mails.py` – letzte Buchungs-Mails in MongoDB
 
 Langfuse (`@observe` ohne Rohprompt-Capture): siehe `docs/LANGFUSE.md`.
 
@@ -51,7 +71,11 @@ Langfuse (`@observe` ohne Rohprompt-Capture): siehe `docs/LANGFUSE.md`.
 
 Alle Secrets ausschließlich über Umgebungsvariablen, nie im Code. Erwartet
 werden u. a. `OPENAI_API_KEY`, `MONGODB_URI`, `LANGFUSE_PUBLIC_KEY`,
-`LANGFUSE_SECRET_KEY`. Die vollständige Liste steht in `.env.example`.
+`LANGFUSE_SECRET_KEY`, `LLM_MODE`. Die vollständige Liste steht in `.env.example`.
+
+Modelle (Beispiel): `OPENAI_MODEL_CLASSIFY` / `EXTRACT` = `gpt-4o-mini`,
+`OPENAI_MODEL_DRAFT` = `gpt-5-mini` oder `gpt-4o-mini`. Bei `gpt-5-*` wird
+`temperature` automatisch weggelassen (API-Vorgabe).
 
 ## Qualitäts- und Sicherheitsschichten
 
