@@ -223,8 +223,5 @@ def wipe_all_data() -> tuple[Any, int]:
             ),
             400,
         )
-    from backend.infrastructure.repositories.mongo import get_database
-
-    db = get_database(g.settings)
-    counts = DataWipeService(db).wipe_account(_account_id())
+    counts = DataWipeService(g.ctx.db).wipe_account(_account_id())
     return jsonify(WipeDataResponse(deleted=counts).model_dump()), 200

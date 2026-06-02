@@ -40,9 +40,12 @@ from backend.infrastructure.repositories.mail_connection_repository import (
 from backend.infrastructure.repositories.mail_metrics_repository import (
     MailMetricsRepository,
 )
-from backend.infrastructure.repositories.mongo import get_database
+from backend.infrastructure.repositories.mongo import Db, get_database
 from backend.infrastructure.repositories.notification_repository import (
     NotificationRepository,
+)
+from backend.infrastructure.repositories.outlook_oauth_flow_repository import (
+    OutlookOAuthFlowRepository,
 )
 from backend.infrastructure.repositories.platform_settings_repository import (
     PlatformSettingsRepository,
@@ -62,6 +65,7 @@ class AppContext:
     """Alle verdrahteten Komponenten für API/CLI/Tests."""
 
     settings: Settings
+    db: Db
     ingestion_router: IngestionRouter
     review_router: ReviewRouter
     workflow: EmailWorkflow
@@ -75,6 +79,7 @@ class AppContext:
     platform_settings_repo: PlatformSettingsRepository
     property_recipient_repo: PropertyRecipientRepository
     mail_connection_repo: MailConnectionRepository
+    outlook_oauth_flow_repo: OutlookOAuthFlowRepository
 
 
 def build_app_context(settings: Settings | None = None) -> AppContext:
@@ -95,6 +100,7 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
     property_recipient_repo = PropertyRecipientRepository(db)
     platform_settings_repo = PlatformSettingsRepository(db)
     mail_connection_repo = MailConnectionRepository(db)
+    outlook_oauth_flow_repo = OutlookOAuthFlowRepository(db)
     notification_service = NotificationService(
         cfg,
         notification_repo,
@@ -182,6 +188,7 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
 
     return AppContext(
         settings=cfg,
+        db=db,
         ingestion_router=IngestionRouter(ingestion),
         review_router=ReviewRouter(workflow),
         workflow=workflow,
@@ -195,4 +202,5 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
         platform_settings_repo=platform_settings_repo,
         property_recipient_repo=property_recipient_repo,
         mail_connection_repo=mail_connection_repo,
+        outlook_oauth_flow_repo=outlook_oauth_flow_repo,
     )
