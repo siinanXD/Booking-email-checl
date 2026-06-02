@@ -2,10 +2,15 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from langfuse.decorators import langfuse_context
 
 from observability.alerts import AlertService
 from services.llm_types import LLMCompletion
+
+if TYPE_CHECKING:
+    from repositories.mail_metrics_repository import MailMetricsRepository
 
 
 class MailCostTracker:
@@ -15,12 +20,14 @@ class MailCostTracker:
         self,
         cost_per_1k_tokens_usd: float = 0.002,
         alerts: AlertService | None = None,
+        metrics_repo: MailMetricsRepository | None = None,
         *,
         tracing: bool = False,
     ) -> None:
         """Initialize the instance with its dependencies."""
         self._cost_per_1k = cost_per_1k_tokens_usd
         self._alerts = alerts
+        self._metrics_repo = metrics_repo
         self._tracing = tracing
         self._prompt_tokens: dict[str, int] = {}
         self._completion_tokens: dict[str, int] = {}
@@ -61,6 +68,16 @@ class MailCostTracker:
             )
         if self._alerts is not None and usage["total_tokens"] > 0:
             self._alerts.check_cost_per_mail(cost, correlation_id)
+        if self._metrics_repo is not None and usage["total_tokens"] > 0:
+            from repositories.mail_metrics_repository import MailMetricsRepository
+
+            if isinstance(self._metrics_repo, MailMetricsRepository):
+                self._metrics_repo.record(
+                    correlation_id,
+                    cost_usd=cost,
+                    prompt_tokens=int(usage["prompt_tokens"]),
+                    completion_tokens=int(usage["completion_tokens"]),
+                )
         self._prompt_tokens.pop(correlation_id, None)
         self._completion_tokens.pop(correlation_id, None)
         return cost

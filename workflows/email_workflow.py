@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any, Literal, cast
 
 from langfuse.decorators import langfuse_context, observe
-from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 
 from models.email import IncomingEmail, ProcessingState, StoredEmail
@@ -14,6 +13,7 @@ from observability.alerts import AlertService
 from observability.mail_cost import MailCostTracker
 from repositories.email_repository import EmailRepository
 from repositories.extraction_repository import ExtractionRepository
+from repositories.review_repository import ReviewRepository
 from schemas.booking.triage import TriageOutcome, TriageResult
 from services.classification import ClassificationService
 from services.extraction import ExtractionService
@@ -41,6 +41,8 @@ class EmailWorkflow:
         indexing: IndexingService | None = None,
         alerts: AlertService | None = None,
         mail_cost: MailCostTracker | None = None,
+        review_repo: ReviewRepository | None = None,
+        checkpointer: object | None = None,
         *,
         tracing: bool = False,
     ) -> None:
@@ -56,9 +58,12 @@ class EmailWorkflow:
         self._indexing = indexing
         self._alerts = alerts
         self._mail_cost = mail_cost
+        self._review_repo = review_repo
         self._tracing = tracing
         self._graph = self._build()
-        self._checkpointer = MemorySaver()
+        from langgraph.checkpoint.memory import MemorySaver
+
+        self._checkpointer = checkpointer or MemorySaver()
         self._app = self._graph.compile(
             checkpointer=self._checkpointer,
             interrupt_before=["human_review"],
@@ -125,16 +130,51 @@ class EmailWorkflow:
         approved_body: str | None = None,
     ) -> dict[str, Any]:
         """Setzt Workflow nach Freigabe fort (gleiche thread_id)."""
+        return self._resume_review(
+            thread_id,
+            status="approved",
+            approved_body=approved_body,
+        )
+
+    def resume_after_rejection(
+        self,
+        thread_id: str,
+        reason: str | None = None,
+    ) -> dict[str, Any]:
+        """Markiert Review als abgelehnt und schließt den Workflow ab."""
+        return self._resume_review(
+            thread_id,
+            status="rejected",
+            reviewer_note=reason,
+        )
+
+    def _resume_review(
+        self,
+        thread_id: str,
+        *,
+        status: str,
+        approved_body: str | None = None,
+        reviewer_note: str | None = None,
+    ) -> dict[str, Any]:
+        """Gemeinsame Resume-Logik für Freigabe und Ablehnung."""
         config = {"configurable": {"thread_id": thread_id}}
         review = ReviewStatus(
             correlation_id=thread_id,
-            status="approved",
+            status=status,
             approved_body=approved_body,
+            reviewer_note=reviewer_note,
         )
         self._app.update_state(config, {"review": review}, as_node="draft_response")
         result_dict: dict[str, Any] | None = None
         try:
             result_dict = dict(self._app.invoke(None, config=config))
+            if self._review_repo is not None:
+                self._review_repo.update_status(
+                    thread_id,
+                    status,
+                    approved_body=approved_body,
+                    reviewer_note=reviewer_note,
+                )
             return result_dict
         finally:
             if self._mail_cost is not None:
@@ -301,14 +341,31 @@ class EmailWorkflow:
             correlation_id=email.correlation_id,
             status="pending",
         )
-        self._email_repo.update_processing_state(
-            email.message_id,
-            (
-                ProcessingState.APPROVED
-                if review.status == "approved"
-                else ProcessingState.PENDING_REVIEW
-            ),
-        )
+        if review.status == "approved":
+            proc = ProcessingState.APPROVED
+        elif review.status == "rejected":
+            proc = ProcessingState.REJECTED
+        else:
+            proc = ProcessingState.PENDING_REVIEW
+        self._email_repo.update_processing_state(email.message_id, proc)
+        if review.status == "pending" and self._review_repo is not None:
+            draft = state.get("draft")
+            draft_body = draft.body if draft is not None else ""
+            intent_val = state.get("intent")
+            intent_str: str | None = None
+            if intent_val is not None:
+                intent_str = (
+                    intent_val.value
+                    if hasattr(intent_val, "value")
+                    else str(intent_val)
+                )
+            self._review_repo.upsert_pending(
+                correlation_id=email.correlation_id,
+                message_id=email.message_id,
+                draft_body=draft_body,
+                grounding_flag=bool(state.get("grounding_flag")),
+                intent=intent_str,
+            )
         return {"review": review}
 
     def _node_finalize(self, state: EmailWorkflowState) -> EmailWorkflowState:
@@ -317,6 +374,8 @@ class EmailWorkflow:
         status = review.status if review else "approved"
         if status == "approved":
             proc = ProcessingState.APPROVED
+        elif status == "rejected":
+            proc = ProcessingState.REJECTED
         else:
             proc = ProcessingState.PENDING_REVIEW
         self._email_repo.update_processing_state(email.message_id, proc)

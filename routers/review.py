@@ -18,6 +18,14 @@ class ReviewPort(Protocol):
         """Approve the pending draft."""
         ...
 
+    def reject_draft(
+        self,
+        correlation_id: str,
+        reason: str | None = None,
+    ) -> dict[str, Any]:
+        """Reject the pending draft."""
+        ...
+
 
 class ReviewRouter:
     """Resume des Workflows nach menschlicher Freigabe."""
@@ -35,4 +43,15 @@ class ReviewRouter:
         return self._workflow.resume_after_approval(
             thread_id=correlation_id,
             approved_body=approved_body,
+        )
+
+    def reject_draft(
+        self,
+        correlation_id: str,
+        reason: str | None = None,
+    ) -> dict[str, Any]:
+        """Lehnt den Entwurf ab (kein Versand)."""
+        return self._workflow.resume_after_rejection(
+            thread_id=correlation_id,
+            reason=reason,
         )

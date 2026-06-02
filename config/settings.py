@@ -79,6 +79,30 @@ class Settings(BaseSettings):
         alias="OUTLOOK_FETCH_UNREAD_ONLY",
     )
 
+    flask_secret_key: str = Field(default="", alias="FLASK_SECRET_KEY")
+    admin_email: str = Field(default="admin@example.com", alias="ADMIN_EMAIL")
+    admin_password: str = Field(default="", alias="ADMIN_PASSWORD")
+    jwt_access_expires: int = Field(default=3600, alias="JWT_ACCESS_TOKEN_EXPIRES")
+    jwt_refresh_expires: int = Field(
+        default=604800,
+        alias="JWT_REFRESH_TOKEN_EXPIRES",
+    )
+    cors_origins: str = Field(
+        default="http://localhost:5173",
+        alias="CORS_ORIGINS",
+    )
+    flask_env: str = Field(default="development", alias="FLASK_ENV")
+    flask_port: int = Field(default=5000, alias="FLASK_PORT")
+    frontend_build_dir: str = Field(
+        default="frontend/dist",
+        alias="FRONTEND_BUILD_DIR",
+    )
+    web_demo_data: bool = Field(default=False, alias="WEB_DEMO_DATA")
+    web_use_memory_checkpointer: bool = Field(
+        default=False,
+        alias="WEB_USE_MEMORY_CHECKPOINTER",
+    )
+
 
 def get_settings() -> Settings:
     """Factory für Settings; lädt Werte aus Umgebung / `.env`."""

@@ -12,7 +12,10 @@ from repositories.email_repository import EmailRepository
 from repositories.embedding_repository import EmbeddingRepository
 from repositories.entity_repository import EntityRepository
 from repositories.extraction_repository import ExtractionRepository
+from repositories.mail_metrics_repository import MailMetricsRepository
 from repositories.mongo import get_database
+from repositories.review_repository import ReviewRepository
+from repositories.user_repository import UserRepository
 from routers.ingestion import IngestionRouter
 from routers.review import ReviewRouter
 from services.classification import ClassificationService, LLMClient
@@ -26,6 +29,7 @@ from services.retrieval import RetrievalService
 from services.similarity_search import SimilaritySearchService
 from services.triage import TriageService
 from services.validation import ValidationService
+from workflows.checkpointer import build_checkpointer
 from workflows.email_workflow import EmailWorkflow
 
 
@@ -38,6 +42,10 @@ class AppContext:
     review_router: ReviewRouter
     workflow: EmailWorkflow
     email_repo: EmailRepository
+    extraction_repo: ExtractionRepository
+    review_repo: ReviewRepository
+    metrics_repo: MailMetricsRepository
+    user_repo: UserRepository
 
 
 def build_app_context(settings: Settings | None = None) -> AppContext:
@@ -49,6 +57,9 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
     entity_repo = EntityRepository(db)
     extraction_repo = ExtractionRepository(db)
     embedding_repo = EmbeddingRepository(db)
+    review_repo = ReviewRepository(db)
+    metrics_repo = MailMetricsRepository(db)
+    user_repo = UserRepository(db)
 
     alerts = AlertService(webhook_url=cfg.webhook_alert_url)
     tracing = configure_langfuse_env(cfg) and tracing_enabled(cfg)
@@ -74,7 +85,11 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
     else:
         msg = f"Unsupported LLM_MODE: {cfg.llm_mode!r} (use live or mock)"
         raise ValueError(msg)
-    mail_cost = MailCostTracker(alerts=alerts, tracing=tracing)
+    mail_cost = MailCostTracker(
+        alerts=alerts,
+        tracing=tracing,
+        metrics_repo=metrics_repo,
+    )
     ingestion = IngestionService(email_repo, TriageService())
     classification = ClassificationService(
         llm,
@@ -104,6 +119,7 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
     )
     indexing = IndexingService(embedding_repo, embed_client)
 
+    checkpointer = build_checkpointer(cfg)
     workflow = EmailWorkflow(
         ingestion=ingestion,
         classification=classification,
@@ -116,6 +132,8 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
         indexing=indexing,
         alerts=alerts,
         mail_cost=mail_cost,
+        review_repo=review_repo,
+        checkpointer=checkpointer,
         tracing=tracing,
     )
 
@@ -125,4 +143,8 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
         review_router=ReviewRouter(workflow),
         workflow=workflow,
         email_repo=email_repo,
+        extraction_repo=extraction_repo,
+        review_repo=review_repo,
+        metrics_repo=metrics_repo,
+        user_repo=user_repo,
     )
