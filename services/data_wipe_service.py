@@ -1,4 +1,4 @@
-"""Löscht Anwendungsdaten (E-Mails, Reviews, Einstellungen) – Benutzer bleiben."""
+"""Löscht Anwendungsdaten pro Mandant – Benutzer bleiben."""
 
 from __future__ import annotations
 
@@ -24,19 +24,32 @@ WIPE_COLLECTIONS = (
     NotificationRepository.COLLECTION,
     PropertyRecipientRepository.COLLECTION,
     PlatformSettingsRepository.COLLECTION,
-    "entities",
+    "mail_connections",
+    "guests",
+    "reservations",
 )
 
 
 class DataWipeService:
-    """Entfernt alle Betriebsdaten aus MongoDB."""
+    """Entfernt Betriebsdaten eines Mandanten aus MongoDB."""
 
     def __init__(self, db: Database[Any]) -> None:
         """Initialize the instance with its dependencies."""
         self._db = db
 
+    def wipe_account(self, account_id: str) -> dict[str, int]:
+        """Löscht alle Betriebsdaten eines Accounts."""
+        counts: dict[str, int] = {}
+        for name in WIPE_COLLECTIONS:
+            if name == PlatformSettingsRepository.COLLECTION:
+                result = self._db[name].delete_many({"_id": account_id})
+            else:
+                result = self._db[name].delete_many({"account_id": account_id})
+            counts[name] = int(result.deleted_count)
+        return counts
+
     def wipe_all(self) -> dict[str, int]:
-        """Löscht alle relevanten Collections; gibt gelöschte Dokumentzahlen zurück."""
+        """Legacy: löscht alle Betriebsdaten global (nur Migration/Tests)."""
         counts: dict[str, int] = {}
         for name in WIPE_COLLECTIONS:
             result = self._db[name].delete_many({})

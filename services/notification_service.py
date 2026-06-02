@@ -47,8 +47,10 @@ class NotificationService:
         self._platform_settings_repo = platform_settings_repo
         self._whatsapp_client = whatsapp_client
 
-    def _effective_settings(self) -> Settings:
-        platform = self._platform_settings_repo.get()
+    def _effective_settings(self, account_id: str | None = None) -> Settings:
+        if not account_id:
+            return self._settings
+        platform = self._platform_settings_repo.get(account_id)
         return merge_platform_settings(self._settings, platform)
 
     def _client(self, settings: Settings) -> WhatsAppClient:
@@ -60,9 +62,11 @@ class NotificationService:
         self,
         correlation_id: str,
         extraction: BookingExtraction,
+        *,
+        account_id: str | None = None,
     ) -> list[NotificationOutboxRecord]:
         """Nach Review-Freigabe: Events erzeugen, idempotent senden."""
-        settings = self._effective_settings()
+        settings = self._effective_settings(account_id)
         if not settings.whatsapp_enabled:
             logger.debug("WhatsApp disabled – skip notification for %s", correlation_id)
             return []
@@ -77,7 +81,9 @@ class NotificationService:
             return []
 
         template_name, params = _build_template_payload(kind, extraction, settings)
-        recipients = self._resolve_recipients(extraction, settings)
+        recipients = self._resolve_recipients(
+            extraction, settings, account_id=account_id
+        )
         if not recipients:
             logger.warning(
                 "No WhatsApp recipients configured for %s",
@@ -162,10 +168,12 @@ class NotificationService:
         self,
         extraction: BookingExtraction,
         settings: Settings,
+        *,
+        account_id: str | None = None,
     ) -> list[str]:
         """Host immer; bei neuer Buchung zusaetzlich Putzfrau/Mitarbeiter."""
         phones: set[str] = set()
-        for phone in self._user_repo.list_whatsapp_recipient_phones():
+        for phone in self._user_repo.list_whatsapp_recipient_phones(account_id):
             phones.add(phone)
         for phone in _parse_recipient_list(settings.whatsapp_default_recipients):
             phones.add(phone)
@@ -173,7 +181,8 @@ class NotificationService:
         intent = extraction.intent
         if intent in (BookingIntent.NEW_BOOKING, None):
             property_phones = self._property_recipient_repo.get_phones(
-                extraction.property_name
+                extraction.property_name,
+                account_id=account_id,
             )
             phones.update(property_phones)
 

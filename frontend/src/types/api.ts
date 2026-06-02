@@ -8,6 +8,79 @@ export interface UserResponse {
   id: string;
   email: string;
   role: string;
+  account_id?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  account_status?: string | null;
+  account_display_name?: string | null;
+  mail_connection_status?: string | null;
+  mail_onboarding_completed?: boolean | null;
+}
+
+export interface ImapPresetItem {
+  id: string;
+  label: string;
+  host: string;
+  port: number;
+  use_ssl: boolean;
+}
+
+export interface MailConnectionResponse {
+  provider: "outlook" | "imap" | string;
+  status: string;
+  email_address: string;
+  preset?: string | null;
+  imap_host: string;
+  imap_port: number;
+  imap_username: string;
+  imap_password_set: boolean;
+  imap_use_ssl: boolean;
+  outlook_auth_mode: string;
+  outlook_mailbox: string;
+  last_error?: string | null;
+  last_sync_at?: string | null;
+  onboarding_completed: boolean;
+  imap_presets: ImapPresetItem[];
+}
+
+export interface MailTestResponse {
+  success: boolean;
+  message: string;
+  mailbox_count?: number | null;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  password_confirm: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  account_type: "private" | "business";
+  company_name?: string;
+}
+
+export interface RegisterResponse {
+  message: string;
+  account_id: string;
+  status: string;
+}
+
+export interface AccountListItem {
+  id: string;
+  display_name: string;
+  contact_email: string;
+  account_type: string;
+  company_name?: string | null;
+  phone?: string | null;
+  status: string;
+  rejection_reason?: string | null;
+  created_at: string;
+}
+
+export interface AccountListResponse {
+  items: AccountListItem[];
+  total: number;
 }
 
 export interface DashboardStats {

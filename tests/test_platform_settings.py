@@ -35,14 +35,16 @@ def test_merge_uses_env_when_no_platform_doc() -> None:
 def test_merge_overrides_from_platform(mock_db) -> None:
     env = _env(WHATSAPP_ENABLED=False)
     repo = PlatformSettingsRepository(mock_db)
+    account_id = "acc-test"
     repo.save(
         PlatformSettingsRecord(
+            id=account_id,
             whatsapp_enabled=True,
             whatsapp_access_token="db-token",
             whatsapp_phone_number_id="999",
         )
     )
-    effective = merge_platform_settings(env, repo.get())
+    effective = merge_platform_settings(env, repo.get(account_id))
     assert effective.whatsapp_enabled is True
     assert effective.whatsapp_access_token == "db-token"
     assert effective.whatsapp_phone_number_id == "999"
@@ -55,7 +57,7 @@ def test_display_fills_empty_db_fields_from_env() -> None:
         WHATSAPP_TEST_RECIPIENT="+491701111111",
         OUTLOOK_MAILBOX="mail@test.de",
     )
-    stored = PlatformSettingsRecord(whatsapp_enabled=False)
+    stored = PlatformSettingsRecord(id="acc-display", whatsapp_enabled=False)
     display = display_platform_settings(env, stored)
     assert display.whatsapp_phone_number_id == "555"
     assert display.whatsapp_test_recipient == "+491701111111"

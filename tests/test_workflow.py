@@ -184,7 +184,9 @@ def test_workflow_finalize_cost_after_spam_discard(
     finalized: list[str] = []
 
     class _RecordingTracker(MailCostTracker):
-        def finalize(self, correlation_id: str) -> float:
+        def finalize(
+            self, correlation_id: str, *, account_id: str | None = None
+        ) -> float:
             """Execute the operation."""
             finalized.append(correlation_id)
             return super().finalize(correlation_id)

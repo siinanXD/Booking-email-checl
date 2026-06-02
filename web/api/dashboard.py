@@ -7,16 +7,18 @@ from typing import Any
 from flask import Blueprint, g, jsonify
 
 from web.middleware.auth_guard import require_auth
-from web.services.query_service import QueryService
+from web.middleware.tenant import require_account
+from web.services.api_helpers import tenant_query_service
 
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/api/dashboard")
 
 
 @dashboard_bp.get("/stats")
 @require_auth
+@require_account
 def stats() -> tuple[Any, int]:
     """KPI-Übersicht für das Dashboard."""
-    svc = QueryService(g.ctx)
+    svc = tenant_query_service()
     data = svc.dashboard_stats()
     if (
         g.settings.web_demo_data

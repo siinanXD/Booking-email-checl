@@ -4,16 +4,20 @@ from __future__ import annotations
 
 from flask import Flask
 
+from web.api.admin import admin_bp
 from web.api.bookings import bookings_bp
 from web.api.costs import costs_bp
 from web.api.dashboard import dashboard_bp
 from web.api.emails import emails_bp
+from web.api.mail import mail_bp
 from web.api.review import review_bp
 from web.api.settings import settings_bp
 
 
 def register_api_blueprints(app: Flask) -> None:
     """Registriert alle geschützten API-Blueprints."""
+    app.register_blueprint(admin_bp)
+    app.register_blueprint(mail_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(emails_bp)
     app.register_blueprint(bookings_bp)

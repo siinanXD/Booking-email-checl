@@ -20,7 +20,14 @@ apiClient.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      useAuthStore.getState().logout();
+      const url = err.config?.url ?? "";
+      const isAuthEndpoint =
+        url.includes("/api/auth/login") ||
+        url.includes("/api/auth/register") ||
+        url.includes("/api/auth/refresh");
+      if (!isAuthEndpoint) {
+        useAuthStore.getState().logout();
+      }
     }
     return Promise.reject(err);
   }

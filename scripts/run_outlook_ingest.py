@@ -1,4 +1,4 @@
-"""CLI: ungelesene Outlook-Mails ingestieren (Microsoft Graph)."""
+"""CLI: Postfach-Mails ingestieren (Outlook Graph oder IMAP aus DB-Konfiguration)."""
 
 from __future__ import annotations
 
@@ -45,6 +45,7 @@ def _import_error_help(exc: ModuleNotFoundError) -> None:
 _venv_hint()
 
 try:
+    from adapters.mail_ingestion import MailIngestionRunner
     from adapters.outlook_ingestion import OutlookIngestionRunner
     from config.factory import build_app_context
     from config.settings import get_settings
@@ -77,23 +78,56 @@ def main() -> int:
     elif mode == "live":
         logger.info("LLM_MODE=live: OpenAI-API wird genutzt (Guthaben noetig).")
     ctx = build_app_context(settings)
-    runner = OutlookIngestionRunner.from_context(settings, ctx)
-    result = runner.run()
-    for item in result.items:
-        if item.error:
+    account_id = (settings.ingest_account_id or "").strip()
+    if account_id:
+        mail_record = ctx.mail_connection_repo.get(account_id)
+        if mail_record is None:
+            logger.error(
+                "INGEST_ACCOUNT_ID=%s gesetzt, aber keine Postfach-Konfiguration "
+                "in mail_connections. Bitte Onboarding abschließen.",
+                account_id,
+            )
+            return 1
+        runner = MailIngestionRunner(
+            ctx.mail_connection_repo,
+            ctx.workflow,
+            ctx.email_repo,
+            settings,
+            fetch_max=settings.outlook_fetch_max,
+            fetch_unread_only=settings.outlook_fetch_unread_only,
+        )
+        mail_result = runner.run_for_account(account_id)
+        for mail_item in mail_result.items:
+            if mail_item.error:
+                logger.error(
+                    "message_id=%s error=%s",
+                    mail_item.message_id,
+                    mail_item.error,
+                )
+            elif mail_item.duplicate:
+                logger.info("duplicate message_id=%s", mail_item.message_id)
+            else:
+                logger.info("ingested message_id=%s", mail_item.message_id)
+        logger.info("Done: %s new ingest(s)", mail_result.processed)
+        return 0
+
+    outlook_runner = OutlookIngestionRunner.from_context(settings, ctx)
+    outlook_result = outlook_runner.run()
+    for outlook_item in outlook_result.items:
+        if outlook_item.error:
             logger.error(
                 "message_id=%s graph_id=%s error=%s",
-                item.message_id,
-                item.graph_id,
-                item.error,
+                outlook_item.message_id,
+                outlook_item.graph_id,
+                outlook_item.error,
             )
-        elif item.skipped_existing:
-            logger.info("skip existing message_id=%s", item.message_id)
-        elif item.duplicate:
-            logger.info("duplicate message_id=%s", item.message_id)
+        elif outlook_item.skipped_existing:
+            logger.info("skip existing message_id=%s", outlook_item.message_id)
+        elif outlook_item.duplicate:
+            logger.info("duplicate message_id=%s", outlook_item.message_id)
         else:
-            logger.info("ingested message_id=%s", item.message_id)
-    logger.info("Done: %s new ingest(s)", result.processed)
+            logger.info("ingested message_id=%s", outlook_item.message_id)
+    logger.info("Done: %s new ingest(s)", outlook_result.processed)
     return 0
 
 

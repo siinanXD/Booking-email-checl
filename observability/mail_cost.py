@@ -52,7 +52,7 @@ class MailCostTracker:
         """Geschätzte Kosten in USD für eine Mail."""
         return (self.total_tokens(correlation_id) / 1000.0) * self._cost_per_1k
 
-    def finalize(self, correlation_id: str) -> float:
+    def finalize(self, correlation_id: str, *, account_id: str | None = None) -> float:
         """Meldet Gesamtkosten (Alert + Langfuse-Trace-Metadaten); leert den Akku."""
         cost = self.cost_usd(correlation_id)
         usage = {
@@ -77,6 +77,7 @@ class MailCostTracker:
                     cost_usd=cost,
                     prompt_tokens=int(usage["prompt_tokens"]),
                     completion_tokens=int(usage["completion_tokens"]),
+                    account_id=account_id,
                 )
         self._prompt_tokens.pop(correlation_id, None)
         self._completion_tokens.pop(correlation_id, None)

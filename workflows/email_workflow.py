@@ -173,16 +173,36 @@ class EmailWorkflow:
         try:
             result_dict = dict(self._app.invoke(None, config=config))
             if self._review_repo is not None:
+                email = self._email_repo.get_by_correlation_id(thread_id)
+                account_id = email.account_id if email else None
                 self._review_repo.update_status(
                     thread_id,
                     status,
+                    account_id=account_id,
                     approved_body=approved_body,
                     reviewer_note=reviewer_note,
                 )
             return result_dict
         finally:
             if self._mail_cost is not None:
-                self._mail_cost.finalize(thread_id)
+                email = self._email_repo.get_by_correlation_id(thread_id)
+                self._mail_cost.finalize(
+                    thread_id,
+                    account_id=email.account_id if email else None,
+                )
+
+    def _account_id_from_email(
+        self,
+        email_input: Any,
+        result: dict[str, Any] | None,
+    ) -> str | None:
+        if result is not None:
+            email = result.get("email")
+            if isinstance(email, StoredEmail):
+                return email.account_id
+        if isinstance(email_input, IncomingEmail | StoredEmail):
+            return email_input.account_id
+        return None
 
     def _finalize_mail_cost(
         self,
@@ -194,7 +214,10 @@ class EmailWorkflow:
             return
         correlation_id = self._correlation_id(email_input, result)
         if correlation_id:
-            self._mail_cost.finalize(correlation_id)
+            self._mail_cost.finalize(
+                correlation_id,
+                account_id=self._account_id_from_email(email_input, result),
+            )
 
     def _correlation_id(
         self,
@@ -229,6 +252,7 @@ class EmailWorkflow:
             self._email_repo.update_processing_state(
                 email.message_id,
                 ProcessingState.DISCARDED,
+                account_id=email.account_id,
                 triage_outcome="not_booking_mail",
             )
             return "end"
@@ -281,6 +305,7 @@ class EmailWorkflow:
         self._email_repo.update_processing_state(
             email.message_id,
             ProcessingState.CLASSIFIED,
+            account_id=email.account_id,
         )
         return {"intent": intent}
 
@@ -292,10 +317,12 @@ class EmailWorkflow:
             email.correlation_id,
             email.message_id,
             extraction,
+            account_id=email.account_id,
         )
         self._email_repo.update_processing_state(
             email.message_id,
             ProcessingState.EXTRACTED,
+            account_id=email.account_id,
         )
         return {"extraction": extraction}
 
@@ -307,6 +334,7 @@ class EmailWorkflow:
             self._email_repo.update_processing_state(
                 email.message_id,
                 ProcessingState.VALIDATED,
+                account_id=email.account_id,
             )
             if self._indexing is not None:
                 self._indexing.schedule_index(
@@ -327,6 +355,7 @@ class EmailWorkflow:
         self._email_repo.update_processing_state(
             email.message_id,
             ProcessingState.RETRIEVED,
+            account_id=email.account_id,
         )
         return {"retrieval": hits}
 
@@ -341,6 +370,7 @@ class EmailWorkflow:
         self._email_repo.update_processing_state(
             email.message_id,
             ProcessingState.DRAFTED,
+            account_id=email.account_id,
         )
         intent_val = state.get("intent")
         intent_str: str | None = None
@@ -355,6 +385,7 @@ class EmailWorkflow:
                 draft_body=draft.body,
                 grounding_flag=grounding_flag,
                 intent=intent_str,
+                account_id=email.account_id,
             )
         return {
             "draft": draft,
@@ -373,7 +404,9 @@ class EmailWorkflow:
             proc = ProcessingState.REJECTED
         else:
             proc = ProcessingState.PENDING_REVIEW
-        self._email_repo.update_processing_state(email.message_id, proc)
+        self._email_repo.update_processing_state(
+            email.message_id, proc, account_id=email.account_id
+        )
         if review.status == "pending" and self._review_repo is not None:
             draft = state.get("draft")
             draft_body = draft.body if draft is not None else ""
@@ -391,6 +424,7 @@ class EmailWorkflow:
                 draft_body=draft_body,
                 grounding_flag=bool(state.get("grounding_flag")),
                 intent=intent_str,
+                account_id=email.account_id,
             )
         return {"review": review}
 
@@ -404,13 +438,16 @@ class EmailWorkflow:
             proc = ProcessingState.REJECTED
         else:
             proc = ProcessingState.PENDING_REVIEW
-        self._email_repo.update_processing_state(email.message_id, proc)
+        self._email_repo.update_processing_state(
+            email.message_id, proc, account_id=email.account_id
+        )
         if status == "approved" and self._notification_service is not None:
             extraction = state.get("extraction")
             if extraction is not None:
                 self._notification_service.dispatch_after_approval(
                     email.correlation_id,
                     extraction,
+                    account_id=email.account_id,
                 )
         return {
             "review": ReviewStatus(

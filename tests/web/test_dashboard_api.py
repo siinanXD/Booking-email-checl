@@ -23,6 +23,7 @@ def test_dashboard_stats_empty(client: Any, auth_headers: dict[str, str]) -> Non
 def test_dashboard_stats_with_mail(
     client: Any,
     auth_headers: dict[str, str],
+    tenant_account_id: str,
     email_repo: Any,
     extraction_repo: ExtractionRepository,
 ) -> None:
@@ -36,12 +37,14 @@ def test_dashboard_stats_with_mail(
         correlation_id="corr-1",
         processing_state=ProcessingState.PENDING_REVIEW,
         updated_at=datetime.now(UTC),
+        account_id=tenant_account_id,
     )
     email_repo.upsert_by_message_id(email)
     extraction_repo.save(
         "corr-1",
         "m1@test",
         BookingExtraction(intent=BookingIntent.NEW_BOOKING, booking_number="AB1"),
+        account_id=tenant_account_id,
     )
     resp = client.get("/api/dashboard/stats", headers=auth_headers)
     assert resp.status_code == 200

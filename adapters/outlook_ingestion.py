@@ -62,6 +62,7 @@ class OutlookIngestionRunner:
         email_repo: EmailRepository,
         fetch_max: int = 100,
         fetch_unread_only: bool = False,
+        ingest_account_id: str | None = None,
     ) -> None:
         """Initialize the instance with its dependencies."""
         self._graph = graph
@@ -71,6 +72,7 @@ class OutlookIngestionRunner:
         self._email_repo = email_repo
         self._fetch_max = fetch_max
         self._fetch_unread_only = fetch_unread_only
+        self._ingest_account_id = ingest_account_id
 
     @classmethod
     def from_context(
@@ -88,6 +90,7 @@ class OutlookIngestionRunner:
             email_repo=ctx.email_repo,
             fetch_max=settings.outlook_fetch_max,
             fetch_unread_only=settings.outlook_fetch_unread_only,
+            ingest_account_id=settings.ingest_account_id,
         )
 
     def run(
@@ -113,6 +116,10 @@ class OutlookIngestionRunner:
             graph_id = str(graph_msg.get("id") or "")
             try:
                 payload = map_graph_message(graph_msg)
+                if self._ingest_account_id:
+                    payload = payload.model_copy(
+                        update={"account_id": self._ingest_account_id}
+                    )
             except ValueError as exc:
                 logger.warning("Skip invalid Graph message %s: %s", graph_id, exc)
                 items.append(
@@ -127,7 +134,10 @@ class OutlookIngestionRunner:
                 )
                 continue
 
-            existing = self._email_repo.get_by_message_id(payload.message_id)
+            existing = self._email_repo.get_by_message_id(
+                payload.message_id,
+                account_id=payload.account_id,
+            )
             if existing is not None:
                 items.append(
                     PollItemResult(

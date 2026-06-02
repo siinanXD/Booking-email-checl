@@ -56,9 +56,10 @@ def merge_platform_settings(
     return Settings.model_validate(base)
 
 
-def platform_from_env(env: Settings) -> PlatformSettingsRecord:
+def platform_from_env(env: Settings, account_id: str) -> PlatformSettingsRecord:
     """Initialisiert DB-Dokument aus aktuellen .env-Werten."""
     return PlatformSettingsRecord(
+        id=account_id,
         whatsapp_enabled=env.whatsapp_enabled,
         whatsapp_access_token=env.whatsapp_access_token,
         whatsapp_phone_number_id=env.whatsapp_phone_number_id,
@@ -85,10 +86,11 @@ def display_platform_settings(
     stored: PlatformSettingsRecord | None,
 ) -> PlatformSettingsRecord:
     """Anzeige-Werte: gespeicherte DB-Felder, sonst Fallback aus .env."""
-    defaults = platform_from_env(env)
+    defaults = platform_from_env(env, stored.id if stored else "unknown")
     if stored is None:
         return defaults
     return PlatformSettingsRecord(
+        id=stored.id,
         whatsapp_enabled=stored.whatsapp_enabled,
         whatsapp_access_token=_pick_str(
             stored.whatsapp_access_token, defaults.whatsapp_access_token

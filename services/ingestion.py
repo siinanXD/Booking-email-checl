@@ -36,7 +36,10 @@ class IngestionService:
 
     def ingest(self, payload: IncomingEmail) -> IngestResult:
         """Normalisiert, dedupliziert, triagiert und speichert."""
-        existing = self._email_repo.get_by_message_id(payload.message_id)
+        existing = self._email_repo.get_by_message_id(
+            payload.message_id,
+            account_id=payload.account_id,
+        )
         if existing is not None:
             return IngestResult(email=existing, duplicate=True, discarded=False)
 

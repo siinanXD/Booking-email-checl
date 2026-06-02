@@ -14,6 +14,7 @@ from schemas.booking.taxonomy import BookingIntent
 def test_list_emails_by_intents(
     client: Any,
     auth_headers: dict[str, str],
+    tenant_account_id: str,
     email_repo: Any,
     extraction_repo: ExtractionRepository,
 ) -> None:
@@ -32,12 +33,14 @@ def test_list_emails_by_intents(
                 received_at=datetime.now(UTC),
                 correlation_id=cid,
                 processing_state=ProcessingState.CLASSIFIED,
+                account_id=tenant_account_id,
             )
         )
         extraction_repo.save(
             cid,
             f"m{i}@test",
             BookingExtraction(intent=intent),
+            account_id=tenant_account_id,
         )
 
     resp = client.get(
@@ -54,6 +57,7 @@ def test_list_emails_by_intents(
 def test_list_emails_without_intent_filter(
     client: Any,
     auth_headers: dict[str, str],
+    tenant_account_id: str,
     email_repo: Any,
 ) -> None:
     """Ohne Intent-Filter erscheinen auch Mails ohne Extraktion."""
@@ -66,6 +70,7 @@ def test_list_emails_without_intent_filter(
             received_at=datetime.now(UTC),
             correlation_id="corr-noext",
             processing_state=ProcessingState.RECEIVED,
+            account_id=tenant_account_id,
         )
     )
     resp = client.get("/api/emails/", headers=auth_headers)

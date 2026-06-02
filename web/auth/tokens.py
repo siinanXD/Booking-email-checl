@@ -18,32 +18,30 @@ def _now() -> datetime:
 
 def create_access_token(user: UserRecord, settings: Settings) -> str:
     """Erzeugt Access-JWT."""
-    return _encode(
-        {
-            "sub": user.id,
-            "email": user.email,
-            "role": user.role,
-            "type": "access",
-            "jti": uuid.uuid4().hex,
-        },
-        settings,
-        expires_seconds=settings.jwt_access_expires,
-    )
+    payload: dict[str, Any] = {
+        "sub": user.id,
+        "email": user.email,
+        "role": user.role,
+        "type": "access",
+        "jti": uuid.uuid4().hex,
+    }
+    if user.account_id:
+        payload["account_id"] = user.account_id
+    return _encode(payload, settings, expires_seconds=settings.jwt_access_expires)
 
 
 def create_refresh_token(user: UserRecord, settings: Settings) -> str:
     """Erzeugt Refresh-JWT."""
-    return _encode(
-        {
-            "sub": user.id,
-            "email": user.email,
-            "role": user.role,
-            "type": "refresh",
-            "jti": uuid.uuid4().hex,
-        },
-        settings,
-        expires_seconds=settings.jwt_refresh_expires,
-    )
+    payload: dict[str, Any] = {
+        "sub": user.id,
+        "email": user.email,
+        "role": user.role,
+        "type": "refresh",
+        "jti": uuid.uuid4().hex,
+    }
+    if user.account_id:
+        payload["account_id"] = user.account_id
+    return _encode(payload, settings, expires_seconds=settings.jwt_refresh_expires)
 
 
 def decode_token(token: str, settings: Settings) -> dict[str, Any]:

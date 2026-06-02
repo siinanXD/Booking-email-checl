@@ -1,4 +1,4 @@
-"""Einstellungen-API (persistente Konfiguration + WhatsApp-Test)."""
+"""Persistente Plattform-Einstellungen und Mandanten-API-Helfer."""
 
 from __future__ import annotations
 
@@ -15,6 +15,8 @@ from services.effective_settings import (
 )
 from services.whatsapp_client import send_whatsapp_hello_world_test
 from web.middleware.auth_guard import require_auth
+from web.middleware.roles import is_account_admin
+from web.middleware.tenant import get_request_account_id, require_account
 from web.schemas.settings import (
     PlatformSettingsResponse,
     PlatformSettingsUpdate,
@@ -30,22 +32,29 @@ settings_bp = Blueprint("settings", __name__, url_prefix="/api/settings")
 
 def _require_admin() -> tuple[Any, int] | None:
     role = g.current_user.get("role")
-    if role != "admin":
+    if not is_account_admin(role):
         return jsonify({"error": "Admin required", "code": 403}), 403
     return None
 
 
+def _account_id() -> str:
+    account_id = get_request_account_id()
+    assert account_id
+    return account_id
+
+
 def _display_platform() -> PlatformSettingsRecord:
     ctx = g.ctx
-    stored = ctx.platform_settings_repo.get()
+    stored = ctx.platform_settings_repo.get(_account_id())
     return display_platform_settings(g.settings, stored)
 
 
 def _to_response() -> PlatformSettingsResponse:
     ctx = g.ctx
+    account_id = _account_id()
     platform = _display_platform()
     user = ctx.user_repo.get_by_id(str(g.current_user["id"]))
-    props = ctx.property_recipient_repo.list_all()
+    props = ctx.property_recipient_repo.list_all(account_id)
     profile = UserProfileSettings()
     if user is not None:
         profile = UserProfileSettings(
@@ -77,6 +86,7 @@ def _to_response() -> PlatformSettingsResponse:
 
 @settings_bp.get("")
 @require_auth
+@require_account
 def get_settings() -> tuple[Any, int]:
     """Lädt alle Einstellungen (Token maskiert)."""
     denied = _require_admin()
@@ -87,6 +97,7 @@ def get_settings() -> tuple[Any, int]:
 
 @settings_bp.put("")
 @require_auth
+@require_account
 def update_settings() -> tuple[Any, int]:
     """Speichert Einstellungen dauerhaft in MongoDB."""
     denied = _require_admin()
@@ -94,9 +105,10 @@ def update_settings() -> tuple[Any, int]:
         return denied
     body = PlatformSettingsUpdate.model_validate(request.get_json(silent=True) or {})
     ctx = g.ctx
-    current = ctx.platform_settings_repo.get()
+    account_id = _account_id()
+    current = ctx.platform_settings_repo.get(account_id)
     if current is None:
-        current = platform_from_env(g.settings)
+        current = platform_from_env(g.settings, account_id)
 
     if body.whatsapp_enabled is not None:
         current.whatsapp_enabled = body.whatsapp_enabled
@@ -131,7 +143,8 @@ def update_settings() -> tuple[Any, int]:
 
     if body.property_recipients is not None:
         ctx.property_recipient_repo.replace_all(
-            [(item.property_name, item.phones) for item in body.property_recipients]
+            account_id,
+            [(item.property_name, item.phones) for item in body.property_recipients],
         )
 
     if body.user_profile is not None:
@@ -146,6 +159,7 @@ def update_settings() -> tuple[Any, int]:
 
 @settings_bp.post("/whatsapp/test")
 @require_auth
+@require_account
 def test_whatsapp() -> tuple[Any, int]:
     """Sendet Meta hello_world an Test-Empfänger."""
     denied = _require_admin()
@@ -153,7 +167,8 @@ def test_whatsapp() -> tuple[Any, int]:
         return denied
     body = WhatsAppTestRequest.model_validate(request.get_json(silent=True) or {})
     ctx = g.ctx
-    platform = ctx.platform_settings_repo.get()
+    account_id = _account_id()
+    platform = ctx.platform_settings_repo.get(account_id)
     effective = merge_platform_settings(g.settings, platform)
     recipient = (
         body.recipient_e164
@@ -187,8 +202,9 @@ def test_whatsapp() -> tuple[Any, int]:
 
 @settings_bp.post("/wipe-all")
 @require_auth
+@require_account
 def wipe_all_data() -> tuple[Any, int]:
-    """Löscht alle Betriebsdaten; Login-Benutzer bleiben erhalten."""
+    """Löscht Betriebsdaten des aktuellen Accounts."""
     denied = _require_admin()
     if denied:
         return denied
@@ -206,5 +222,5 @@ def wipe_all_data() -> tuple[Any, int]:
     from repositories.mongo import get_database
 
     db = get_database(g.settings)
-    counts = DataWipeService(db).wipe_all()
+    counts = DataWipeService(db).wipe_account(_account_id())
     return jsonify(WipeDataResponse(deleted=counts).model_dump()), 200

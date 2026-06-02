@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from pymongo.collection import Collection
 
 from repositories.mongo import Db
+from repositories.tenant_scope import with_account_filter
 
 
 class ReviewRecord(BaseModel):
@@ -42,10 +43,11 @@ class ReviewRepository:
         draft_body: str,
         grounding_flag: bool,
         intent: str | None,
+        account_id: str | None = None,
     ) -> ReviewRecord:
         """Speichert ausstehenden Review-Entwurf."""
         now = datetime.now(UTC)
-        doc = {
+        doc: dict[str, Any] = {
             "_id": correlation_id,
             "correlation_id": correlation_id,
             "message_id": message_id,
@@ -55,14 +57,19 @@ class ReviewRepository:
             "intent": intent,
             "updated_at": now.isoformat(),
         }
+        if account_id:
+            doc["account_id"] = account_id
         self._col.update_one({"_id": correlation_id}, {"$set": doc}, upsert=True)
-        return self.get(correlation_id) or ReviewRecord.model_validate(doc)
+        return self.get(
+            correlation_id, account_id=account_id
+        ) or ReviewRecord.model_validate(doc)
 
     def update_status(
         self,
         correlation_id: str,
         status: str,
         *,
+        account_id: str | None = None,
         approved_body: str | None = None,
         reviewer_note: str | None = None,
     ) -> ReviewRecord | None:
@@ -75,25 +82,35 @@ class ReviewRepository:
             update["approved_body"] = approved_body
         if reviewer_note is not None:
             update["reviewer_note"] = reviewer_note
-        self._col.update_one({"_id": correlation_id}, {"$set": update})
-        return self.get(correlation_id)
+        query = with_account_filter({"_id": correlation_id}, account_id)
+        self._col.update_one(query, {"$set": update})
+        return self.get(correlation_id, account_id=account_id)
 
-    def get(self, correlation_id: str) -> ReviewRecord | None:
+    def get(
+        self,
+        correlation_id: str,
+        *,
+        account_id: str | None = None,
+    ) -> ReviewRecord | None:
         """Lädt einen Review-Datensatz."""
-        doc = self._col.find_one({"_id": correlation_id})
+        query = with_account_filter({"_id": correlation_id}, account_id)
+        doc = self._col.find_one(query)
         if doc is None:
             return None
         return ReviewRecord.model_validate(doc)
 
-    def count_pending(self) -> int:
+    def count_pending(self, *, account_id: str | None = None) -> int:
         """Anzahl ausstehender Reviews."""
-        return int(self._col.count_documents({"review_status": "pending"}))
+        query = with_account_filter({"review_status": "pending"}, account_id)
+        return int(self._col.count_documents(query))
 
-    def list_pending(self, limit: int = 50) -> list[ReviewRecord]:
+    def list_pending(
+        self,
+        limit: int = 50,
+        *,
+        account_id: str | None = None,
+    ) -> list[ReviewRecord]:
         """Ausstehende Reviews, neueste zuerst."""
-        cursor = (
-            self._col.find({"review_status": "pending"})
-            .sort("updated_at", -1)
-            .limit(limit)
-        )
+        query = with_account_filter({"review_status": "pending"}, account_id)
+        cursor = self._col.find(query).sort("updated_at", -1).limit(limit)
         return [ReviewRecord.model_validate(doc) for doc in cursor]

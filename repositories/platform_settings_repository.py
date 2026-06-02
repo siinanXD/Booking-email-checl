@@ -1,4 +1,4 @@
-"""Persistente Plattform-Einstellungen (Singleton in MongoDB)."""
+"""Persistente Plattform-Einstellungen pro Mandant."""
 
 from __future__ import annotations
 
@@ -10,11 +10,13 @@ from pymongo.collection import Collection
 
 from repositories.mongo import Db
 
+LEGACY_PLATFORM_DOC_ID = "platform"
+
 
 class PlatformSettingsRecord(BaseModel):
     """Vom Benutzer konfigurierbare Einstellungen (überschreiben .env zur Laufzeit)."""
 
-    id: str = "platform"
+    id: str
     whatsapp_enabled: bool = False
     whatsapp_access_token: str = ""
     whatsapp_phone_number_id: str = ""
@@ -30,33 +32,39 @@ class PlatformSettingsRecord(BaseModel):
 
 
 class PlatformSettingsRepository:
-    """Collection `platform_settings` – ein Dokument mit `_id: platform`."""
+    """Collection `platform_settings` – ein Dokument pro Account."""
 
     COLLECTION = "platform_settings"
-    DOC_ID = "platform"
 
     def __init__(self, db: Db) -> None:
         """Initialize the instance with its dependencies."""
         self._col: Collection[dict[str, Any]] = db[self.COLLECTION]
 
-    def get(self) -> PlatformSettingsRecord | None:
-        """Lädt Einstellungen oder None wenn noch nie gespeichert."""
-        doc = self._col.find_one({"_id": self.DOC_ID})
+    def get(self, account_id: str) -> PlatformSettingsRecord | None:
+        """Lädt Einstellungen für einen Account."""
+        doc = self._col.find_one({"_id": account_id})
         if doc is None:
+            legacy = self._col.find_one({"_id": LEGACY_PLATFORM_DOC_ID})
+            if legacy is not None:
+                payload = {k: v for k, v in legacy.items() if k != "_id"}
+                payload["id"] = account_id
+                return PlatformSettingsRecord.model_validate(payload)
             return None
         payload = {k: v for k, v in doc.items() if k != "_id"}
-        payload["id"] = self.DOC_ID
+        payload["id"] = account_id
         return PlatformSettingsRecord.model_validate(payload)
 
     def save(self, record: PlatformSettingsRecord) -> PlatformSettingsRecord:
-        """Speichert Einstellungen."""
+        """Speichert Einstellungen für einen Account."""
         record.updated_at = datetime.now(UTC)
         doc = record.model_dump(mode="json")
-        doc["_id"] = self.DOC_ID
-        doc["id"] = self.DOC_ID
-        self._col.replace_one({"_id": self.DOC_ID}, doc, upsert=True)
+        account_id = record.id
+        doc["_id"] = account_id
+        doc["id"] = account_id
+        doc["account_id"] = account_id
+        self._col.replace_one({"_id": account_id}, doc, upsert=True)
         return record
 
-    def reset(self) -> None:
-        """Löscht gespeicherte Plattform-Einstellungen."""
-        self._col.delete_one({"_id": self.DOC_ID})
+    def reset(self, account_id: str) -> None:
+        """Löscht gespeicherte Einstellungen eines Accounts."""
+        self._col.delete_one({"_id": account_id})

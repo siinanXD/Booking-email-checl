@@ -131,6 +131,11 @@ class Settings(BaseSettings):
         default="",
         alias="WHATSAPP_TEST_RECIPIENT",
     )
+    ingest_account_id: str | None = Field(default=None, alias="INGEST_ACCOUNT_ID")
+    mail_poll_interval_seconds: int = Field(
+        default=300, alias="MAIL_POLL_INTERVAL_SECONDS"
+    )
+    mail_poll_run_once: bool = Field(default=False, alias="MAIL_POLL_RUN_ONCE")
 
 
 def get_settings() -> Settings:

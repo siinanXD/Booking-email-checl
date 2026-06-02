@@ -46,7 +46,10 @@ def test_me_with_token(client: Any, auth_headers: dict[str, str]) -> None:
     """Mit Token → Profil."""
     resp = client.get("/api/auth/me", headers=auth_headers)
     assert resp.status_code == 200
-    assert resp.get_json()["email"] == "admin@test.local"
+    data = resp.get_json()
+    assert data["email"] == "admin@test.local"
+    assert data["role"] == "platform_admin"
+    assert data["account_status"] == "active"
 
 
 def test_logout_revokes_access_token(client: Any, web_settings: Any) -> None:

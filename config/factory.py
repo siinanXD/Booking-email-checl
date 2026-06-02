@@ -8,10 +8,12 @@ from config.settings import Settings, get_settings
 from observability.alerts import AlertService
 from observability.langfuse_setup import configure_langfuse_env, tracing_enabled
 from observability.mail_cost import MailCostTracker
+from repositories.account_repository import AccountRepository
 from repositories.email_repository import EmailRepository
 from repositories.embedding_repository import EmbeddingRepository
 from repositories.entity_repository import EntityRepository
 from repositories.extraction_repository import ExtractionRepository
+from repositories.mail_connection_repository import MailConnectionRepository
 from repositories.mail_metrics_repository import MailMetricsRepository
 from repositories.mongo import get_database
 from repositories.notification_repository import NotificationRepository
@@ -51,9 +53,11 @@ class AppContext:
     review_repo: ReviewRepository
     metrics_repo: MailMetricsRepository
     user_repo: UserRepository
+    account_repo: AccountRepository
     revoked_token_repo: RevokedTokenRepository
     platform_settings_repo: PlatformSettingsRepository
     property_recipient_repo: PropertyRecipientRepository
+    mail_connection_repo: MailConnectionRepository
 
 
 def build_app_context(settings: Settings | None = None) -> AppContext:
@@ -68,10 +72,12 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
     review_repo = ReviewRepository(db)
     metrics_repo = MailMetricsRepository(db)
     user_repo = UserRepository(db)
+    account_repo = AccountRepository(db)
     revoked_token_repo = RevokedTokenRepository(db)
     notification_repo = NotificationRepository(db)
     property_recipient_repo = PropertyRecipientRepository(db)
     platform_settings_repo = PlatformSettingsRepository(db)
+    mail_connection_repo = MailConnectionRepository(db)
     notification_service = NotificationService(
         cfg,
         notification_repo,
@@ -167,7 +173,9 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
         review_repo=review_repo,
         metrics_repo=metrics_repo,
         user_repo=user_repo,
+        account_repo=account_repo,
         revoked_token_repo=revoked_token_repo,
         platform_settings_repo=platform_settings_repo,
         property_recipient_repo=property_recipient_repo,
+        mail_connection_repo=mail_connection_repo,
     )

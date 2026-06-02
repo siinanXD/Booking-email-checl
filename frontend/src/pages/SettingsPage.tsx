@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import {
+  fetchMailConnection,
+  testMailConnection,
+} from "@/api/mail";
 import {
   fetchSettings,
   saveSettings,
@@ -22,12 +27,28 @@ export function SettingsPage() {
   const [phoneNumberId, setPhoneNumberId] = useState("");
   const [defaultRecipients, setDefaultRecipients] = useState("");
   const [testRecipient, setTestRecipient] = useState("");
-  const [outlookMailbox, setOutlookMailbox] = useState("");
   const [userPhone, setUserPhone] = useState("");
   const [userWhatsappEnabled, setUserWhatsappEnabled] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [testMessage, setTestMessage] = useState<string | null>(null);
   const [wipeConfirm, setWipeConfirm] = useState("");
+
+  const { data: mailData } = useQuery({
+    queryKey: ["mail-connection"],
+    queryFn: fetchMailConnection,
+  });
+
+  const mailTestMut = useMutation({
+    mutationFn: testMailConnection,
+    onSuccess: (res) => {
+      setSaveMessage(
+        res.success
+          ? `Postfach-Verbindung OK${res.mailbox_count != null ? ` (${res.mailbox_count} Nachrichten)` : ""}.`
+          : `Postfach-Test fehlgeschlagen: ${res.message}`
+      );
+    },
+    onError: () => setSaveMessage("Postfach-Test fehlgeschlagen."),
+  });
 
   useEffect(() => {
     if (!data) return;
@@ -36,7 +57,6 @@ export function SettingsPage() {
     setPhoneNumberId(data.whatsapp_phone_number_id);
     setDefaultRecipients(data.whatsapp_default_recipients);
     setTestRecipient(data.whatsapp_test_recipient);
-    setOutlookMailbox(data.outlook_mailbox);
     setUserPhone(data.user_profile.whatsapp_phone_e164 ?? "");
     setUserWhatsappEnabled(data.user_profile.whatsapp_enabled);
   }, [data]);
@@ -49,7 +69,6 @@ export function SettingsPage() {
         whatsapp_phone_number_id: phoneNumberId,
         whatsapp_default_recipients: defaultRecipients,
         whatsapp_test_recipient: testRecipient,
-        outlook_mailbox: outlookMailbox,
         user_profile: {
           whatsapp_phone_e164: userPhone.trim() || null,
           whatsapp_enabled: userWhatsappEnabled,
@@ -195,16 +214,56 @@ export function SettingsPage() {
       </Card>
 
       <Card className="space-y-4">
-        <h3 className="font-medium text-slate-800">Erweitert</h3>
-        <label className="block text-sm text-slate-600">
-          Outlook-Postfach
-          <Input
-            className="mt-1"
-            value={outlookMailbox}
-            onChange={(e) => setOutlookMailbox(e.target.value)}
-            placeholder="postfach@firma.de"
-          />
-        </label>
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="font-medium text-slate-800">Postfach</h3>
+          <Link
+            to="/onboarding?edit=1"
+            className="text-sm text-indigo-600 hover:underline"
+          >
+            Bearbeiten
+          </Link>
+        </div>
+        {mailData ? (
+          <>
+            <p className="text-sm text-slate-600">
+              {mailData.provider === "outlook" ? "Microsoft Outlook" : "IMAP"} ·{" "}
+              {mailData.email_address || "—"}
+            </p>
+            <p className="text-sm text-slate-500">
+              Status:{" "}
+              <span
+                className={
+                  mailData.status === "connected"
+                    ? "text-green-700"
+                    : mailData.status === "error"
+                      ? "text-red-600"
+                      : "text-slate-600"
+                }
+              >
+                {mailData.status}
+              </span>
+              {mailData.last_error && (
+                <span className="block text-xs text-red-600">
+                  {mailData.last_error}
+                </span>
+              )}
+            </p>
+            <Button
+              variant="secondary"
+              onClick={() => mailTestMut.mutate()}
+              disabled={mailTestMut.isPending}
+            >
+              Postfach-Verbindung testen
+            </Button>
+          </>
+        ) : (
+          <p className="text-sm text-slate-500">
+            Noch kein Postfach verbunden.{" "}
+            <Link to="/onboarding?edit=1" className="text-indigo-600 hover:underline">
+              Jetzt einrichten
+            </Link>
+          </p>
+        )}
       </Card>
 
       <div className="flex flex-wrap gap-3">

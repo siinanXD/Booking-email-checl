@@ -155,7 +155,8 @@ def test_property_recipients_are_included(mock_db) -> None:
     """Unterkunftsspezifische Cleaner-Nummern werden berücksichtigt."""
     client = MockWhatsAppClient()
     property_repo = PropertyRecipientRepository(mock_db)
-    property_repo.upsert("Apartment Mitte", ["+491709999999"])
+    account_id = "test-account"
+    property_repo.upsert(account_id, "Apartment Mitte", ["+491709999999"])
     svc = NotificationService(
         _settings(WHATSAPP_DEFAULT_RECIPIENTS=""),
         NotificationRepository(mock_db),
@@ -169,7 +170,7 @@ def test_property_recipients_are_included(mock_db) -> None:
         property_name="Apartment Mitte",
         booking_number="AB200",
     )
-    records = svc.dispatch_after_approval("corr-5", extraction)
+    records = svc.dispatch_after_approval("corr-5", extraction, account_id=account_id)
     assert len(records) == 1
     assert records[0].recipient_e164 == "+491709999999"
 
@@ -178,7 +179,8 @@ def test_cancellation_skips_property_cleaners(mock_db) -> None:
     """Storno benachrichtigt Host, nicht Putzfrau der Unterkunft."""
     client = MockWhatsAppClient()
     property_repo = PropertyRecipientRepository(mock_db)
-    property_repo.upsert("Apartment Mitte", ["+491709999999"])
+    account_id = "test-account"
+    property_repo.upsert(account_id, "Apartment Mitte", ["+491709999999"])
     svc = NotificationService(
         _settings(WHATSAPP_DEFAULT_RECIPIENTS="+491701234567"),
         NotificationRepository(mock_db),
@@ -192,7 +194,9 @@ def test_cancellation_skips_property_cleaners(mock_db) -> None:
         property_name="Apartment Mitte",
         booking_number="AB200",
     )
-    records = svc.dispatch_after_approval("corr-storno", extraction)
+    records = svc.dispatch_after_approval(
+        "corr-storno", extraction, account_id=account_id
+    )
     assert len(records) == 1
     assert records[0].recipient_e164 == "+491701234567"
 

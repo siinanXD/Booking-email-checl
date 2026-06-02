@@ -15,6 +15,20 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  poll:
+    build: .
+    command: ["python", "scripts/run_mail_poll_loop.py"]
+    env_file:
+      - .env
+    environment:
+      FLASK_ENV: production
+      MAIL_POLL_INTERVAL_SECONDS: ${MAIL_POLL_INTERVAL_SECONDS:-300}
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/email_platform}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+
   mongo:
     image: mongo:7
     ports:

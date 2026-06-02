@@ -253,6 +253,7 @@ def count_booking_mails(
     extraction_repo: object,
     *,
     since_iso: str | None = None,
+    account_id: str | None = None,
 ) -> tuple[int, int, dict[str, int]]:
     """Zählt (gesamt, booking, nach Intent) optional seit received_at."""
     from repositories.email_repository import EmailRepository
@@ -268,13 +269,18 @@ def count_booking_mails(
     match: dict[str, object] = {}
     if since_iso:
         match["received_at"] = {"$gte": since_iso}
+    if account_id:
+        match["account_id"] = account_id
     total = 0
     booking = 0
     by_intent: dict[str, int] = {}
     for doc in emails._col.find(match):
         total += 1
         email = StoredEmail.from_mongo(doc)
-        ext = extr.get_by_correlation_id(email.correlation_id)
+        ext = extr.get_by_correlation_id(
+            email.correlation_id,
+            account_id=account_id,
+        )
         verdict = classify_booking_mail(email, ext)
         if verdict.is_booking:
             booking += 1

@@ -9,6 +9,7 @@ from pymongo.collection import Collection
 
 from models.email import ProcessingState, StoredEmail
 from repositories.mongo import Db
+from repositories.tenant_scope import with_account_filter
 from services.booking_relevance import mongo_noise_exclusion
 
 
@@ -39,11 +40,18 @@ class EmailRepository:
             raise RuntimeError(msg)
         return stored
 
-    def get_by_message_id(self, message_id: str) -> StoredEmail | None:
+    def get_by_message_id(
+        self,
+        message_id: str,
+        *,
+        account_id: str | None = None,
+    ) -> StoredEmail | None:
         """Lädt eine Mail anhand der Message-ID."""
-        doc = self._col.find_one({"_id": message_id})
+        query = with_account_filter({"_id": message_id}, account_id)
+        doc = self._col.find_one(query)
         if doc is None:
-            doc = self._col.find_one({"message_id": message_id})
+            alt = with_account_filter({"message_id": message_id}, account_id)
+            doc = self._col.find_one(alt)
         if doc is None:
             return None
         return StoredEmail.from_mongo(doc)
@@ -52,6 +60,8 @@ class EmailRepository:
         self,
         message_id: str,
         state: ProcessingState,
+        *,
+        account_id: str | None = None,
         **extra: Any,
     ) -> StoredEmail | None:
         """Aktualisiert Verarbeitungsstatus und optionale Felder."""
@@ -60,17 +70,30 @@ class EmailRepository:
             "updated_at": datetime.now(UTC).isoformat(),
             **extra,
         }
-        self._col.update_one({"_id": message_id}, {"$set": update})
-        return self.get_by_message_id(message_id)
+        query = with_account_filter({"_id": message_id}, account_id)
+        self._col.update_one(query, {"$set": update})
+        return self.get_by_message_id(message_id, account_id=account_id)
 
-    def list_by_correlation_id(self, correlation_id: str) -> list[StoredEmail]:
+    def list_by_correlation_id(
+        self,
+        correlation_id: str,
+        *,
+        account_id: str | None = None,
+    ) -> list[StoredEmail]:
         """Alle Mails einer Correlation-ID."""
-        cursor = self._col.find({"correlation_id": correlation_id})
+        query = with_account_filter({"correlation_id": correlation_id}, account_id)
+        cursor = self._col.find(query)
         return [StoredEmail.from_mongo(doc) for doc in cursor]
 
-    def get_by_correlation_id(self, correlation_id: str) -> StoredEmail | None:
+    def get_by_correlation_id(
+        self,
+        correlation_id: str,
+        *,
+        account_id: str | None = None,
+    ) -> StoredEmail | None:
         """Erste Mail zu einer Correlation-ID."""
-        doc = self._col.find_one({"correlation_id": correlation_id})
+        query = with_account_filter({"correlation_id": correlation_id}, account_id)
+        doc = self._col.find_one(query)
         if doc is None:
             return None
         return StoredEmail.from_mongo(doc)
@@ -78,6 +101,7 @@ class EmailRepository:
     def list_filtered(
         self,
         *,
+        account_id: str | None = None,
         status: str | None = None,
         intent: str | None = None,
         intents: list[str] | None = None,
@@ -89,6 +113,8 @@ class EmailRepository:
     ) -> tuple[list[StoredEmail], int]:
         """Paginierte Liste mit optionalen Filtern."""
         base_match: dict[str, Any] = {}
+        if account_id:
+            base_match["account_id"] = account_id
         if booking_related:
             noise = mongo_noise_exclusion()
             if noise:
@@ -160,24 +186,38 @@ class EmailRepository:
         self,
         state: ProcessingState,
         since_iso: str,
+        *,
+        account_id: str | None = None,
     ) -> int:
         """Zählt Mails mit Status seit Zeitstempel (ISO)."""
-        return int(
-            self._col.count_documents(
-                {
-                    "processing_state": state.value,
-                    "updated_at": {"$gte": since_iso},
-                }
-            )
+        query = with_account_filter(
+            {
+                "processing_state": state.value,
+                "updated_at": {"$gte": since_iso},
+            },
+            account_id,
         )
+        return int(self._col.count_documents(query))
 
-    def count_updated_since(self, since_iso: str) -> int:
+    def count_updated_since(
+        self,
+        since_iso: str,
+        *,
+        account_id: str | None = None,
+    ) -> int:
         """Alle Mails mit Update seit Zeitstempel."""
-        return int(self._col.count_documents({"updated_at": {"$gte": since_iso}}))
+        query = with_account_filter({"updated_at": {"$gte": since_iso}}, account_id)
+        return int(self._col.count_documents(query))
 
-    def count_received_since(self, since_iso: str) -> int:
+    def count_received_since(
+        self,
+        since_iso: str,
+        *,
+        account_id: str | None = None,
+    ) -> int:
         """Eingegangene Mails seit Zeitstempel (received_at, ISO)."""
-        return int(self._col.count_documents({"received_at": {"$gte": since_iso}}))
+        query = with_account_filter({"received_at": {"$gte": since_iso}}, account_id)
+        return int(self._col.count_documents(query))
 
     @staticmethod
     def _apply_booking_related_match(

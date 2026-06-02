@@ -35,11 +35,14 @@ def require_auth(fn: F) -> F:
         jti = payload.get("jti")
         if isinstance(jti, str) and is_revoked(jti):
             return jsonify({"error": "Token revoked", "code": 401}), 401
+        account_id = payload.get("account_id")
         g.current_user = {
             "id": payload.get("sub"),
             "email": payload.get("email"),
             "role": payload.get("role"),
+            "account_id": account_id if isinstance(account_id, str) else None,
         }
+        g.current_account_id = account_id if isinstance(account_id, str) else None
         return fn(*args, **kwargs)
 
     return wrapper  # type: ignore[return-value]

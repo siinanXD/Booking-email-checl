@@ -8,9 +8,12 @@ import {
   ClipboardCheck,
   DollarSign,
   Building2,
+  UserCheck,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchDashboardStats } from "@/api/dashboard";
+import { fetchPendingAccounts } from "@/api/admin";
+import { useAuthStore } from "@/stores/authStore";
 
 const links = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -24,12 +27,20 @@ const links = [
 ];
 
 export function Sidebar() {
+  const isPlatformAdmin = useAuthStore((s) => s.isPlatformAdmin());
   const { data: stats } = useQuery({
     queryKey: ["dashboard-stats"],
     queryFn: fetchDashboardStats,
     refetchInterval: 30_000,
   });
+  const { data: pendingAccounts } = useQuery({
+    queryKey: ["admin-accounts", "pending-count"],
+    queryFn: fetchPendingAccounts,
+    enabled: isPlatformAdmin,
+    refetchInterval: 60_000,
+  });
   const pending = stats?.pending_review ?? 0;
+  const pendingApprovals = pendingAccounts?.total ?? 0;
 
   return (
     <aside className="flex w-56 flex-col bg-slate-900 text-slate-200">
@@ -62,6 +73,26 @@ export function Sidebar() {
             )}
           </NavLink>
         ))}
+        {isPlatformAdmin && (
+          <NavLink
+            to="/admin/approvals"
+            className={({ isActive }) =>
+              `flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
+                isActive
+                  ? "bg-indigo-600 text-white"
+                  : "text-slate-300 hover:bg-slate-800"
+              }`
+            }
+          >
+            <UserCheck size={18} />
+            <span className="flex-1">Freischaltungen</span>
+            {pendingApprovals > 0 && (
+              <span className="rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-white">
+                {pendingApprovals}
+              </span>
+            )}
+          </NavLink>
+        )}
       </nav>
     </aside>
   );

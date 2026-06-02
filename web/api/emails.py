@@ -4,16 +4,18 @@ from __future__ import annotations
 
 from typing import Any
 
-from flask import Blueprint, g, jsonify, request
+from flask import Blueprint, jsonify, request
 
 from web.middleware.auth_guard import require_auth
-from web.services.query_service import QueryService
+from web.middleware.tenant import require_account
+from web.services.api_helpers import tenant_query_service
 
 emails_bp = Blueprint("emails", __name__, url_prefix="/api/emails")
 
 
 @emails_bp.get("/")
 @require_auth
+@require_account
 def list_emails() -> tuple[Any, int]:
     """Paginierte E-Mail-Liste."""
     page = max(int(request.args.get("page", 1)), 1)
@@ -25,7 +27,7 @@ def list_emails() -> tuple[Any, int]:
         "true",
         "yes",
     )
-    svc = QueryService(g.ctx)
+    svc = tenant_query_service()
     result = svc.list_emails(
         status=request.args.get("status"),
         intent=request.args.get("intent"),
@@ -41,9 +43,10 @@ def list_emails() -> tuple[Any, int]:
 
 @emails_bp.get("/<correlation_id>")
 @require_auth
+@require_account
 def email_detail(correlation_id: str) -> tuple[Any, int]:
     """Vollständiges Mail-Detail."""
-    svc = QueryService(g.ctx)
+    svc = tenant_query_service()
     detail = svc.get_email_detail(correlation_id)
     if detail is None:
         return jsonify({"error": "Email not found", "code": 404}), 404

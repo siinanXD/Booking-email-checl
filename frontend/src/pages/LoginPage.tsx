@@ -1,9 +1,10 @@
-import { FormEvent, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { FormEvent, useEffect, useState } from "react";
+import { Link, Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { useAuthStore } from "@/stores/authStore";
+import { isAxiosError } from "axios";
 
 export function LoginPage() {
   const [email, setEmail] = useState("");
@@ -12,6 +13,13 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const login = useAuthStore((s) => s.login);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  useEffect(() => {
+    const { accessToken, user, logout } = useAuthStore.getState();
+    if (accessToken && !user) {
+      logout();
+    }
+  }, []);
 
   if (isAuthenticated()) {
     return <Navigate to="/" replace />;
@@ -23,8 +31,20 @@ export function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-    } catch {
-      setError("Anmeldung fehlgeschlagen. E-Mail oder Passwort prüfen.");
+    } catch (err: unknown) {
+      if (isAxiosError(err)) {
+        if (!err.response) {
+          setError(
+            "Server nicht erreichbar. Backend starten (Flask :5000 oder Docker :8000) und Seite neu laden."
+          );
+        } else if (err.response.data?.error) {
+          setError(String(err.response.data.error));
+        } else {
+          setError("Anmeldung fehlgeschlagen. E-Mail oder Passwort prüfen.");
+        }
+      } else {
+        setError("Anmeldung fehlgeschlagen. E-Mail oder Passwort prüfen.");
+      }
     } finally {
       setLoading(false);
     }
@@ -60,6 +80,12 @@ export function LoginPage() {
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Wird angemeldet…" : "Anmelden"}
           </Button>
+          <p className="text-center text-sm text-slate-500">
+            Noch kein Konto?{" "}
+            <Link to="/register" className="text-indigo-600 hover:underline">
+              Registrieren
+            </Link>
+          </p>
         </form>
       </Card>
     </div>

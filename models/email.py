@@ -39,6 +39,7 @@ class IncomingEmail(BaseModel):
     in_reply_to: str | None = None
     references: list[str] = Field(default_factory=list)
     platform: str | None = None
+    account_id: str | None = None
     correlation_id: str = Field(default_factory=lambda: str(uuid4()))
 
     def thread_ids(self) -> list[str]:

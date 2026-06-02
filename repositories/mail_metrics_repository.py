@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 from pymongo.collection import Collection
 
 from repositories.mongo import Db
+from repositories.tenant_scope import with_account_filter
 
 
 class MailMetricRecord(BaseModel):
@@ -38,9 +39,10 @@ class MailMetricsRepository:
         cost_usd: float,
         prompt_tokens: int,
         completion_tokens: int,
+        account_id: str | None = None,
     ) -> None:
         """Speichert Kosten-Snapshot (idempotent pro correlation_id)."""
-        doc = {
+        doc: dict[str, Any] = {
             "_id": correlation_id,
             "correlation_id": correlation_id,
             "cost_usd": cost_usd,
@@ -48,19 +50,29 @@ class MailMetricsRepository:
             "completion_tokens": completion_tokens,
             "processed_at": datetime.now(UTC).isoformat(),
         }
+        if account_id:
+            doc["account_id"] = account_id
         self._col.update_one({"_id": correlation_id}, {"$set": doc}, upsert=True)
 
-    def sum_cost_between(self, start: datetime, end: datetime) -> float:
+    def sum_cost_between(
+        self,
+        start: datetime,
+        end: datetime,
+        *,
+        account_id: str | None = None,
+    ) -> float:
         """Summiert Kosten im Zeitraum."""
-        pipeline: Sequence[Mapping[str, Any]] = [
+        match = with_account_filter(
             {
-                "$match": {
-                    "processed_at": {
-                        "$gte": start.isoformat(),
-                        "$lte": end.isoformat(),
-                    }
+                "processed_at": {
+                    "$gte": start.isoformat(),
+                    "$lte": end.isoformat(),
                 }
             },
+            account_id,
+        )
+        pipeline: Sequence[Mapping[str, Any]] = [
+            {"$match": match},
             {"$group": {"_id": None, "total": {"$sum": "$cost_usd"}}},
         ]
         rows = list(self._col.aggregate(pipeline))
@@ -68,34 +80,44 @@ class MailMetricsRepository:
             return 0.0
         return float(rows[0].get("total", 0.0))
 
-    def count_between(self, start: datetime, end: datetime) -> int:
+    def count_between(
+        self,
+        start: datetime,
+        end: datetime,
+        *,
+        account_id: str | None = None,
+    ) -> int:
         """Anzahl Metrik-Einträge im Zeitraum."""
-        return int(
-            self._col.count_documents(
-                {
-                    "processed_at": {
-                        "$gte": start.isoformat(),
-                        "$lte": end.isoformat(),
-                    }
+        query = with_account_filter(
+            {
+                "processed_at": {
+                    "$gte": start.isoformat(),
+                    "$lte": end.isoformat(),
                 }
-            )
+            },
+            account_id,
         )
+        return int(self._col.count_documents(query))
 
     def aggregate_by_day(
         self,
         start: datetime,
         end: datetime,
+        *,
+        account_id: str | None = None,
     ) -> list[dict[str, Any]]:
         """Tagesaggregation für Kosten-Charts."""
-        pipeline: Sequence[Mapping[str, Any]] = [
+        match = with_account_filter(
             {
-                "$match": {
-                    "processed_at": {
-                        "$gte": start.isoformat(),
-                        "$lte": end.isoformat(),
-                    }
+                "processed_at": {
+                    "$gte": start.isoformat(),
+                    "$lte": end.isoformat(),
                 }
             },
+            account_id,
+        )
+        pipeline: Sequence[Mapping[str, Any]] = [
+            {"$match": match},
             {
                 "$group": {
                     "_id": {"$substr": ["$processed_at", 0, 10]},

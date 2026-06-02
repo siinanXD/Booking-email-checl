@@ -54,9 +54,17 @@ def app(mock_db: object, web_settings: Settings) -> Generator:
             mock_cp.return_value = MemorySaver()
             flask_app = create_app(settings)
             ctx = flask_app.extensions["ctx"]
-            ctx.user_repo.ensure_admin(
+            account = ctx.account_repo.create(
+                display_name="Test Admin",
+                contact_email=settings.admin_email,
+                account_type="business",
+                company_name="Test Admin",
+                status="active",
+            )
+            ctx.user_repo.ensure_platform_admin(
                 settings.admin_email,
                 generate_password_hash(settings.admin_password),
+                account_id=account.id,
             )
             flask_app.config["TESTING"] = True
             yield flask_app
@@ -66,6 +74,16 @@ def app(mock_db: object, web_settings: Settings) -> Generator:
 def client(app: object) -> object:
     """Flask test client."""
     return app.test_client()  # type: ignore[union-attr]
+
+
+@pytest.fixture
+def tenant_account_id(client: object, auth_headers: dict[str, str]) -> str:
+    """Account-ID des eingeloggten Test-Admins."""
+    resp = client.get("/api/auth/me", headers=auth_headers)  # type: ignore[union-attr]
+    assert resp.status_code == 200
+    account_id = resp.get_json()["account_id"]
+    assert isinstance(account_id, str)
+    return account_id
 
 
 @pytest.fixture

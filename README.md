@@ -54,6 +54,36 @@ Siehe `docs/OUTLOOK.md`. Unter Windows immer die **Projekt-venv** nutzen
 
 Oder nach `Activate.ps1`: `python scripts/run_outlook_ingest.py`.
 
+Einzelmandant-Debug: `INGEST_ACCOUNT_ID` in `.env` setzen.
+
+### Automatisches Mail-Polling
+
+Der Poll-Worker holt periodisch Mails für **alle freigegebenen Mandanten**
+(`active`) mit konfiguriertem Postfach (Onboarding abgeschlossen).
+
+**Docker (Produktion)** – startet Web, Mongo und Poll-Worker:
+
+```powershell
+docker compose up -d
+```
+
+Intervall in `.env`: `MAIL_POLL_INTERVAL_SECONDS=300` (Standard: 5 Minuten).
+
+**Lokal (Windows, Dev)** – separates Terminal:
+
+```powershell
+.\scripts\run_mail_poll_loop.ps1
+```
+
+Einmaliger Lauf ohne Schleife:
+
+```powershell
+.\scripts\run_mail_poll.ps1
+```
+
+Voraussetzungen: Mandant vom Plattform-Admin freigegeben, Postfach im
+Onboarding eingerichtet (oder unter Einstellungen → Postfach bearbeiten).
+
 ### LLM-Modus und Hilfsskripte
 
 | Variable | Wirkung |

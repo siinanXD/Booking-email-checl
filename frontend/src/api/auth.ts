@@ -1,5 +1,10 @@
 import { apiClient } from "@/api/client";
-import type { TokenResponse, UserResponse } from "@/types/api";
+import type {
+  RegisterRequest,
+  RegisterResponse,
+  TokenResponse,
+  UserResponse,
+} from "@/types/api";
 
 export async function login(
   email: string,
@@ -12,8 +17,20 @@ export async function login(
   return data;
 }
 
-export async function fetchMe(): Promise<UserResponse> {
-  const { data } = await apiClient.get<UserResponse>("/api/auth/me");
+export async function register(
+  payload: RegisterRequest
+): Promise<RegisterResponse> {
+  const { data } = await apiClient.post<RegisterResponse>(
+    "/api/auth/register",
+    payload
+  );
+  return data;
+}
+
+export async function fetchMe(accessToken: string): Promise<UserResponse> {
+  const { data } = await apiClient.get<UserResponse>("/api/auth/me", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
   return data;
 }
 

@@ -1,16 +1,23 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { fetchMe, login as loginApi, logoutApi } from "@/api/auth";
-import type { UserResponse } from "@/types/api";
+import {
+  fetchMe,
+  login as loginApi,
+  logoutApi,
+  register as registerApi,
+} from "@/api/auth";
+import type { RegisterRequest, RegisterResponse, UserResponse } from "@/types/api";
 
 interface AuthState {
   accessToken: string | null;
   refreshToken: string | null;
   user: UserResponse | null;
   login: (email: string, password: string) => Promise<void>;
+  register: (payload: RegisterRequest) => Promise<RegisterResponse>;
   logout: () => void;
   loadUser: () => Promise<void>;
   isAuthenticated: () => boolean;
+  isPlatformAdmin: () => boolean;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -19,16 +26,24 @@ export const useAuthStore = create<AuthState>()(
       accessToken: null,
       refreshToken: null,
       user: null,
-      isAuthenticated: () => Boolean(get().accessToken),
+      isAuthenticated: () =>
+        Boolean(get().accessToken && get().user),
+      isPlatformAdmin: () => get().user?.role === "platform_admin",
       login: async (email, password) => {
         const tokens = await loginApi(email, password);
-        set({
-          accessToken: tokens.access_token,
-          refreshToken: tokens.refresh_token,
-        });
-        const user = await fetchMe();
-        set({ user });
+        try {
+          const user = await fetchMe(tokens.access_token);
+          set({
+            accessToken: tokens.access_token,
+            refreshToken: tokens.refresh_token,
+            user,
+          });
+        } catch (err) {
+          set({ accessToken: null, refreshToken: null, user: null });
+          throw err;
+        }
       },
+      register: async (payload) => registerApi(payload),
       logout: () => {
         const token = get().accessToken;
         if (token) {
@@ -37,9 +52,10 @@ export const useAuthStore = create<AuthState>()(
         set({ accessToken: null, refreshToken: null, user: null });
       },
       loadUser: async () => {
-        if (!get().accessToken) return;
+        const token = get().accessToken;
+        if (!token) return;
         try {
-          const user = await fetchMe();
+          const user = await fetchMe(token);
           set({ user });
         } catch {
           get().logout();

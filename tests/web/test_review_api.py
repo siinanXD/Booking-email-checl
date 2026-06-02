@@ -15,6 +15,7 @@ from schemas.booking.taxonomy import BookingIntent
 def test_list_pending_reviews(
     client: Any,
     auth_headers: dict[str, str],
+    tenant_account_id: str,
     mock_db: object,
     email_repo: Any,
     extraction_repo: ExtractionRepository,
@@ -31,6 +32,7 @@ def test_list_pending_reviews(
             correlation_id=cid,
             processing_state=ProcessingState.PENDING_REVIEW,
             platform="beds24",
+            account_id=tenant_account_id,
         )
     )
     extraction_repo.save(
@@ -40,6 +42,7 @@ def test_list_pending_reviews(
             intent=BookingIntent.GUEST_INQUIRY,
             booking_number="12345",
         ),
+        account_id=tenant_account_id,
     )
     reviews = ReviewRepository(mock_db)  # type: ignore[arg-type]
     reviews.upsert_pending(
@@ -48,6 +51,7 @@ def test_list_pending_reviews(
         draft_body="Hallo Gast, vielen Dank fuer Ihre Anfrage.",
         grounding_flag=False,
         intent="guest_inquiry",
+        account_id=tenant_account_id,
     )
     resp = client.get("/api/review/pending", headers=auth_headers)
     assert resp.status_code == 200

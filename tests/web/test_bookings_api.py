@@ -14,6 +14,7 @@ from schemas.booking.taxonomy import BookingIntent
 def test_list_bookings(
     client: Any,
     auth_headers: dict[str, str],
+    tenant_account_id: str,
     email_repo: Any,
     extraction_repo: ExtractionRepository,
 ) -> None:
@@ -29,12 +30,14 @@ def test_list_bookings(
             correlation_id=cid,
             processing_state=ProcessingState.CLASSIFIED,
             platform="beds24",
+            account_id=tenant_account_id,
         )
     )
     extraction_repo.save(
         cid,
         "m-booking@test",
         BookingExtraction(intent=BookingIntent.NEW_BOOKING, booking_number="AB99"),
+        account_id=tenant_account_id,
     )
     resp = client.get("/api/bookings/?limit=20", headers=auth_headers)
     assert resp.status_code == 200
