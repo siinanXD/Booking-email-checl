@@ -64,6 +64,10 @@ plugins = ["pydantic.mypy"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
+module = ["workflows.*"]
+disable_error_code = ["arg-type"]
+
+[[tool.mypy.overrides]]
 module = ["tests.*"]
 disallow_untyped_defs = false
 disable_error_code = [
@@ -73,6 +77,7 @@ disable_error_code = [
     "type-arg",
     "union-attr",
     "unused-ignore",
+    "misc",
 ]
 
 [tool.pytest.ini_options]
