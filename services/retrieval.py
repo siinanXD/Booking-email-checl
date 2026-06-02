@@ -31,6 +31,7 @@ class RetrievalService:
         email_repo: EmailRepository,
         similarity: SimilaritySearchService | None = None,
     ) -> None:
+        """Initialize the instance with its dependencies."""
         self._entities = entity_repo
         self._emails = email_repo
         self._similarity = similarity

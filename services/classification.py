@@ -19,7 +19,9 @@ from utils.pii import mask_pii
 class LLMClient(Protocol):
     """Abstraktion für Tests."""
 
-    def complete(self, prompt: str, model: str) -> LLMCompletion: ...
+    def complete(self, prompt: str, model: str) -> LLMCompletion:
+        """Return a completion for the supplied prompt and model."""
+        ...
 
 
 class ClassificationService:
@@ -34,6 +36,7 @@ class ClassificationService:
         alerts: AlertService | None = None,
         mail_cost: MailCostTracker | None = None,
     ) -> None:
+        """Initialize the instance with its dependencies."""
         self._llm = llm
         self._model = model
         self._tracing = tracing
@@ -44,7 +47,12 @@ class ClassificationService:
         """Klassifiziert eine gespeicherte Mail."""
         return cast(BookingIntent, self._classify_observed(email))
 
-    @observe(name="classify", as_type="generation")  # type: ignore[misc]
+    @observe(
+        name="classify",
+        as_type="generation",
+        capture_input=False,
+        capture_output=False,
+    )  # type: ignore[misc]
     def _classify_observed(self, email: StoredEmail) -> BookingIntent:
         if self._tracing:
             langfuse_context.update_current_trace(

@@ -17,6 +17,7 @@ class ExtractionRepository:
     COLLECTION = "extractions"
 
     def __init__(self, db: Db) -> None:
+        """Initialize the instance with its dependencies."""
         self._col: Collection[dict[str, Any]] = db[self.COLLECTION]
 
     def save(

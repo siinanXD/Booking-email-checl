@@ -6,11 +6,15 @@ from repositories.embedding_repository import EmbeddingRepository
 
 
 class MockEmbedClient:
+    """Test helper used by the suite."""
+
     def embed(self, text: str) -> list[float]:
+        """Execute the operation."""
         return [1.0, 0.0] if "hello" in text else [0.0, 1.0]
 
 
 def test_find_similar_cases(mock_db) -> None:
+    """Verify find similar cases."""
     from services.similarity_search import SimilaritySearchService
 
     repo = EmbeddingRepository(mock_db)

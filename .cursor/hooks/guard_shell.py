@@ -26,6 +26,7 @@ BLOCKED_PATTERNS = [
 
 
 def main() -> int:
+    """Run the command workflow."""
     try:
         payload = json.load(sys.stdin)
     except (json.JSONDecodeError, ValueError):

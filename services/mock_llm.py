@@ -9,16 +9,22 @@ class MockLLM:
     """Mock für Klassifikation, Extraktion und Draft."""
 
     def complete(self, prompt: str, model: str) -> LLMCompletion:
+        """Return a deterministic completion for the supplied test prompt."""
         text = self._text_for(prompt)
         return LLMCompletion(text=text, prompt_tokens=10, completion_tokens=20)
 
     def _mail_section(self, prompt: str) -> str:
         """Nur den Mail-Block, nicht Few-Shots."""
+        start = "--- BEGIN UNTRUSTED MAIL ---"
+        end = "--- END UNTRUSTED MAIL ---"
+        if start in prompt and end in prompt:
+            return prompt.rsplit(start, 1)[-1].split(end, 1)[0]
         if "Mail:" in prompt:
             return prompt.rsplit("Mail:", 1)[-1]
         return prompt
 
     def _text_for(self, prompt: str) -> str:
+        """Choose a stable response based on the isolated mail body."""
         if "Antwortentwurf" in prompt or "Gast-Mail" in prompt:
             return "Sehr geehrte/r Gast, Ihre Anfrage wurde bearbeitet."
         if "Extrahiere strukturierte" in prompt:
@@ -63,5 +69,6 @@ class MockEmbeddingClient:
     """Embeddings ohne OpenAI (feste Vektoren)."""
 
     def embed(self, text: str) -> list[float]:
+        """Return a fixed embedding vector without calling OpenAI."""
         _ = text
         return [1.0, 0.5, 0.25]

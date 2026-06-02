@@ -14,7 +14,9 @@ from schemas.booking.extraction import BookingExtraction
 class EmbeddingFn(Protocol):
     """OpenAI- oder Mock-Embeddings."""
 
-    def embed(self, text: str) -> list[float]: ...
+    def embed(self, text: str) -> list[float]:
+        """Return an embedding vector for the supplied text."""
+        ...
 
 
 def chunk_text(body: str, max_chunks: int = 3) -> list[str]:
@@ -28,7 +30,7 @@ def chunk_text(body: str, max_chunks: int = 3) -> list[str]:
 
 
 class EmbeddingClient:
-    """OpenAI Embeddings (optional mit Langfuse-Auto-Trace)."""
+    """OpenAI Embeddings client."""
 
     def __init__(
         self,
@@ -38,6 +40,7 @@ class EmbeddingClient:
         use_langfuse: bool = False,
         tracing: bool = False,
     ) -> None:
+        """Initialize the instance with its dependencies."""
         self._tracing = tracing
         if use_langfuse:
             from langfuse.openai import OpenAI
@@ -47,8 +50,14 @@ class EmbeddingClient:
         self._client = OpenAI(api_key=api_key)
         self._model = model
 
-    @observe(name="embed", as_type="generation")  # type: ignore[misc]
+    @observe(
+        name="embed",
+        as_type="generation",
+        capture_input=False,
+        capture_output=False,
+    )  # type: ignore[misc]
     def embed(self, text: str) -> list[float]:
+        """Execute the operation."""
         if self._tracing:
             langfuse_context.update_current_observation(model=self._model)
         response = self._client.embeddings.create(
@@ -66,6 +75,7 @@ class IndexingService:
         embedding_repo: EmbeddingRepository,
         embed_client: EmbeddingFn,
     ) -> None:
+        """Initialize the instance with its dependencies."""
         self._repo = embedding_repo
         self._embed = embed_client
 

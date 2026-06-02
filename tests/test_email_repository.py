@@ -8,6 +8,7 @@ from models.email import ProcessingState, StoredEmail
 
 
 def test_upsert_and_get(email_repo) -> None:
+    """Verify upsert and get."""
     email = StoredEmail(
         message_id="repo-test-1",
         from_address="a@b.com",
@@ -22,6 +23,7 @@ def test_upsert_and_get(email_repo) -> None:
 
 
 def test_update_processing_state(email_repo) -> None:
+    """Verify update processing state."""
     email = StoredEmail(
         message_id="repo-test-2",
         from_address="a@b.com",

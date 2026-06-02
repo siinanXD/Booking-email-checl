@@ -14,13 +14,16 @@ class ReviewPort(Protocol):
         self,
         correlation_id: str,
         approved_body: str | None = None,
-    ) -> dict[str, Any]: ...
+    ) -> dict[str, Any]:
+        """Approve the pending draft."""
+        ...
 
 
 class ReviewRouter:
     """Resume des Workflows nach menschlicher Freigabe."""
 
     def __init__(self, workflow: EmailWorkflow) -> None:
+        """Initialize the instance with its dependencies."""
         self._workflow = workflow
 
     def approve_draft(

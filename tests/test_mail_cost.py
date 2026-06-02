@@ -8,6 +8,7 @@ from services.llm_types import LLMCompletion
 
 
 def test_finalize_aggregates_tokens_single_alert(caplog) -> None:
+    """Verify finalize aggregates tokens single alert."""
     alerts = AlertService(thresholds=AlertThresholds(max_cost_per_mail_usd=0.1))
     tracker = MailCostTracker(cost_per_1k_tokens_usd=0.1, alerts=alerts)
     completion = LLMCompletion(text="x", prompt_tokens=500, completion_tokens=500)
@@ -20,6 +21,7 @@ def test_finalize_aggregates_tokens_single_alert(caplog) -> None:
 
 
 def test_finalize_no_alert_below_threshold(caplog) -> None:
+    """Verify finalize no alert below threshold."""
     tracker = MailCostTracker(
         cost_per_1k_tokens_usd=0.002,
         alerts=AlertService(thresholds=AlertThresholds(max_cost_per_mail_usd=1.0)),

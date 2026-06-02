@@ -6,6 +6,7 @@ from utils.text import normalize_body
 
 
 def test_normalize_body_from_html() -> None:
+    """Verify normalize body from html."""
     html = "<p>Hallo</p><p>Welt</p>"
     text = normalize_body("", html)
     assert "Hallo" in text

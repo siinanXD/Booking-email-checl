@@ -11,6 +11,7 @@ from tests.mocks import MockLLM
 
 
 def test_classify_mock() -> None:
+    """Verify classify mock."""
     email = StoredEmail(
         message_id="c1",
         from_address="g@airbnb.com",

@@ -9,7 +9,7 @@ Kurze Entscheidungen pro Kernkomponente (Stand: MVP-Start). Bei Abweichung im PR
 | **Entity Resolution** | Eigenbau | Relay-Adressen, mehrdeutige Namen – domänenspezifisch, nicht generisch lösbar. |
 | **Klassifikation / Extraktion** | OpenAI Python SDK direkt | Weniger Abstraktions-Overhead als dicke LangChain-Pipeline (SPEC); strukturierte Outputs via Pydantic. |
 | **Triage (MVP)** | Regelbasiert | Kosten vor teurem LLM; LLM-Triage optional später. |
-| **Observability** | Langfuse SDK | Traces pro Mail/Correlation-ID; PII wird vor dem Senden maskiert. |
+| **Observability** | Langfuse SDK mit `@observe` ohne Rohprompt-Capture | Traces pro Mail/Correlation-ID; PII-haltige Prompts/Outputs werden nicht automatisch erfasst. |
 | **Ingestion (MVP)** | Programmatisches `IngestionPort` | HTTP/Outlook-Webhook folgt separat; keine FastAPI-Pflicht im MVP. |
 
 ## Nicht übernommen

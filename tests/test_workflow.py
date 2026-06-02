@@ -21,6 +21,7 @@ class _MockEmbed:
     """Minimaler Embedding-Stub für Tests."""
 
     def embed(self, text: str) -> list[float]:
+        """Execute the operation."""
         return [1.0, 0.5]
 
 
@@ -64,6 +65,7 @@ def test_workflow_stops_with_review_pending(
     extraction_repo,
     mock_db,
 ) -> None:
+    """Verify workflow stops with review pending."""
     from repositories.embedding_repository import EmbeddingRepository
 
     payload = IncomingEmail(
@@ -96,6 +98,7 @@ def test_workflow_persists_processing_state(
     extraction_repo,
     mock_db,
 ) -> None:
+    """Verify workflow persists processing state."""
     from repositories.embedding_repository import EmbeddingRepository
 
     payload = IncomingEmail(
@@ -122,6 +125,44 @@ def test_workflow_persists_processing_state(
     )
 
 
+def test_resume_after_approval_persists_approved_state(
+    ingestion_service,
+    email_repo,
+    entity_repo,
+    extraction_repo,
+    mock_db,
+) -> None:
+    """Verify approval resume persists the approved processing state."""
+    from repositories.embedding_repository import EmbeddingRepository
+
+    payload = IncomingEmail(
+        message_id="wf-approve-001",
+        from_address="guest@airbnb.com",
+        subject="Stornierung AB200",
+        body_text="Stornierung AB200 bitte.",
+        received_at=datetime.now(UTC),
+        platform="airbnb",
+    )
+    wf = _build_workflow(
+        ingestion_service,
+        email_repo,
+        entity_repo,
+        extraction_repo,
+        EmbeddingRepository(mock_db),
+    )
+    wf.run(payload, thread_id=payload.correlation_id)
+    result = wf.resume_after_approval(
+        payload.correlation_id,
+        approved_body="Freigegebener Text",
+    )
+
+    email = email_repo.get_by_message_id("wf-approve-001")
+    assert email is not None
+    assert email.processing_state == ProcessingState.APPROVED
+    assert result["review"].status == "approved"
+    assert result["review"].approved_body == "Freigegebener Text"
+
+
 def test_workflow_finalize_cost_after_spam_discard(
     ingestion_service,
     email_repo,
@@ -137,6 +178,7 @@ def test_workflow_finalize_cost_after_spam_discard(
 
     class _RecordingTracker(MailCostTracker):
         def finalize(self, correlation_id: str) -> float:
+            """Execute the operation."""
             finalized.append(correlation_id)
             return super().finalize(correlation_id)
 

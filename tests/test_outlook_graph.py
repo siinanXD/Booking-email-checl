@@ -37,6 +37,7 @@ def _sample_graph_message() -> dict[str, Any]:
 
 
 def test_map_graph_message_text_body() -> None:
+    """Verify map graph message text body."""
     payload = map_graph_message(_sample_graph_message())
     assert payload.message_id == "<booking-test@example.com>"
     assert payload.from_address == "guest@example.com"
@@ -51,6 +52,7 @@ def test_map_graph_message_text_body() -> None:
 
 
 def test_map_graph_message_html_body() -> None:
+    """Verify map graph message html body."""
     msg = _sample_graph_message()
     msg["body"] = {"contentType": "html", "content": "<p>Hi</p>"}
     payload = map_graph_message(msg)
@@ -59,17 +61,20 @@ def test_map_graph_message_html_body() -> None:
 
 
 def test_map_graph_message_requires_id() -> None:
+    """Verify map graph message requires id."""
     with pytest.raises(ValueError, match="internetMessageId"):
         map_graph_message({"receivedDateTime": "2026-06-01T12:00:00Z"})
 
 
 class _FakeTokenProvider:
     def get_token(self) -> str:
+        """Return the requested value."""
         return "fake-token"
 
 
 class _FakeGraph(OutlookGraphClient):
     def __init__(self, messages: list[dict[str, Any]]) -> None:
+        """Initialize the instance with its dependencies."""
         super().__init__(
             auth_mode="delegated",
             mailbox=None,
@@ -84,9 +89,11 @@ class _FakeGraph(OutlookGraphClient):
         *,
         unread_only: bool = False,
     ) -> list[dict[str, Any]]:
+        """List matching records."""
         return self._messages[:top]
 
     def list_unread_inbox_messages(self, top: int = 50) -> list[dict[str, Any]]:
+        """List matching records."""
         return self.list_inbox_messages(top, unread_only=True)
 
     def post_process_message(
@@ -96,6 +103,7 @@ class _FakeGraph(OutlookGraphClient):
         action: str,
         processed_folder: str | None,
     ) -> None:
+        """Execute the operation."""
         self.marked.append(graph_id)
 
 
@@ -106,6 +114,7 @@ def test_outlook_runner_ingests_and_marks_read(
     extraction_repo,
     embedding_repo,
 ) -> None:
+    """Verify outlook runner ingests and marks read."""
     from tests.test_workflow import _build_workflow
 
     workflow = _build_workflow(
@@ -136,6 +145,7 @@ def test_outlook_runner_skips_existing_message_id(
     email_repo,
     booking_emails,
 ) -> None:
+    """Verify outlook runner skips existing message id."""
     from tests.test_workflow import _build_workflow
 
     workflow = _build_workflow(
@@ -170,6 +180,7 @@ def test_outlook_runner_skips_existing_message_id(
 
 @patch("adapters.outlook_graph.urlopen")
 def test_graph_client_list_unread(mock_urlopen: MagicMock) -> None:
+    """Verify graph client list unread."""
     body = json.dumps({"value": [_sample_graph_message()]}).encode()
     mock_resp = MagicMock()
     mock_resp.read.return_value = body
@@ -190,6 +201,7 @@ def test_graph_client_list_unread(mock_urlopen: MagicMock) -> None:
 
 
 def test_outlook_graph_client_from_settings_delegated() -> None:
+    """Verify outlook graph client from settings delegated."""
     settings = Settings.model_validate(
         {
             "OPENAI_API_KEY": "sk-test",
@@ -205,6 +217,7 @@ def test_outlook_graph_client_from_settings_delegated() -> None:
 
 
 def test_outlook_graph_client_from_settings_application_requires_mailbox() -> None:
+    """Verify outlook graph client from settings application requires mailbox."""
     settings = Settings.model_validate(
         {
             "OPENAI_API_KEY": "sk-test",

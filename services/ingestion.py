@@ -30,6 +30,7 @@ class IngestionService:
         email_repo: EmailRepository,
         triage_service: TriageService | None = None,
     ) -> None:
+        """Initialize the instance with its dependencies."""
         self._email_repo = email_repo
         self._triage = triage_service or TriageService()
 

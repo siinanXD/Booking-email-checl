@@ -20,6 +20,7 @@ class IngestionRouter:
     """Standard-Implementierung des IngestionPort."""
 
     def __init__(self, service: IngestionService) -> None:
+        """Initialize the instance with its dependencies."""
         self._service = service
 
     def ingest_email(self, payload: IncomingEmail) -> IngestResult:

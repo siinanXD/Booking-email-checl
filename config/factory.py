@@ -54,7 +54,8 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
     tracing = configure_langfuse_env(cfg) and tracing_enabled(cfg)
 
     llm_mode = cfg.llm_mode.strip().lower()
-    use_langfuse_openai = tracing and llm_mode == "live"
+    # Raw mail prompts must not be auto-captured by provider wrappers.
+    use_langfuse_openai = False
     llm: LLMClient
     embed_client: EmbeddingFn
     if llm_mode == "mock":

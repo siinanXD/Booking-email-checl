@@ -11,8 +11,9 @@ import pytest
 
 from models.email import StoredEmail
 from schemas.booking.taxonomy import BookingIntent
-from services.classification import ClassificationService, OpenAIClient
+from services.classification import ClassificationService
 from services.extraction import ExtractionService
+from services.openai_client import OpenAIClient
 from services.validation import ValidationService
 from tests.eval.compare import run_extraction_eval
 from tests.mocks import MockLLM
@@ -37,6 +38,7 @@ def _build_llm() -> MockLLM | OpenAIClient:
 
 @pytest.fixture
 def eval_cases() -> list[dict[str, object]]:
+    """Execute the operation."""
     path = Path(__file__).parent / "cases.json"
     data: list[dict[str, object]] = json.loads(path.read_text(encoding="utf-8"))
     return data
@@ -95,6 +97,7 @@ def test_eval_extraction_field_accuracy(
     extract_svc = ExtractionService(llm, "gpt-4o-mini")
 
     def extract_fn(email: StoredEmail, intent: BookingIntent | None = None):
+        """Execute the operation."""
         return extract_svc.extract(email, intent=intent)
 
     report = run_extraction_eval(eval_cases, extract_fn)

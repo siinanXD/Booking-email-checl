@@ -27,6 +27,7 @@ class AlertService:
         webhook_url: str | None = None,
         thresholds: AlertThresholds | None = None,
     ) -> None:
+        """Initialize the instance with its dependencies."""
         self._webhook = webhook_url
         self._thresholds = thresholds or AlertThresholds()
 

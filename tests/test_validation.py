@@ -10,6 +10,7 @@ from services.validation import ValidationService
 
 
 def test_validate_dates_ok() -> None:
+    """Verify validate dates ok."""
     ext = BookingExtraction(
         intent=BookingIntent.NEW_BOOKING,
         check_in=date(2026, 6, 12),
@@ -20,6 +21,7 @@ def test_validate_dates_ok() -> None:
 
 
 def test_validate_dates_invalid() -> None:
+    """Verify validate dates invalid."""
     ext = BookingExtraction(
         check_in=date(2026, 6, 15),
         check_out=date(2026, 6, 12),
@@ -29,6 +31,7 @@ def test_validate_dates_invalid() -> None:
 
 
 def test_validate_cancellation_requires_booking_number() -> None:
+    """Verify validate cancellation requires booking number."""
     ext = BookingExtraction(intent=BookingIntent.CANCELLATION)
     result = ValidationService().validate(ext)
     assert result.valid is False

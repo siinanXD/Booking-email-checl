@@ -29,26 +29,31 @@ def mock_db() -> Generator[Db, None, None]:
 
 @pytest.fixture
 def email_repo(mock_db: Db) -> EmailRepository:
+    """Execute the operation."""
     return EmailRepository(mock_db)
 
 
 @pytest.fixture
 def entity_repo(mock_db: Db) -> EntityRepository:
+    """Execute the operation."""
     return EntityRepository(mock_db)
 
 
 @pytest.fixture
 def extraction_repo(mock_db: Db) -> ExtractionRepository:
+    """Execute the operation."""
     return ExtractionRepository(mock_db)
 
 
 @pytest.fixture
 def embedding_repo(mock_db: Db) -> EmbeddingRepository:
+    """Execute the operation."""
     return EmbeddingRepository(mock_db)
 
 
 @pytest.fixture
 def ingestion_service(email_repo: EmailRepository) -> IngestionService:
+    """Execute the operation."""
     return IngestionService(email_repo, TriageService())
 
 

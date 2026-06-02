@@ -17,6 +17,7 @@ class EntityRepository:
     RESERVATIONS = "reservations"
 
     def __init__(self, db: Db) -> None:
+        """Initialize the instance with its dependencies."""
         self._guests: Collection[dict[str, Any]] = db[self.GUESTS]
         self._reservations: Collection[dict[str, Any]] = db[self.RESERVATIONS]
 

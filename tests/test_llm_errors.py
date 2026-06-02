@@ -16,11 +16,15 @@ from services.retrieval import RetrievalService
 
 
 class FailingLLM:
+    """Test helper used by the suite."""
+
     def complete(self, prompt: str, model: str) -> LLMCompletion:
+        """Execute the operation."""
         raise ConnectionError("simulated network failure")
 
 
 def test_classify_returns_other_on_llm_failure() -> None:
+    """Verify classify returns other on llm failure."""
     email = StoredEmail(
         message_id="fail-cls",
         from_address="g@airbnb.com",
@@ -35,6 +39,7 @@ def test_classify_returns_other_on_llm_failure() -> None:
 
 
 def test_extract_returns_low_confidence_on_llm_failure() -> None:
+    """Verify extract returns low confidence on llm failure."""
     email = StoredEmail(
         message_id="fail-ext",
         from_address="g@airbnb.com",
@@ -50,6 +55,7 @@ def test_generate_draft_fallback_on_llm_failure(
     entity_repo,
     email_repo,
 ) -> None:
+    """Verify generate draft fallback on llm failure."""
     email = StoredEmail(
         message_id="fail-draft",
         from_address="g@test.com",

@@ -41,9 +41,11 @@ class OutlookIngestionAdapter:
     """IngestionPort für einzelne Mails (z. B. Webhook-Brücke)."""
 
     def __init__(self, port: IngestionPort) -> None:
+        """Initialize the instance with its dependencies."""
         self._port = port
 
     def ingest_email(self, payload: IncomingEmail) -> IngestResult:
+        """Execute the operation."""
         return self._port.ingest_email(payload)
 
 
@@ -61,6 +63,7 @@ class OutlookIngestionRunner:
         fetch_max: int = 100,
         fetch_unread_only: bool = False,
     ) -> None:
+        """Initialize the instance with its dependencies."""
         self._graph = graph
         self._workflow = workflow
         self._post_action = post_action
@@ -75,6 +78,7 @@ class OutlookIngestionRunner:
         settings: Settings,
         ctx: AppContext,
     ) -> OutlookIngestionRunner:
+        """Execute the operation."""
         graph = OutlookGraphClient.from_settings(settings)
         return cls(
             graph=graph,
@@ -89,6 +93,7 @@ class OutlookIngestionRunner:
     def run(
         self, *, top: int | None = None, unread_only: bool | None = None
     ) -> PollRunResult:
+        """Run the command workflow."""
         limit = top if top is not None else self._fetch_max
         only_unread = (
             unread_only if unread_only is not None else self._fetch_unread_only

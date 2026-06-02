@@ -10,6 +10,7 @@ from services.triage import TriageService
 
 
 def test_triage_relevant_booking() -> None:
+    """Verify triage relevant booking."""
     email = IncomingEmail(
         message_id="m1",
         from_address="guest@airbnb.com",
@@ -23,6 +24,7 @@ def test_triage_relevant_booking() -> None:
 
 
 def test_triage_phishing() -> None:
+    """Verify triage phishing."""
     email = IncomingEmail(
         message_id="m2",
         from_address="x@evil.com",
@@ -35,6 +37,7 @@ def test_triage_phishing() -> None:
 
 
 def test_triage_empty_noreply() -> None:
+    """Verify triage empty noreply."""
     email = IncomingEmail(
         message_id="m3",
         from_address="noreply@mailer-daemon.local",

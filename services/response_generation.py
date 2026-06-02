@@ -38,6 +38,7 @@ class ResponseGenerationService:
         alerts: AlertService | None = None,
         mail_cost: MailCostTracker | None = None,
     ) -> None:
+        """Initialize the instance with its dependencies."""
         self._llm = llm
         self._model = model
         self._retrieval = retrieval
@@ -58,7 +59,12 @@ class ResponseGenerationService:
             self._generate_draft_observed(email, extraction, hits),
         )
 
-    @observe(name="draft_response", as_type="generation")  # type: ignore[misc]
+    @observe(
+        name="draft_response",
+        as_type="generation",
+        capture_input=False,
+        capture_output=False,
+    )  # type: ignore[misc]
     def _generate_draft_observed(
         self,
         email: StoredEmail,

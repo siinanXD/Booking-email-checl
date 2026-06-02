@@ -6,6 +6,7 @@ import sys
 
 
 def main() -> int:
+    """Run the command workflow."""
     try:
         from config.settings import get_settings
         from repositories.mongo import ping

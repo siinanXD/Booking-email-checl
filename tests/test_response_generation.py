@@ -18,6 +18,7 @@ def test_generate_draft_uses_mock(
     entity_repo,
     email_repo,
 ) -> None:
+    """Verify generate draft uses mock."""
     email = StoredEmail(
         message_id="draft-1",
         from_address="g@test.com",

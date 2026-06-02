@@ -31,6 +31,7 @@ class ExtractionService:
         alerts: AlertService | None = None,
         mail_cost: MailCostTracker | None = None,
     ) -> None:
+        """Initialize the instance with its dependencies."""
         self._llm = llm
         self._model = model
         self._tracing = tracing
@@ -45,7 +46,12 @@ class ExtractionService:
         """Extrahiert Felder; setzt intent falls übergeben."""
         return cast(BookingExtraction, self._extract_observed(email, intent))
 
-    @observe(name="extract", as_type="generation")  # type: ignore[misc]
+    @observe(
+        name="extract",
+        as_type="generation",
+        capture_input=False,
+        capture_output=False,
+    )  # type: ignore[misc]
     def _extract_observed(
         self,
         email: StoredEmail,

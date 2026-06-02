@@ -7,6 +7,7 @@ from observability.alerts import AlertService, AlertThresholds
 
 
 def test_high_cost_alert(caplog) -> None:
+    """Verify high cost alert."""
     svc = AlertService(thresholds=AlertThresholds(max_cost_per_mail_usd=0.1))
     svc.check_cost_per_mail(0.5, "corr-alert-1")
     assert any("high_cost" in r.message for r in caplog.records)
@@ -27,6 +28,7 @@ def test_no_grounding_alert_when_grounded(caplog) -> None:
 
 
 def test_grounding_alert_when_not_grounded(caplog) -> None:
+    """Verify grounding alert when not grounded."""
     svc = AlertService()
     draft = GeneratedResponse(
         correlation_id="corr-ground-bad",

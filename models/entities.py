@@ -19,10 +19,12 @@ class Guest(BaseModel):
     created_at: datetime | None = None
 
     def to_mongo(self) -> dict[str, Any]:
+        """Execute the operation."""
         return self.model_dump(mode="json")
 
     @classmethod
     def from_mongo(cls, doc: dict[str, Any]) -> Guest:
+        """Execute the operation."""
         payload = {k: v for k, v in doc.items() if k != "_id"}
         if "_id" in doc:
             payload["guest_id"] = str(doc["_id"])
@@ -37,10 +39,12 @@ class Property(BaseModel):
     platform: str | None = None
 
     def to_mongo(self) -> dict[str, Any]:
+        """Execute the operation."""
         return self.model_dump(mode="json")
 
     @classmethod
     def from_mongo(cls, doc: dict[str, Any]) -> Property:
+        """Execute the operation."""
         payload = {k: v for k, v in doc.items() if k != "_id"}
         if "_id" in doc:
             payload["property_id"] = str(doc["_id"])
@@ -64,10 +68,12 @@ class Reservation(BaseModel):
     correlation_id: str | None = None
 
     def to_mongo(self) -> dict[str, Any]:
+        """Execute the operation."""
         return self.model_dump(mode="json")
 
     @classmethod
     def from_mongo(cls, doc: dict[str, Any]) -> Reservation:
+        """Execute the operation."""
         payload = {k: v for k, v in doc.items() if k != "_id"}
         if "_id" in doc:
             payload["reservation_id"] = str(doc["_id"])
@@ -83,9 +89,11 @@ class Message(BaseModel):
     reservation_id: str | None = None
 
     def to_mongo(self) -> dict[str, Any]:
+        """Execute the operation."""
         return self.model_dump(mode="json")
 
     @classmethod
     def from_mongo(cls, doc: dict[str, Any]) -> Message:
+        """Execute the operation."""
         payload = {k: v for k, v in doc.items() if k != "_id"}
         return cls.model_validate(payload)

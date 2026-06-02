@@ -45,7 +45,7 @@ für OpenAI und Langfuse.
 Outlook-/Graph-Ingestion (optional): siehe `docs/OUTLOOK.md` und
 `python scripts/run_outlook_ingest.py`.
 
-Langfuse (`@observe`, `langfuse.openai`): siehe `docs/LANGFUSE.md`.
+Langfuse (`@observe` ohne Rohprompt-Capture): siehe `docs/LANGFUSE.md`.
 
 ## Konfiguration (Environment-Variablen)
 

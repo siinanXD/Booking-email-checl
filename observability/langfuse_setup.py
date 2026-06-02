@@ -1,4 +1,4 @@
-"""Langfuse-Konfiguration (Muster wie langfuse.openai + @observe, SDK v2)."""
+"""Langfuse-Konfiguration für PII-arme @observe-Traces mit SDK v2."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ def tracing_enabled(settings: Settings) -> bool:
 
 
 def configure_langfuse_env(settings: Settings) -> bool:
-    """Setzt LANGFUSE_* für OpenAI-Wrapper und @observe (idempotent)."""
+    """Setze LANGFUSE_* für @observe-Tracing (idempotent)."""
     if not tracing_enabled(settings):
         os.environ["LANGFUSE_TRACING_ENABLED"] = "false"
         return False

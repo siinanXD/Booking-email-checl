@@ -11,6 +11,7 @@ from tests.mocks import MockLLM
 
 
 def test_extract_parses_booking_number() -> None:
+    """Verify extract parses booking number."""
     email = StoredEmail(
         message_id="ext-1",
         from_address="g@airbnb.com",

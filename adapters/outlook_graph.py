@@ -124,6 +124,7 @@ class DelegatedAuth:
         authority: str,
         cache_path: Path,
     ) -> None:
+        """Initialize the instance with its dependencies."""
         self._client_id = client_id
         self._authority = _authority_host(authority)
         self._cache_path = cache_path
@@ -132,6 +133,7 @@ class DelegatedAuth:
             self._cache.deserialize(cache_path.read_text(encoding="utf-8"))
 
     def get_token(self) -> str:
+        """Return the requested value."""
         app = msal.PublicClientApplication(
             self._client_id,
             authority=self._authority,
@@ -178,11 +180,13 @@ class ApplicationAuth:
         client_id: str,
         client_secret: str,
     ) -> None:
+        """Initialize the instance with its dependencies."""
         self._tenant_id = tenant_id
         self._client_id = client_id
         self._client_secret = client_secret
 
     def get_token(self) -> str:
+        """Return the requested value."""
         authority = f"https://login.microsoftonline.com/{self._tenant_id}"
         app = msal.ConfidentialClientApplication(
             self._client_id,
@@ -206,6 +210,7 @@ class OutlookGraphClient:
         mailbox: str | None,
         token_provider: DelegatedAuth | ApplicationAuth,
     ) -> None:
+        """Initialize the instance with its dependencies."""
         mode = auth_mode.strip().lower()
         if mode not in ("delegated", "application"):
             msg = f"Unsupported OUTLOOK_AUTH_MODE: {auth_mode}"
@@ -217,6 +222,7 @@ class OutlookGraphClient:
 
     @classmethod
     def from_settings(cls, settings: Settings) -> OutlookGraphClient:
+        """Execute the operation."""
         if not settings.azure_client_id:
             msg = "AZURE_CLIENT_ID is required for Outlook ingestion"
             raise ValueError(msg)
@@ -313,11 +319,13 @@ class OutlookGraphClient:
         return self.list_inbox_messages(top, unread_only=True)
 
     def mark_message_read(self, graph_id: str) -> None:
+        """Mark the target resource."""
         prefix = self._resource_prefix()
         path = f"{prefix}/messages/{quote(graph_id, safe='')}"
         self._request("PATCH", path, body={"isRead": True})
 
     def move_message_to_folder(self, graph_id: str, folder_display_name: str) -> None:
+        """Move the target resource."""
         folder_id = self._resolve_folder_id(folder_display_name)
         prefix = self._resource_prefix()
         path = f"{prefix}/messages/{quote(graph_id, safe='')}/move"

@@ -29,14 +29,17 @@ class CaseExtractionResult:
 
     @property
     def matched_fields(self) -> int:
+        """Execute the operation."""
         return sum(1 for r in self.field_results if r.matched)
 
     @property
     def total_fields(self) -> int:
+        """Return the total value."""
         return len(self.field_results)
 
     @property
     def case_passed(self) -> bool:
+        """Execute the operation."""
         return self.total_fields > 0 and self.matched_fields == self.total_fields
 
 
@@ -48,28 +51,34 @@ class ExtractionEvalReport:
 
     @property
     def cases_with_expectation(self) -> int:
+        """Execute the operation."""
         return len(self.case_results)
 
     @property
     def cases_passed(self) -> int:
+        """Execute the operation."""
         return sum(1 for c in self.case_results if c.case_passed)
 
     @property
     def field_matched(self) -> int:
+        """Execute the operation."""
         return sum(c.matched_fields for c in self.case_results)
 
     @property
     def field_total(self) -> int:
+        """Execute the operation."""
         return sum(c.total_fields for c in self.case_results)
 
     @property
     def case_hit_rate(self) -> float:
+        """Execute the operation."""
         if self.cases_with_expectation == 0:
             return 1.0
         return self.cases_passed / self.cases_with_expectation
 
     @property
     def field_accuracy(self) -> float:
+        """Execute the operation."""
         if self.field_total == 0:
             return 1.0
         return self.field_matched / self.field_total

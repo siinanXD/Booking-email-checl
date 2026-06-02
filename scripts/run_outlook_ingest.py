@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 
 def main() -> int:
+    """Run the command workflow."""
     settings = get_settings()
     mode = settings.llm_mode.strip().lower()
     logger.info(

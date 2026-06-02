@@ -15,4 +15,5 @@ class LLMCompletion:
 
     @property
     def total_tokens(self) -> int:
+        """Return the total value."""
         return self.prompt_tokens + self.completion_tokens

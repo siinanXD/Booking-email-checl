@@ -14,6 +14,7 @@ def test_find_reservations_by_guest_email(
     entity_repo,
     email_repo,
 ) -> None:
+    """Verify find reservations by guest email."""
     guest = Guest(guest_id="g1", email="guest@test.com", name="Max")
     entity_repo.upsert_guest(guest)
     entity_repo.upsert_reservation(

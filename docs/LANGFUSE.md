@@ -1,8 +1,8 @@
 # Langfuse-Observability
 
-Das Projekt folgt dem Muster aus
-[llm_observation.py (Gist)](https://gist.github.com/Chafficui/d6313f4845048b2d9c45fdec5bf7f735),
-angepasst an **Langfuse SDK 2.x** (`langfuse>=2.50,<3`).
+Das Projekt nutzt **Langfuse SDK 2.x** (`langfuse==2.60.10`) bewusst ohne
+automatischen Rohprompt-Capture. Mailinhalte können PII enthalten und werden als
+nicht vertrauenswürdige Daten behandelt.
 
 ## Aktivierung
 
@@ -18,15 +18,15 @@ LANGFUSE_HOST=https://cloud.langfuse.com
 
 ## Was passiert im Code
 
-| Gist (v3-Stil) | Dieses Repo (v2) |
-|----------------|------------------|
-| `from langfuse.openai import openai` | `OpenAI` / `EmbeddingClient` aus `langfuse.openai` bei `LLM_MODE=live` |
-| `@observe` | `langfuse.decorators.observe` auf Workflow + classify/extract/draft |
-| `langfuse.update_current_trace(session_id=...)` | `langfuse_context.update_current_trace(session_id=correlation_id)` |
+| Langfuse-Funktion | Dieses Repo |
+|-------------------|-------------|
+| `@observe` | `capture_input=False`, `capture_output=False` auf Workflow + classify/extract/draft/embed |
+| Trace-Session | `langfuse_context.update_current_trace(session_id=correlation_id)` |
+| Trace-Metadaten | Nur maskierte IDs und technische Felder |
 | Tags nach Klassifikation | `tags=[intent.value]` auf dem Trace |
 
 - **`LLM_MODE=mock`:** Spans/Generations über `@observe`, **keine** OpenAI-Kosten; Modellname aus `.env` nur in Metadaten.
-- **`LLM_MODE=live`:** Jeder Chat-/Embedding-Aufruf erscheint in Langfuse mit Tokens und Modell (vom SDK erkannt).
+- **`LLM_MODE=live`:** Chat-/Embedding-Aufrufe laufen über das OpenAI SDK; Langfuse sieht nur explizit gesetzte, PII-arme Trace-Daten.
 
 ## Sessions in der UI
 
@@ -34,4 +34,6 @@ Alle Schritte einer Mail teilen `session_id = correlation_id` (Mail-Thread). In 
 
 ## Embeddings
 
-`IndexingService` nutzt bei Live+Tracing ebenfalls `langfuse.openai.OpenAI` → Generationen für `text-embedding-3-small` sichtbar.
+`IndexingService` erfasst keine Embedding-Rohtexte in Langfuse. Modellname und
+Kosten können über explizite Metadaten/Cost-Tracking ergänzt werden, ohne den
+Mailinhalt zu senden.

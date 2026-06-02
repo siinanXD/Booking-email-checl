@@ -14,6 +14,7 @@ class SimilaritySearchService:
         embedding_repo: EmbeddingRepository,
         embed_client: EmbeddingFn,
     ) -> None:
+        """Initialize the instance with its dependencies."""
         self._repo = embedding_repo
         self._embed = embed_client
 

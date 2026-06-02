@@ -18,6 +18,7 @@ class MailCostTracker:
         *,
         tracing: bool = False,
     ) -> None:
+        """Initialize the instance with its dependencies."""
         self._cost_per_1k = cost_per_1k_tokens_usd
         self._alerts = alerts
         self._tracing = tracing

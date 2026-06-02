@@ -17,6 +17,7 @@ class EmailRepository:
     COLLECTION = "emails"
 
     def __init__(self, db: Db) -> None:
+        """Initialize the instance with its dependencies."""
         self._col: Collection[dict[str, Any]] = db[self.COLLECTION]
 
     def upsert_by_message_id(self, email: StoredEmail) -> StoredEmail:

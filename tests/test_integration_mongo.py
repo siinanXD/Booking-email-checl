@@ -12,6 +12,7 @@ from repositories.mongo import ping
 
 @pytest.mark.integration
 def test_mongo_ping() -> None:
+    """Verify mongo ping."""
     uri = os.environ.get("MONGODB_URI")
     if not uri:
         pytest.skip("MONGODB_URI not set")

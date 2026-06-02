@@ -44,6 +44,7 @@ class EmailWorkflow:
         *,
         tracing: bool = False,
     ) -> None:
+        """Initialize the instance with its dependencies."""
         self._ingestion = ingestion
         self._classification = classification
         self._extraction = extraction
@@ -101,7 +102,7 @@ class EmailWorkflow:
         """Startet Workflow; stoppt vor human_review wenn nicht discarded."""
         return cast(dict[str, Any], self._run_observed(email_input, thread_id))
 
-    @observe(name="mail_processed")  # type: ignore[misc]
+    @observe(name="mail_processed", capture_input=False, capture_output=False)  # type: ignore[misc]
     def _run_observed(
         self,
         email_input: Any,
@@ -125,16 +126,16 @@ class EmailWorkflow:
     ) -> dict[str, Any]:
         """Setzt Workflow nach Freigabe fort (gleiche thread_id)."""
         config = {"configurable": {"thread_id": thread_id}}
+        review = ReviewStatus(
+            correlation_id=thread_id,
+            status="approved",
+            approved_body=approved_body,
+        )
+        self._app.update_state(config, {"review": review}, as_node="draft_response")
         result_dict: dict[str, Any] | None = None
         try:
             result_dict = dict(self._app.invoke(None, config=config))
-            out = result_dict
-            out["review"] = ReviewStatus(
-                correlation_id=thread_id,
-                status="approved",
-                approved_body=approved_body,
-            )
-            return out
+            return result_dict
         finally:
             if self._mail_cost is not None:
                 self._mail_cost.finalize(thread_id)
@@ -296,13 +297,17 @@ class EmailWorkflow:
 
     def _node_human_review(self, state: EmailWorkflowState) -> EmailWorkflowState:
         email = state["email"]
-        review = ReviewStatus(
+        review = state.get("review") or ReviewStatus(
             correlation_id=email.correlation_id,
             status="pending",
         )
         self._email_repo.update_processing_state(
             email.message_id,
-            ProcessingState.PENDING_REVIEW,
+            (
+                ProcessingState.APPROVED
+                if review.status == "approved"
+                else ProcessingState.PENDING_REVIEW
+            ),
         )
         return {"review": review}
 
