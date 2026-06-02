@@ -1,6 +1,48 @@
 # CHANGELOG
 
 
+## v0.5.1 (2026-06-02)
+
+### Bug Fixes
+
+- **config**: Validate mongodb_uri format
+  ([`250984c`](https://github.com/siinanXD/Booking-email-checl/commit/250984c0db40ab69e57a284cee7d22424548384b))
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+- **indexing**: Thread-backed asyncio.run fallback
+  ([`31dd81c`](https://github.com/siinanXD/Booking-email-checl/commit/31dd81c78e50c6e178ae421a589fda4dfda713b3))
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+- **langfuse**: Log mail cost on active trace
+  ([`c79f679`](https://github.com/siinanXD/Booking-email-checl/commit/c79f679ad2633f42ce1ed1b0b52422b11b4b974e))
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+- **mongo**: Singleton client with timeout
+  ([`38f852e`](https://github.com/siinanXD/Booking-email-checl/commit/38f852e06ea8ee591078219fb69f32426c639877))
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+- **triage**: Ignore platform hint on unknown domain
+  ([`7e3de9c`](https://github.com/siinanXD/Booking-email-checl/commit/7e3de9c2da8df37eb2aff8bb61644b76b0f178e5))
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+### Chores
+
+- **deps**: Align ruff to 0.9.6
+  ([`c03c004`](https://github.com/siinanXD/Booking-email-checl/commit/c03c0043e051b500927c6e3bd97ef3f70be2bdc8))
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+- **models**: Remove duplicate RetrievalResult model
+  ([`0df9679`](https://github.com/siinanXD/Booking-email-checl/commit/0df9679cdf4fdeb30b3bfce0def16c72ccd7f5d7))
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+
 ## v0.5.0 (2026-06-02)
 
 ### Features
