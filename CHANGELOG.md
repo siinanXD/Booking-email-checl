@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.5.0 (2026-06-02)
+
+### Features
+
+- Outlook OAuth onboarding, README refresh, and CI hygiene
+  ([`bfffeae`](https://github.com/siinanXD/Booking-email-checl/commit/bfffeaeb79c6877dced8884491932891b371b4a7))
+
+Add delegated Outlook OAuth flow with mail sync/reprocess APIs, update README with architecture
+  SVGs, split booking mail counters for the 300-line rule, and fix lint/import ordering for green
+  CI.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+
 ## v0.4.1 (2026-06-02)
 
 ### Bug Fixes
