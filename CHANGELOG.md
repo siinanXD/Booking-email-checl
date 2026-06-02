@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.2.1 (2026-06-02)
+
+### Bug Fixes
+
+- **auth**: Persist JWT blocklist in Mongo for multi-worker logout
+  ([`a2dccb5`](https://github.com/siinanXD/Booking-email-checl/commit/a2dccb507286c3aaadc69990a02dafd8642c2a19))
+
+Logout tokens are stored in MongoDB with TTL so revocation works across Gunicorn workers. Fixes MyPy
+  CI errors, Docker admin seed failures, demo credentials in .env.example, and missing docstrings.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+
 ## v0.2.0 (2026-06-02)
 
 ### Bug Fixes
