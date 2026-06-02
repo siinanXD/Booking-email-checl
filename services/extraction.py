@@ -4,17 +4,19 @@ from __future__ import annotations
 
 import json
 from datetime import date, datetime
-from typing import Any
+from typing import Any, cast
+
+from langfuse.decorators import langfuse_context, observe
 
 from models.email import StoredEmail
 from observability.alerts import AlertService
-from observability.langfuse_client import LangfuseTracer
 from observability.mail_cost import MailCostTracker
 from schemas.booking.extraction import BookingExtraction
 from schemas.booking.taxonomy import BookingIntent
 from services.classification import LLMClient
 from services.llm_errors import LLM_PIPELINE_ERRORS, notify_llm_failure
 from services.prompt_loader import format_prompt_with_few_shots
+from utils.pii import mask_pii
 
 
 class ExtractionService:
@@ -24,13 +26,14 @@ class ExtractionService:
         self,
         llm: LLMClient,
         model: str,
-        tracer: LangfuseTracer | None = None,
+        *,
+        tracing: bool = False,
         alerts: AlertService | None = None,
         mail_cost: MailCostTracker | None = None,
     ) -> None:
         self._llm = llm
         self._model = model
-        self._tracer = tracer or LangfuseTracer(enabled=False)
+        self._tracing = tracing
         self._alerts = alerts
         self._mail_cost = mail_cost
 
@@ -40,6 +43,24 @@ class ExtractionService:
         intent: BookingIntent | None = None,
     ) -> BookingExtraction:
         """Extrahiert Felder; setzt intent falls übergeben."""
+        return cast(BookingExtraction, self._extract_observed(email, intent))
+
+    @observe(name="extract", as_type="generation")  # type: ignore[misc]
+    def _extract_observed(
+        self,
+        email: StoredEmail,
+        intent: BookingIntent | None,
+    ) -> BookingExtraction:
+        if self._tracing:
+            langfuse_context.update_current_trace(
+                session_id=email.correlation_id,
+                metadata={
+                    "message_id": mask_pii(email.message_id),
+                    "step": "extract",
+                    "intent": intent.value if intent else None,
+                },
+            )
+            langfuse_context.update_current_observation(model=self._model)
         prompt = format_prompt_with_few_shots(
             "booking/extract.md",
             "booking/examples/extract_examples.json",
@@ -49,21 +70,9 @@ class ExtractionService:
         )
         data: dict[str, Any]
         try:
-            with self._tracer.trace("extract", email.correlation_id) as trace_id:
-                completion = self._llm.complete(prompt, self._model)
-                self._tracer.log_generation(
-                    trace_id,
-                    "extract",
-                    self._model,
-                    prompt,
-                    completion.text,
-                    usage={
-                        "prompt_tokens": completion.prompt_tokens,
-                        "completion_tokens": completion.completion_tokens,
-                    },
-                )
-                if self._mail_cost is not None:
-                    self._mail_cost.add(email.correlation_id, completion)
+            completion = self._llm.complete(prompt, self._model)
+            if self._mail_cost is not None:
+                self._mail_cost.add(email.correlation_id, completion)
             data = self._parse_json(completion.text)
         except LLM_PIPELINE_ERRORS as exc:
             notify_llm_failure(

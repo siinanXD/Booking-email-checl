@@ -3,9 +3,18 @@
 from __future__ import annotations
 
 import asyncio
+from typing import Protocol
+
+from langfuse.decorators import langfuse_context, observe
 
 from repositories.embedding_repository import EmbeddingRepository
 from schemas.booking.extraction import BookingExtraction
+
+
+class EmbeddingFn(Protocol):
+    """OpenAI- oder Mock-Embeddings."""
+
+    def embed(self, text: str) -> list[float]: ...
 
 
 def chunk_text(body: str, max_chunks: int = 3) -> list[str]:
@@ -19,15 +28,29 @@ def chunk_text(body: str, max_chunks: int = 3) -> list[str]:
 
 
 class EmbeddingClient:
-    """OpenAI Embeddings."""
+    """OpenAI Embeddings (optional mit Langfuse-Auto-Trace)."""
 
-    def __init__(self, api_key: str, model: str) -> None:
-        from openai import OpenAI
+    def __init__(
+        self,
+        api_key: str,
+        model: str,
+        *,
+        use_langfuse: bool = False,
+        tracing: bool = False,
+    ) -> None:
+        self._tracing = tracing
+        if use_langfuse:
+            from langfuse.openai import OpenAI
+        else:
+            from openai import OpenAI
 
         self._client = OpenAI(api_key=api_key)
         self._model = model
 
+    @observe(name="embed", as_type="generation")  # type: ignore[misc]
     def embed(self, text: str) -> list[float]:
+        if self._tracing:
+            langfuse_context.update_current_observation(model=self._model)
         response = self._client.embeddings.create(
             input=text,
             model=self._model,
@@ -41,7 +64,7 @@ class IndexingService:
     def __init__(
         self,
         embedding_repo: EmbeddingRepository,
-        embed_client: EmbeddingClient,
+        embed_client: EmbeddingFn,
     ) -> None:
         self._repo = embedding_repo
         self._embed = embed_client

@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+.outlook_token_cache.json
 
 # Python
 .venv/

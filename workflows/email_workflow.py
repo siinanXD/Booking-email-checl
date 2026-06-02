@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
+from langfuse.decorators import langfuse_context, observe
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 
@@ -40,6 +41,8 @@ class EmailWorkflow:
         indexing: IndexingService | None = None,
         alerts: AlertService | None = None,
         mail_cost: MailCostTracker | None = None,
+        *,
+        tracing: bool = False,
     ) -> None:
         self._ingestion = ingestion
         self._classification = classification
@@ -52,6 +55,7 @@ class EmailWorkflow:
         self._indexing = indexing
         self._alerts = alerts
         self._mail_cost = mail_cost
+        self._tracing = tracing
         self._graph = self._build()
         self._checkpointer = MemorySaver()
         self._app = self._graph.compile(
@@ -95,6 +99,16 @@ class EmailWorkflow:
         thread_id: str,
     ) -> dict[str, Any]:
         """Startet Workflow; stoppt vor human_review wenn nicht discarded."""
+        return cast(dict[str, Any], self._run_observed(email_input, thread_id))
+
+    @observe(name="mail_processed")  # type: ignore[misc]
+    def _run_observed(
+        self,
+        email_input: Any,
+        thread_id: str,
+    ) -> dict[str, Any]:
+        if self._tracing:
+            langfuse_context.update_current_trace(session_id=thread_id)
         config = {"configurable": {"thread_id": thread_id}}
         initial: EmailWorkflowState = {"email": email_input}
         result_dict: dict[str, Any] | None = None

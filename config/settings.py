@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     )
 
     openai_api_key: str = Field(alias="OPENAI_API_KEY")
+    # live = OpenAI; mock = Dev ohne API-Kosten (Platzhalter-Antworten)
+    llm_mode: str = Field(default="live", alias="LLM_MODE")
     mongodb_uri: str = Field(alias="MONGODB_URI")
     mongodb_db_name: str = Field(default="ai_email", alias="MONGODB_DB_NAME")
 
@@ -48,6 +50,27 @@ class Settings(BaseSettings):
     langgraph_checkpoint_uri: str | None = Field(
         default=None,
         alias="LANGGRAPH_CHECKPOINT_URI",
+    )
+
+    azure_tenant_id: str | None = Field(default=None, alias="AZURE_TENANT_ID")
+    azure_client_id: str | None = Field(default=None, alias="AZURE_CLIENT_ID")
+    azure_client_secret: str | None = Field(default=None, alias="AZURE_CLIENT_SECRET")
+    azure_authority: str = Field(default="common", alias="AZURE_AUTHORITY")
+    outlook_mailbox: str | None = Field(default=None, alias="OUTLOOK_MAILBOX")
+    outlook_auth_mode: str = Field(default="delegated", alias="OUTLOOK_AUTH_MODE")
+    outlook_token_cache_path: str = Field(
+        default=".outlook_token_cache.json",
+        alias="OUTLOOK_TOKEN_CACHE_PATH",
+    )
+    outlook_post_action: str = Field(default="none", alias="OUTLOOK_POST_ACTION")
+    outlook_processed_folder: str | None = Field(
+        default=None,
+        alias="OUTLOOK_PROCESSED_FOLDER",
+    )
+    outlook_fetch_max: int = Field(default=100, alias="OUTLOOK_FETCH_MAX")
+    outlook_fetch_unread_only: bool = Field(
+        default=False,
+        alias="OUTLOOK_FETCH_UNREAD_ONLY",
     )
 
 

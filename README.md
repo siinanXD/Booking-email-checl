@@ -42,6 +42,11 @@ für OpenAI und Langfuse.
    `pre-commit install && pre-commit install --hook-type commit-msg`
 5. Tests laufen lassen: `pytest -q`.
 
+Outlook-/Graph-Ingestion (optional): siehe `docs/OUTLOOK.md` und
+`python scripts/run_outlook_ingest.py`.
+
+Langfuse (`@observe`, `langfuse.openai`): siehe `docs/LANGFUSE.md`.
+
 ## Konfiguration (Environment-Variablen)
 
 Alle Secrets ausschließlich über Umgebungsvariablen, nie im Code. Erwartet

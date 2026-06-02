@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from repositories.embedding_repository import EmbeddingRepository
-from services.indexing import EmbeddingClient
+from services.indexing import EmbeddingFn
 
 
 class SimilaritySearchService:
@@ -12,7 +12,7 @@ class SimilaritySearchService:
     def __init__(
         self,
         embedding_repo: EmbeddingRepository,
-        embed_client: EmbeddingClient,
+        embed_client: EmbeddingFn,
     ) -> None:
         self._repo = embedding_repo
         self._embed = embed_client

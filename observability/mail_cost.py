@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from langfuse.decorators import langfuse_context
+
 from observability.alerts import AlertService
-from observability.langfuse_client import LangfuseTracer
 from services.llm_types import LLMCompletion
 
 
@@ -14,11 +15,12 @@ class MailCostTracker:
         self,
         cost_per_1k_tokens_usd: float = 0.002,
         alerts: AlertService | None = None,
-        tracer: LangfuseTracer | None = None,
+        *,
+        tracing: bool = False,
     ) -> None:
         self._cost_per_1k = cost_per_1k_tokens_usd
         self._alerts = alerts
-        self._tracer = tracer
+        self._tracing = tracing
         self._prompt_tokens: dict[str, int] = {}
         self._completion_tokens: dict[str, int] = {}
 
@@ -43,7 +45,7 @@ class MailCostTracker:
         return (self.total_tokens(correlation_id) / 1000.0) * self._cost_per_1k
 
     def finalize(self, correlation_id: str) -> float:
-        """Meldet Gesamtkosten (Alert + Langfuse); leert den Akku."""
+        """Meldet Gesamtkosten (Alert + Langfuse-Trace-Metadaten); leert den Akku."""
         cost = self.cost_usd(correlation_id)
         usage = {
             "prompt_tokens": self._prompt_tokens.get(correlation_id, 0),
@@ -51,8 +53,11 @@ class MailCostTracker:
             "total_tokens": self.total_tokens(correlation_id),
             "cost_usd": cost,
         }
-        if self._tracer is not None:
-            self._tracer.log_mail_cost(correlation_id, usage)
+        if self._tracing and usage["total_tokens"] > 0:
+            langfuse_context.update_current_trace(
+                session_id=correlation_id,
+                metadata={"mail_cost": usage},
+            )
         if self._alerts is not None and usage["total_tokens"] > 0:
             self._alerts.check_cost_per_mail(cost, correlation_id)
         self._prompt_tokens.pop(correlation_id, None)

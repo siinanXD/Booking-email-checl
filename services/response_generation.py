@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import json
+from typing import cast
+
+from langfuse.decorators import langfuse_context, observe
 
 from models.email import StoredEmail
 from models.response import GeneratedResponse
 from observability.alerts import AlertService
-from observability.langfuse_client import LangfuseTracer
 from observability.mail_cost import MailCostTracker
 from schemas.booking.extraction import BookingExtraction
 from services.classification import LLMClient
@@ -15,6 +17,7 @@ from services.grounding import GroundingService
 from services.llm_errors import LLM_PIPELINE_ERRORS, notify_llm_failure
 from services.prompt_loader import format_prompt
 from services.retrieval import RetrievalHits, RetrievalService
+from utils.pii import mask_pii
 
 _FALLBACK_DRAFT_BODY = (
     "[Automatischer Entwurf fehlgeschlagen. Bitte manuell antworten.]"
@@ -30,7 +33,8 @@ class ResponseGenerationService:
         model: str,
         retrieval: RetrievalService,
         grounding: GroundingService | None = None,
-        tracer: LangfuseTracer | None = None,
+        *,
+        tracing: bool = False,
         alerts: AlertService | None = None,
         mail_cost: MailCostTracker | None = None,
     ) -> None:
@@ -38,7 +42,7 @@ class ResponseGenerationService:
         self._model = model
         self._retrieval = retrieval
         self._grounding = grounding or GroundingService()
-        self._tracer = tracer or LangfuseTracer(enabled=False)
+        self._tracing = tracing
         self._alerts = alerts
         self._mail_cost = mail_cost
 
@@ -49,6 +53,27 @@ class ResponseGenerationService:
         hits: RetrievalHits | None = None,
     ) -> GeneratedResponse:
         """Erstellt Entwurf und prüft Grounding."""
+        return cast(
+            GeneratedResponse,
+            self._generate_draft_observed(email, extraction, hits),
+        )
+
+    @observe(name="draft_response", as_type="generation")  # type: ignore[misc]
+    def _generate_draft_observed(
+        self,
+        email: StoredEmail,
+        extraction: BookingExtraction,
+        hits: RetrievalHits | None,
+    ) -> GeneratedResponse:
+        if self._tracing:
+            langfuse_context.update_current_trace(
+                session_id=email.correlation_id,
+                metadata={
+                    "message_id": mask_pii(email.message_id),
+                    "step": "draft",
+                },
+            )
+            langfuse_context.update_current_observation(model=self._model)
         if hits is None:
             hits = self._retrieval.retrieve(email, extraction)
         facts = self._facts_json(hits, extraction)
@@ -58,21 +83,9 @@ class ResponseGenerationService:
             body=email.body_text,
         )
         try:
-            with self._tracer.trace("draft_response", email.correlation_id) as trace_id:
-                completion = self._llm.complete(prompt, self._model)
-                self._tracer.log_generation(
-                    trace_id,
-                    "draft",
-                    self._model,
-                    prompt,
-                    completion.text,
-                    usage={
-                        "prompt_tokens": completion.prompt_tokens,
-                        "completion_tokens": completion.completion_tokens,
-                    },
-                )
-                if self._mail_cost is not None:
-                    self._mail_cost.add(email.correlation_id, completion)
+            completion = self._llm.complete(prompt, self._model)
+            if self._mail_cost is not None:
+                self._mail_cost.add(email.correlation_id, completion)
             draft = GeneratedResponse(
                 correlation_id=email.correlation_id,
                 body=completion.text,
