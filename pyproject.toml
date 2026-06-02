@@ -26,6 +26,25 @@ dependencies = [
     "tenacity>=8.5,<9",                 # Retry/Backoff für externe Aufrufe
 ]
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = [
+    "config*",
+    "models*",
+    "routers*",
+    "prompts*",
+    "schemas*",
+    "services*",
+    "workflows*",
+    "repositories*",
+    "observability*",
+    "utils*",
+]
+exclude = ["tests*", "docs*", ".cursor*", ".github*"]
+
+[tool.setuptools.package-data]
+prompts = ["**/*.md", "**/*.json"]
+
 [project.optional-dependencies]
 # Dev-Tooling exakt auf die Versionen in .pre-commit-config.yaml abgestimmt,
 # damit lokal, in pre-commit und in der CI dasselbe läuft.
