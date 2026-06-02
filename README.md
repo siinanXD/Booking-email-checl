@@ -80,6 +80,41 @@ Optional: `pip install langgraph-checkpoint-mongodb==0.1.4` für durable LangGra
 
 API: `GET /health`, `POST /api/auth/login`, geschützte Routes unter `/api/dashboard`, `/api/emails`, `/api/review`, `/api/costs`.
 
+### React-Dashboard (Dev)
+
+Zwei Terminals: Flask (Port 5000) und Vite (Port 5173). Vite proxied `/api` und `/health` zum Backend.
+
+```powershell
+# Terminal 1 – Backend (aus Projektroot, .venv aktiv)
+python scripts/seed_admin.py
+flask --app web.app:create_app run --debug --port 5000
+
+# Terminal 2 – Frontend
+cd frontend
+npm install
+npm run dev
+```
+
+Browser: `http://localhost:5173` — Login mit `ADMIN_EMAIL` / `ADMIN_PASSWORD` aus `.env` (nach `seed_admin.py`).
+
+Produktion: `cd frontend && npm run build` erzeugt `frontend/dist/`; Flask liefert das Bundle aus, wenn `FLASK_ENV=production` und der Ordner existiert.
+
+Frontend-Tests: `cd frontend && npm test`.
+
+### Production (Docker + Gunicorn)
+
+Multi-Stage-Image: baut das React-Bundle, startet Flask über Gunicorn auf Port **8000** (SPA + API aus einem Container).
+
+```powershell
+# .env mit MONGODB_URI, OPENAI_*, LANGFUSE_*, FLASK_SECRET_KEY, ADMIN_* usw.
+docker compose up --build
+```
+
+- UI + API: `http://localhost:8000`
+- Optionaler MongoDB-Service in `docker-compose.yml` (Default-URI `mongodb://mongo:27017/email_platform`). Für Atlas nur `MONGODB_URI` in `.env` setzen und den `mongo`-Service entfernen oder nicht starten.
+- Beim Start wird `scripts/seed_admin.py` ausgeführt, wenn `ADMIN_EMAIL` und `ADMIN_PASSWORD` gesetzt sind.
+- Lokal ohne Docker: `pip install -e ".[prod]"` und `gunicorn -c gunicorn.conf.py wsgi:app` (nach `npm run build` im Ordner `frontend/`).
+
 ## Konfiguration (Environment-Variablen)
 
 Alle Secrets ausschließlich über Umgebungsvariablen, nie im Code. Erwartet

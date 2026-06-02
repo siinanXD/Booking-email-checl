@@ -1,0 +1,37 @@
+import { Badge } from "@/components/ui/Badge";
+import type { EmailListItem } from "@/types/api";
+
+export function EmailRow({
+  item,
+  onClick,
+}: {
+  item: EmailListItem;
+  onClick?: () => void;
+}) {
+  const tone =
+    item.review_status === "pending" || item.processing_state === "pending_review"
+      ? "pending"
+      : item.processing_state;
+
+  return (
+    <tr
+      className="cursor-pointer border-b border-slate-100 hover:bg-slate-50"
+      onClick={onClick}
+    >
+      <td className="px-4 py-3 text-sm text-slate-600">
+        {item.received_at
+          ? new Date(item.received_at).toLocaleString("de-DE")
+          : "—"}
+      </td>
+      <td className="px-4 py-3 text-sm">{item.from_address}</td>
+      <td className="px-4 py-3 text-sm font-medium">{item.booking_number ?? "—"}</td>
+      <td className="px-4 py-3 text-sm">{item.platform ?? "—"}</td>
+      <td className="px-4 py-3">
+        <Badge label={item.intent ?? item.processing_state} tone={tone} />
+      </td>
+      <td className="max-w-xs truncate px-4 py-3 text-sm text-slate-600">
+        {item.subject}
+      </td>
+    </tr>
+  );
+}

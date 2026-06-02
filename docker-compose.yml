@@ -1,0 +1,33 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      FLASK_ENV: production
+      FRONTEND_BUILD_DIR: frontend/dist
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8000}
+      MONGODB_URI: ${MONGODB_URI:-mongodb://mongo:27017/email_platform}
+    depends_on:
+      mongo:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 8
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  mongo_data:

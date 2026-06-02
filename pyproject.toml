@@ -26,6 +26,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+prod = [
+    "gunicorn==23.0.0",
+]
 # Dev-Tooling exakt auf die Versionen in .pre-commit-config.yaml abgestimmt,
 # damit lokal, in pre-commit und in der CI dasselbe läuft.
 dev = [
