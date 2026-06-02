@@ -68,10 +68,18 @@ Dann laufen Klassifikation, Extraktion, Embeddings und Draft mit **Mock-Antworte
 ```powershell
 cd C:\Users\sinan\CursorProjekt\Booking-email-checl
 py -3.11 -m venv .venv
-.\.venv\Scripts\activate
+.\.venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
 python scripts/run_outlook_ingest.py
 ```
+
+Ohne `Activate` (nutzt automatisch `.venv`):
+
+```powershell
+.\scripts\run_outlook_ingest.ps1
+```
+
+**Nicht** das globale `python` von Windows — sonst: `No module named 'adapters'` oder `msal`.
 
 Ablauf: neueste Inbox-Mails (Standard: **100**, `OUTLOOK_FETCH_MAX`) →
 `IncomingEmail` → `workflow.run()` → bei Erfolg als gelesen markieren (oder

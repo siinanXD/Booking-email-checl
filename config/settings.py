@@ -2,15 +2,21 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Immer Projekt-`.env`, nicht abhaengig vom aktuellen Terminal-Verzeichnis
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+_ENV_FILE = _PROJECT_ROOT / ".env"
 
 
 class Settings(BaseSettings):
     """Lädt Werte aus `.env`; siehe `.env.example` für alle Keys."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=_ENV_FILE if _ENV_FILE.is_file() else ".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -40,7 +46,7 @@ class Settings(BaseSettings):
         default="gpt-4o-mini",
         alias="OPENAI_MODEL_EXTRACT",
     )
-    openai_model_draft: str = Field(default="gpt-4o", alias="OPENAI_MODEL_DRAFT")
+    openai_model_draft: str = Field(default="gpt-4o-mini", alias="OPENAI_MODEL_DRAFT")
     embedding_model: str = Field(
         default="text-embedding-3-small",
         alias="EMBEDDING_MODEL",

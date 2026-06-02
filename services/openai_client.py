@@ -33,15 +33,18 @@ class OpenAIClient:
         self._client = client_cls(api_key=api_key)
 
     def complete(self, prompt: str, model: str) -> LLMCompletion:
-        """Run a deterministic chat completion and return text plus token usage."""
-        response = self._client.chat.completions.create(
-            model=model,
-            messages=[
+        """Run a chat completion and return text plus token usage."""
+        create_kwargs: dict[str, Any] = {
+            "model": model,
+            "messages": [
                 {"role": "system", "content": _SYSTEM_MESSAGE},
                 {"role": "user", "content": prompt},
             ],
-            temperature=0,
-        )
+        }
+        # gpt-5-* erlaubt nur temperature=1 (Default); 0 fuehrt zu 400.
+        if not model.lower().startswith("gpt-5"):
+            create_kwargs["temperature"] = 0
+        response = self._client.chat.completions.create(**create_kwargs)
         content = response.choices[0].message.content or ""
         usage = response.usage
         return LLMCompletion(
