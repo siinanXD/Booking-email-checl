@@ -1,6 +1,30 @@
 # CHANGELOG
 
 
+## v0.4.1 (2026-06-02)
+
+### Bug Fixes
+
+- Use app context database for settings wipe-all in tests
+  ([`57916fb`](https://github.com/siinanXD/Booking-email-checl/commit/57916fb141dcbb51ef08f931adadd048cddc0b35))
+
+Route wipe-all through g.ctx.db so web tests use mongomock instead of connecting to localhost
+  MongoDB.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+### Refactoring
+
+- Reorganize backend and frontend for layered architecture
+  ([`09707dc`](https://github.com/siinanXD/Booking-email-checl/commit/09707dcb01f3beb75825a894efe14abe985d8934))
+
+Move Python code under backend/ with api, ai, features, and infrastructure layers, restructure the
+  dashboard into features/lib/shared, and align CI fixes including authStore tests and lint
+  formatting.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+
 ## v0.4.0 (2026-06-02)
 
 ### Features
