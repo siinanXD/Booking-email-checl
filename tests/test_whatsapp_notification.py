@@ -4,20 +4,26 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime
 
-from config.settings import Settings
-from models.notification import NotificationKind, NotificationStatus
-from repositories.notification_repository import NotificationRepository
-from repositories.platform_settings_repository import PlatformSettingsRepository
-from repositories.property_recipient_repository import PropertyRecipientRepository
-from repositories.user_repository import UserRepository
-from schemas.booking.extraction import BookingExtraction
-from schemas.booking.taxonomy import BookingIntent
-from services.notification_service import NotificationService
-from services.whatsapp_client import (
+from backend.ai.domain.booking.extraction import BookingExtraction
+from backend.ai.domain.booking.taxonomy import BookingIntent
+from backend.core.config.settings import Settings
+from backend.core.models.notification import NotificationKind, NotificationStatus
+from backend.features.notifications.notification_service import NotificationService
+from backend.features.notifications.whatsapp_client import (
     DisabledWhatsAppClient,
     MockWhatsAppClient,
     WhatsAppClient,
 )
+from backend.infrastructure.repositories.notification_repository import (
+    NotificationRepository,
+)
+from backend.infrastructure.repositories.platform_settings_repository import (
+    PlatformSettingsRepository,
+)
+from backend.infrastructure.repositories.property_recipient_repository import (
+    PropertyRecipientRepository,
+)
+from backend.infrastructure.repositories.user_repository import UserRepository
 
 
 def _settings(**overrides: object) -> Settings:
@@ -222,15 +228,15 @@ def test_workflow_finalize_triggers_whatsapp_on_approval(
 ) -> None:
     """Freigabe im Workflow löst NotificationService aus."""
 
-    from models.email import IncomingEmail, ProcessingState
-    from services.classification import ClassificationService
-    from services.extraction import ExtractionService
-    from services.grounding import GroundingService
-    from services.response_generation import ResponseGenerationService
-    from services.retrieval import RetrievalService
-    from services.validation import ValidationService
+    from backend.ai.services.classification import ClassificationService
+    from backend.ai.services.extraction import ExtractionService
+    from backend.ai.services.grounding import GroundingService
+    from backend.ai.services.response_generation import ResponseGenerationService
+    from backend.ai.services.retrieval import RetrievalService
+    from backend.ai.services.validation import ValidationService
+    from backend.ai.workflows.email_workflow import EmailWorkflow
+    from backend.core.models.email import IncomingEmail, ProcessingState
     from tests.mocks import MockLLM
-    from workflows.email_workflow import EmailWorkflow
 
     client = MockWhatsAppClient()
     notification_svc = _notification_svc(mock_db, client)

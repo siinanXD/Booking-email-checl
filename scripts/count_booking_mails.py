@@ -15,9 +15,9 @@ require_project_venv()
 
 from datetime import UTC, datetime, timedelta
 
-from config.factory import build_app_context
-from config.settings import get_settings
-from services.booking_relevance import count_booking_mails
+from backend.ai.domain.booking.booking_relevance import count_booking_mails
+from backend.core.config.factory import build_app_context
+from backend.core.config.settings import get_settings
 
 
 def main() -> int:
@@ -39,7 +39,7 @@ def main() -> int:
     )
     pending_all = ctx.review_repo.count_pending()
     pending_booking = len(
-        __import__("web.services.query_service", fromlist=["QueryService"])
+        __import__("backend.api.services.query_service", fromlist=["QueryService"])
         .QueryService(ctx)
         .list_review_pending(limit=500)
     )

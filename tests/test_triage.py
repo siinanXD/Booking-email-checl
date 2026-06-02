@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from models.email import IncomingEmail
-from schemas.booking.triage import TriageOutcome
-from services.triage import TriageService
+from backend.ai.domain.booking.triage import TriageOutcome
+from backend.ai.services.triage import TriageService
+from backend.core.models.email import IncomingEmail
 
 
 def test_triage_relevant_booking() -> None:

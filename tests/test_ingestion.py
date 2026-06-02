@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from models.email import ProcessingState
-from routers.ingestion import IngestionRouter
-from schemas.booking.triage import TriageOutcome
-from utils.text import strip_quoted_history
+from backend.ai.domain.booking.triage import TriageOutcome
+from backend.application.ingestion import IngestionRouter
+from backend.core.models.email import ProcessingState
+from backend.core.utils.text import strip_quoted_history
 
 
 def test_strip_quoted_history() -> None:

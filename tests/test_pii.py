@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from utils.pii import mask_pii
+from backend.core.utils.pii import mask_pii
 
 
 def test_mask_email_and_phone() -> None:

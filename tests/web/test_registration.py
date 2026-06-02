@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from models.email import ProcessingState, StoredEmail
+from backend.core.models.email import ProcessingState, StoredEmail
 
 
 def _register_payload(**overrides: object) -> dict[str, object]:

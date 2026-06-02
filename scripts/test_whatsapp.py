@@ -9,8 +9,10 @@ from _bootstrap import setup_path
 
 setup_path()
 
-from config.settings import get_settings  # noqa: E402
-from services.whatsapp_client import send_whatsapp_hello_world_test  # noqa: E402
+from backend.core.config.settings import get_settings  # noqa: E402
+from backend.features.notifications.whatsapp_client import (
+    send_whatsapp_hello_world_test,  # noqa: E402
+)
 
 
 def main() -> int:

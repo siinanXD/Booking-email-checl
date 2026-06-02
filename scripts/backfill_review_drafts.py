@@ -13,15 +13,15 @@ from _bootstrap import require_project_venv, safe_print
 
 require_project_venv()
 
-from models.email import ProcessingState
-from schemas.booking.taxonomy import BookingIntent
-from services.booking_relevance import is_booking_relevant
+from backend.ai.domain.booking.booking_relevance import is_booking_relevant
+from backend.ai.domain.booking.taxonomy import BookingIntent
+from backend.core.models.email import ProcessingState
 
 
 def main() -> int:
     """Erzeugt Review-Entwürfe für verarbeitete Mails ohne pending Review."""
-    from config.factory import build_app_context
-    from config.settings import get_settings
+    from backend.core.config.factory import build_app_context
+    from backend.core.config.settings import get_settings
 
     ctx = build_app_context(get_settings())
     wf = ctx.workflow

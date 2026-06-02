@@ -10,7 +10,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from config.settings import _ENV_FILE, get_settings  # noqa: E402
+from backend.core.config.settings import _ENV_FILE, get_settings  # noqa: E402
 
 
 def main() -> int:

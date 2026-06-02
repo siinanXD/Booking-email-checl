@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from models.notification import WhatsAppSendResult
+from backend.core.models.notification import WhatsAppSendResult
 
 
 def test_get_settings_requires_auth(client) -> None:
@@ -44,7 +44,7 @@ def test_get_and_update_settings(client, auth_headers) -> None:
 
 def test_whatsapp_test_endpoint(client, auth_headers) -> None:
     with patch(
-        "web.api.settings.send_whatsapp_hello_world_test",
+        "backend.api.blueprints.settings.send_whatsapp_hello_world_test",
         return_value=WhatsAppSendResult(success=True, provider_message_id="wamid.x"),
     ):
         resp = client.post(

@@ -9,8 +9,8 @@ from unittest.mock import patch
 import mongomock
 from langgraph.checkpoint.memory import MemorySaver
 
-from config.settings import Settings
-from repositories.mongo import Db
+from backend.core.config.settings import Settings
+from backend.infrastructure.repositories.mongo import Db
 
 
 def test_wsgi_module_exposes_flask_app() -> None:
@@ -29,10 +29,10 @@ def test_wsgi_module_exposes_flask_app() -> None:
     mongo_client: mongomock.MongoClient = mongomock.MongoClient()
     db: Db = mongo_client["wsgi_test"]
     sys.modules.pop("wsgi", None)
-    with patch("config.factory.get_database", return_value=db):
-        with patch("workflows.checkpointer.build_checkpointer") as mock_cp:
+    with patch("backend.core.config.factory.get_database", return_value=db):
+        with patch("backend.ai.workflows.checkpointer.build_checkpointer") as mock_cp:
             mock_cp.return_value = MemorySaver()
-            with patch("web.app.get_settings", return_value=settings):
+            with patch("backend.api.app.get_settings", return_value=settings):
                 wsgi = importlib.import_module("wsgi")
                 client = wsgi.app.test_client()
                 resp = client.get("/health")

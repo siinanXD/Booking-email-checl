@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from models.email import StoredEmail
-from schemas.booking.taxonomy import BookingIntent
-from services.extraction import ExtractionService
+from backend.ai.domain.booking.taxonomy import BookingIntent
+from backend.ai.services.extraction import ExtractionService
+from backend.core.models.email import StoredEmail
 from tests.mocks import MockLLM
 
 

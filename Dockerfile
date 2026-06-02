@@ -20,18 +20,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml ./
-COPY adapters/ ./adapters/
-COPY config/ ./config/
-COPY models/ ./models/
-COPY routers/ ./routers/
-COPY prompts/ ./prompts/
-COPY schemas/ ./schemas/
-COPY services/ ./services/
-COPY workflows/ ./workflows/
-COPY repositories/ ./repositories/
-COPY observability/ ./observability/
-COPY utils/ ./utils/
-COPY web/ ./web/
+COPY backend/ ./backend/
 COPY wsgi.py gunicorn.conf.py ./
 COPY scripts/ ./scripts/
 

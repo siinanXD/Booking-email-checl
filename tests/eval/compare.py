@@ -6,8 +6,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from schemas.booking.extraction import BookingExtraction
-from schemas.booking.taxonomy import BookingIntent
+from backend.ai.domain.booking.extraction import BookingExtraction
+from backend.ai.domain.booking.taxonomy import BookingIntent
 
 
 @dataclass
@@ -142,8 +142,8 @@ def run_extraction_eval(
     """Führt Extraktion pro Fall aus und vergleicht expected_extraction."""
     from datetime import datetime
 
-    from models.email import StoredEmail
-    from schemas.booking.taxonomy import BookingIntent
+    from backend.ai.domain.booking.taxonomy import BookingIntent
+    from backend.core.models.email import StoredEmail
 
     report = ExtractionEvalReport()
     for case in cases:

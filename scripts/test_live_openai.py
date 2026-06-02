@@ -15,13 +15,15 @@ if str(_ROOT) not in sys.path:
 
 def main() -> int:
     """Live-Smoke-Test für OpenAI Embeddings und Chat (ohne Outlook)."""
-    from config.factory import build_app_context
-    from config.settings import get_settings
-    from models.email import IncomingEmail
-    from repositories.embedding_repository import EmbeddingRepository
-    from repositories.mongo import get_database
-    from services.indexing import EmbeddingClient
-    from services.openai_client import OpenAIClient
+    from backend.ai.services.indexing import EmbeddingClient
+    from backend.ai.services.openai_client import OpenAIClient
+    from backend.core.config.factory import build_app_context
+    from backend.core.config.settings import get_settings
+    from backend.core.models.email import IncomingEmail
+    from backend.infrastructure.repositories.embedding_repository import (
+        EmbeddingRepository,
+    )
+    from backend.infrastructure.repositories.mongo import get_database
 
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")

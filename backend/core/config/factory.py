@@ -1,0 +1,198 @@
+"""Zentrale Verdrahtung: Settings → Services → Workflow."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from backend.ai.services.classification import ClassificationService, LLMClient
+from backend.ai.services.extraction import ExtractionService
+from backend.ai.services.grounding import GroundingService
+from backend.ai.services.indexing import EmbeddingClient, EmbeddingFn, IndexingService
+from backend.ai.services.ingestion import IngestionService
+from backend.ai.services.openai_client import OpenAIClient
+from backend.ai.services.response_generation import ResponseGenerationService
+from backend.ai.services.retrieval import RetrievalService
+from backend.ai.services.similarity_search import SimilaritySearchService
+from backend.ai.services.triage import TriageService
+from backend.ai.services.validation import ValidationService
+from backend.ai.workflows.checkpointer import build_checkpointer
+from backend.ai.workflows.email_workflow import EmailWorkflow
+from backend.application.ingestion import IngestionRouter
+from backend.application.review import ReviewRouter
+from backend.core.config.settings import Settings, get_settings
+from backend.features.notifications.notification_service import NotificationService
+from backend.infrastructure.observability.alerts import AlertService
+from backend.infrastructure.observability.langfuse_setup import (
+    configure_langfuse_env,
+    tracing_enabled,
+)
+from backend.infrastructure.observability.mail_cost import MailCostTracker
+from backend.infrastructure.repositories.account_repository import AccountRepository
+from backend.infrastructure.repositories.email_repository import EmailRepository
+from backend.infrastructure.repositories.embedding_repository import EmbeddingRepository
+from backend.infrastructure.repositories.entity_repository import EntityRepository
+from backend.infrastructure.repositories.extraction_repository import (
+    ExtractionRepository,
+)
+from backend.infrastructure.repositories.mail_connection_repository import (
+    MailConnectionRepository,
+)
+from backend.infrastructure.repositories.mail_metrics_repository import (
+    MailMetricsRepository,
+)
+from backend.infrastructure.repositories.mongo import get_database
+from backend.infrastructure.repositories.notification_repository import (
+    NotificationRepository,
+)
+from backend.infrastructure.repositories.platform_settings_repository import (
+    PlatformSettingsRepository,
+)
+from backend.infrastructure.repositories.property_recipient_repository import (
+    PropertyRecipientRepository,
+)
+from backend.infrastructure.repositories.review_repository import ReviewRepository
+from backend.infrastructure.repositories.revoked_token_repository import (
+    RevokedTokenRepository,
+)
+from backend.infrastructure.repositories.user_repository import UserRepository
+
+
+@dataclass
+class AppContext:
+    """Alle verdrahteten Komponenten für API/CLI/Tests."""
+
+    settings: Settings
+    ingestion_router: IngestionRouter
+    review_router: ReviewRouter
+    workflow: EmailWorkflow
+    email_repo: EmailRepository
+    extraction_repo: ExtractionRepository
+    review_repo: ReviewRepository
+    metrics_repo: MailMetricsRepository
+    user_repo: UserRepository
+    account_repo: AccountRepository
+    revoked_token_repo: RevokedTokenRepository
+    platform_settings_repo: PlatformSettingsRepository
+    property_recipient_repo: PropertyRecipientRepository
+    mail_connection_repo: MailConnectionRepository
+
+
+def build_app_context(settings: Settings | None = None) -> AppContext:
+    """Erzeugt den Anwendungskontext aus Settings."""
+    cfg = settings or get_settings()
+    db = get_database(cfg)
+
+    email_repo = EmailRepository(db)
+    entity_repo = EntityRepository(db)
+    extraction_repo = ExtractionRepository(db)
+    embedding_repo = EmbeddingRepository(db)
+    review_repo = ReviewRepository(db)
+    metrics_repo = MailMetricsRepository(db)
+    user_repo = UserRepository(db)
+    account_repo = AccountRepository(db)
+    revoked_token_repo = RevokedTokenRepository(db)
+    notification_repo = NotificationRepository(db)
+    property_recipient_repo = PropertyRecipientRepository(db)
+    platform_settings_repo = PlatformSettingsRepository(db)
+    mail_connection_repo = MailConnectionRepository(db)
+    notification_service = NotificationService(
+        cfg,
+        notification_repo,
+        user_repo,
+        property_recipient_repo,
+        platform_settings_repo,
+    )
+
+    alerts = AlertService(webhook_url=cfg.webhook_alert_url)
+    tracing = configure_langfuse_env(cfg) and tracing_enabled(cfg)
+
+    llm_mode = cfg.llm_mode.strip().lower()
+    # Raw mail prompts must not be auto-captured by provider wrappers.
+    use_langfuse_openai = False
+    llm: LLMClient
+    embed_client: EmbeddingFn
+    if llm_mode == "mock":
+        from backend.ai.services.mock_llm import MockEmbeddingClient, MockLLM
+
+        llm = MockLLM()
+        embed_client = MockEmbeddingClient()
+    elif llm_mode == "live":
+        llm = OpenAIClient(cfg.openai_api_key, use_langfuse=use_langfuse_openai)
+        embed_client = EmbeddingClient(
+            cfg.openai_api_key,
+            cfg.embedding_model,
+            use_langfuse=use_langfuse_openai,
+            tracing=tracing,
+        )
+    else:
+        msg = f"Unsupported LLM_MODE: {cfg.llm_mode!r} (use live or mock)"
+        raise ValueError(msg)
+    mail_cost = MailCostTracker(
+        alerts=alerts,
+        tracing=tracing,
+        metrics_repo=metrics_repo,
+    )
+    ingestion = IngestionService(email_repo, TriageService())
+    classification = ClassificationService(
+        llm,
+        cfg.openai_model_classify,
+        tracing=tracing,
+        alerts=alerts,
+        mail_cost=mail_cost,
+    )
+    extraction = ExtractionService(
+        llm,
+        cfg.openai_model_extract,
+        tracing=tracing,
+        alerts=alerts,
+        mail_cost=mail_cost,
+    )
+    validation = ValidationService()
+    similarity = SimilaritySearchService(embedding_repo, embed_client)
+    retrieval = RetrievalService(entity_repo, email_repo, similarity=similarity)
+    response_gen = ResponseGenerationService(
+        llm,
+        cfg.openai_model_draft,
+        retrieval,
+        GroundingService(),
+        tracing=tracing,
+        alerts=alerts,
+        mail_cost=mail_cost,
+    )
+    indexing = IndexingService(embedding_repo, embed_client)
+
+    checkpointer = build_checkpointer(cfg)
+    workflow = EmailWorkflow(
+        ingestion=ingestion,
+        classification=classification,
+        extraction=extraction,
+        validation=validation,
+        retrieval=retrieval,
+        response_gen=response_gen,
+        email_repo=email_repo,
+        extraction_repo=extraction_repo,
+        indexing=indexing,
+        alerts=alerts,
+        mail_cost=mail_cost,
+        review_repo=review_repo,
+        notification_service=notification_service,
+        checkpointer=checkpointer,
+        tracing=tracing,
+    )
+
+    return AppContext(
+        settings=cfg,
+        ingestion_router=IngestionRouter(ingestion),
+        review_router=ReviewRouter(workflow),
+        workflow=workflow,
+        email_repo=email_repo,
+        extraction_repo=extraction_repo,
+        review_repo=review_repo,
+        metrics_repo=metrics_repo,
+        user_repo=user_repo,
+        account_repo=account_repo,
+        revoked_token_repo=revoked_token_repo,
+        platform_settings_repo=platform_settings_repo,
+        property_recipient_repo=property_recipient_repo,
+        mail_connection_repo=mail_connection_repo,
+    )

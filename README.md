@@ -103,7 +103,7 @@ Flask-Backend für das Dashboard (JWT, Review ohne Auto-Versand):
 
 ```powershell
 python scripts/seed_admin.py
-flask --app web.app:create_app run --debug --port 5000
+flask --app backend.api.app:create_app run --debug --port 5000
 ```
 
 Optional: `pip install langgraph-checkpoint-mongodb==0.1.4` für durable LangGraph-Checkpoints in Mongo (nicht im Standard-Resolver wegen `langgraph` 0.2.x). Sonst `WEB_USE_MEMORY_CHECKPOINTER=true` nur für Tests.
@@ -117,7 +117,7 @@ Zwei Terminals: Flask (Port 5000) und Vite (Port 5173). Vite proxied `/api` und 
 ```powershell
 # Terminal 1 – Backend (aus Projektroot, .venv aktiv)
 python scripts/seed_admin.py
-flask --app web.app:create_app run --debug --port 5000
+flask --app backend.api.app:create_app run --debug --port 5000
 
 # Terminal 2 – Frontend
 cd frontend

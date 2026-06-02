@@ -9,12 +9,12 @@ from pathlib import Path
 
 import pytest
 
-from models.email import StoredEmail
-from schemas.booking.taxonomy import BookingIntent
-from services.classification import ClassificationService
-from services.extraction import ExtractionService
-from services.openai_client import OpenAIClient
-from services.validation import ValidationService
+from backend.ai.domain.booking.taxonomy import BookingIntent
+from backend.ai.services.classification import ClassificationService
+from backend.ai.services.extraction import ExtractionService
+from backend.ai.services.openai_client import OpenAIClient
+from backend.ai.services.validation import ValidationService
+from backend.core.models.email import StoredEmail
 from tests.eval.compare import run_extraction_eval
 from tests.mocks import MockLLM
 
@@ -26,7 +26,7 @@ def _eval_mode() -> str:
 def _build_llm() -> MockLLM | OpenAIClient:
     mode = _eval_mode()
     if mode == "live":
-        from config.settings import get_settings
+        from backend.core.config.settings import get_settings
 
         settings = get_settings()
         return OpenAIClient(settings.openai_api_key)

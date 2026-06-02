@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from utils.text import normalize_body
+from backend.core.utils.text import normalize_body
 
 
 def test_normalize_body_from_html() -> None:

@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from repositories.mail_metrics_repository import MailMetricsRepository
+from backend.infrastructure.repositories.mail_metrics_repository import (
+    MailMetricsRepository,
+)
 
 
 def test_costs_empty(client: Any, auth_headers: dict[str, str]) -> None:

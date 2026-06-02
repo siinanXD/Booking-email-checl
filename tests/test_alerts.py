@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from models.response import GeneratedResponse
-from observability.alerts import AlertService, AlertThresholds
+from backend.core.models.response import GeneratedResponse
+from backend.infrastructure.observability.alerts import AlertService, AlertThresholds
 
 
 def test_high_cost_alert(caplog) -> None:

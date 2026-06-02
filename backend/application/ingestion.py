@@ -1,0 +1,28 @@
+"""Ingestion-Schnittstelle (ohne HTTP im MVP)."""
+
+from __future__ import annotations
+
+from typing import Protocol
+
+from backend.ai.services.ingestion import IngestionService, IngestResult
+from backend.core.models.email import IncomingEmail
+
+
+class IngestionPort(Protocol):
+    """Port für externe Ingestion-Adapter (Outlook, Webhook, …)."""
+
+    def ingest_email(self, payload: IncomingEmail) -> IngestResult:
+        """Eine Mail in die Pipeline aufnehmen."""
+        ...
+
+
+class IngestionRouter:
+    """Standard-Implementierung des IngestionPort."""
+
+    def __init__(self, service: IngestionService) -> None:
+        """Initialize the instance with its dependencies."""
+        self._service = service
+
+    def ingest_email(self, payload: IncomingEmail) -> IngestResult:
+        """Delegiert an den IngestionService."""
+        return self._service.ingest(payload)

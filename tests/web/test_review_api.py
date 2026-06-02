@@ -5,11 +5,13 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from models.email import ProcessingState, StoredEmail
-from repositories.extraction_repository import ExtractionRepository
-from repositories.review_repository import ReviewRepository
-from schemas.booking.extraction import BookingExtraction
-from schemas.booking.taxonomy import BookingIntent
+from backend.ai.domain.booking.extraction import BookingExtraction
+from backend.ai.domain.booking.taxonomy import BookingIntent
+from backend.core.models.email import ProcessingState, StoredEmail
+from backend.infrastructure.repositories.extraction_repository import (
+    ExtractionRepository,
+)
+from backend.infrastructure.repositories.review_repository import ReviewRepository
 
 
 def test_list_pending_reviews(

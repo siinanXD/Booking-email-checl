@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from models.email import StoredEmail
-from models.entities import Reservation
-from schemas.booking.extraction import BookingExtraction
-from schemas.booking.taxonomy import BookingIntent
-from services.grounding import GroundingService
-from services.response_generation import ResponseGenerationService
-from services.retrieval import RetrievalHits, RetrievalService
+from backend.ai.domain.booking.extraction import BookingExtraction
+from backend.ai.domain.booking.taxonomy import BookingIntent
+from backend.ai.services.grounding import GroundingService
+from backend.ai.services.response_generation import ResponseGenerationService
+from backend.ai.services.retrieval import RetrievalHits, RetrievalService
+from backend.core.models.email import StoredEmail
+from backend.core.models.entities import Reservation
 from tests.mocks import MockLLM
 
 

@@ -12,10 +12,12 @@ if str(_ROOT) not in sys.path:
 
 def main() -> int:
     """Listet aktuelle Buchungs-Mails und Extraktionen aus MongoDB."""
-    from config.settings import get_settings
-    from repositories.email_repository import EmailRepository
-    from repositories.extraction_repository import ExtractionRepository
-    from repositories.mongo import get_database
+    from backend.core.config.settings import get_settings
+    from backend.infrastructure.repositories.email_repository import EmailRepository
+    from backend.infrastructure.repositories.extraction_repository import (
+        ExtractionRepository,
+    )
+    from backend.infrastructure.repositories.mongo import get_database
 
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")

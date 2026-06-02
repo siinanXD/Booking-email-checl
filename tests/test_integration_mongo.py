@@ -6,8 +6,8 @@ import os
 
 import pytest
 
-from config.settings import Settings
-from repositories.mongo import ping
+from backend.core.config.settings import Settings
+from backend.infrastructure.repositories.mongo import ping
 
 
 @pytest.mark.integration

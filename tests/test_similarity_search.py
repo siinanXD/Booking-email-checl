@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from repositories.embedding_repository import EmbeddingRepository
+from backend.infrastructure.repositories.embedding_repository import EmbeddingRepository
 
 
 class MockEmbedClient:
@@ -15,7 +15,7 @@ class MockEmbedClient:
 
 def test_find_similar_cases(mock_db) -> None:
     """Verify find similar cases."""
-    from services.similarity_search import SimilaritySearchService
+    from backend.ai.services.similarity_search import SimilaritySearchService
 
     repo = EmbeddingRepository(mock_db)
     repo.upsert_chunk("s1", "c1", "hello world", [1.0, 0.0], "guest_inquiry")

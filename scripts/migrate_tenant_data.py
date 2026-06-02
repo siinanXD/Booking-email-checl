@@ -24,10 +24,12 @@ def main() -> int:
     if str(root) not in sys.path:
         sys.path.insert(0, str(root))
 
-    from config.settings import get_settings
-    from repositories.mongo import get_database
-    from repositories.platform_settings_repository import LEGACY_PLATFORM_DOC_ID
-    from repositories.user_repository import UserRepository
+    from backend.core.config.settings import get_settings
+    from backend.infrastructure.repositories.mongo import get_database
+    from backend.infrastructure.repositories.platform_settings_repository import (
+        LEGACY_PLATFORM_DOC_ID,
+    )
+    from backend.infrastructure.repositories.user_repository import UserRepository
 
     settings = get_settings()
     db = get_database(settings)

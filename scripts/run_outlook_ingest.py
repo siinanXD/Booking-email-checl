@@ -45,10 +45,10 @@ def _import_error_help(exc: ModuleNotFoundError) -> None:
 _venv_hint()
 
 try:
-    from adapters.mail_ingestion import MailIngestionRunner
-    from adapters.outlook_ingestion import OutlookIngestionRunner
-    from config.factory import build_app_context
-    from config.settings import get_settings
+    from backend.core.config.factory import build_app_context
+    from backend.core.config.settings import get_settings
+    from backend.infrastructure.adapters.mail.ingestion import MailIngestionRunner
+    from backend.infrastructure.adapters.outlook.ingestion import OutlookIngestionRunner
 except ModuleNotFoundError as exc:
     _import_error_help(exc)
     raise SystemExit(1) from exc

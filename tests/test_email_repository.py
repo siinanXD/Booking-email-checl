@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from models.email import ProcessingState, StoredEmail
+from backend.core.models.email import ProcessingState, StoredEmail
 
 
 def test_upsert_and_get(email_repo) -> None:

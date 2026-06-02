@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from adapters.mail_connector import MailTestResult
+from backend.infrastructure.adapters.mail.connector import MailTestResult
 
 
 @pytest.fixture
@@ -84,7 +84,9 @@ def test_mail_test_connection(client: object, auth_headers: dict[str, str]) -> N
             "imap_password": "pw",
         },
     )
-    with patch("services.mail_connection_service.build_mail_connector") as mock_build:
+    with patch(
+        "backend.features.mail.mail_connection_service.build_mail_connector"
+    ) as mock_build:
         connector = MagicMock()
         connector.test_connection.return_value = MailTestResult(
             success=True,

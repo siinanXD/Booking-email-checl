@@ -9,13 +9,13 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from adapters.outlook_graph import (
+from backend.core.config.settings import Settings
+from backend.core.models.email import StoredEmail
+from backend.infrastructure.adapters.outlook.graph import (
     OutlookGraphClient,
     map_graph_message,
 )
-from adapters.outlook_ingestion import OutlookIngestionRunner
-from config.settings import Settings
-from models.email import StoredEmail
+from backend.infrastructure.adapters.outlook.ingestion import OutlookIngestionRunner
 
 
 def _sample_graph_message() -> dict[str, Any]:
@@ -178,7 +178,7 @@ def test_outlook_runner_skips_existing_message_id(
     assert graph.marked == []
 
 
-@patch("adapters.outlook_graph.urlopen")
+@patch("backend.infrastructure.adapters.outlook.graph.urlopen")
 def test_graph_client_list_unread(mock_urlopen: MagicMock) -> None:
     """Verify graph client list unread."""
     body = json.dumps({"value": [_sample_graph_message()]}).encode()
@@ -238,7 +238,7 @@ def test_outlook_graph_client_from_settings_application_requires_mailbox() -> No
 @pytest.mark.live_graph
 def test_live_graph_smoke() -> None:
     """Manueller Smoke-Test mit echter .env – nicht in CI."""
-    from config.settings import get_settings
+    from backend.core.config.settings import get_settings
 
     settings = get_settings()
     if not settings.azure_client_id:

@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
-from repositories.embedding_repository import EmbeddingRepository, _dot
-from services.indexing import chunk_text
+from backend.ai.services.indexing import chunk_text
+from backend.infrastructure.repositories.embedding_repository import (
+    EmbeddingRepository,
+    _dot,
+)
 
 
 def test_chunk_text_paragraphs() -> None:

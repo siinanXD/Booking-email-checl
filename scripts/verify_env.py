@@ -8,8 +8,8 @@ import sys
 def main() -> int:
     """Run the command workflow."""
     try:
-        from config.settings import get_settings
-        from repositories.mongo import ping
+        from backend.core.config.settings import get_settings
+        from backend.infrastructure.repositories.mongo import ping
     except Exception as exc:  # noqa: BLE001
         print(f"Import fehlgeschlagen: {exc}")
         return 1

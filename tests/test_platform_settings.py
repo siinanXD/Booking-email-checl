@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from config.settings import Settings
-from repositories.platform_settings_repository import (
-    PlatformSettingsRecord,
-    PlatformSettingsRepository,
-)
-from services.effective_settings import (
+from backend.core.config.settings import Settings
+from backend.features.platform.effective_settings import (
     display_platform_settings,
     merge_platform_settings,
+)
+from backend.infrastructure.repositories.platform_settings_repository import (
+    PlatformSettingsRecord,
+    PlatformSettingsRepository,
 )
 
 

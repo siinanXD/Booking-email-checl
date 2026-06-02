@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from datetime import date
 
-from schemas.booking.extraction import BookingExtraction
-from schemas.booking.taxonomy import BookingIntent
-from services.validation import ValidationService
+from backend.ai.domain.booking.extraction import BookingExtraction
+from backend.ai.domain.booking.taxonomy import BookingIntent
+from backend.ai.services.validation import ValidationService
 
 
 def test_validate_dates_ok() -> None:

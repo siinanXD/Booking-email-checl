@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from config.settings import Settings
-from services.whatsapp_client import MetaCloudWhatsAppClient
+from backend.core.config.settings import Settings
+from backend.features.notifications.whatsapp_client import MetaCloudWhatsAppClient
 
 
 def test_send_hello_world_builds_meta_payload(monkeypatch) -> None:
@@ -23,7 +23,7 @@ def test_send_hello_world_builds_meta_payload(monkeypatch) -> None:
         return FakeResponse()
 
     monkeypatch.setattr(
-        "services.whatsapp_client.httpx.post",
+        "backend.features.notifications.whatsapp_client.httpx.post",
         fake_post,
     )
     settings = Settings.model_validate(

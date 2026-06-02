@@ -43,9 +43,11 @@ def _import_error_help(exc: ModuleNotFoundError) -> None:
 _venv_hint()
 
 try:
-    from config.factory import build_app_context
-    from config.settings import get_settings
-    from services.mail_poll_service import build_mail_poll_service_from_context
+    from backend.core.config.factory import build_app_context
+    from backend.core.config.settings import get_settings
+    from backend.features.mail.mail_poll_service import (
+        build_mail_poll_service_from_context,
+    )
 except ModuleNotFoundError as exc:
     _import_error_help(exc)
     raise SystemExit(1) from exc

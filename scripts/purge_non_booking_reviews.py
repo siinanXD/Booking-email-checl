@@ -13,10 +13,10 @@ from _bootstrap import require_project_venv, safe_print
 
 require_project_venv()
 
-from config.factory import build_app_context
-from config.settings import get_settings
-from models.email import StoredEmail
-from services.booking_relevance import classify_booking_mail
+from backend.ai.domain.booking.booking_relevance import classify_booking_mail
+from backend.core.config.factory import build_app_context
+from backend.core.config.settings import get_settings
+from backend.core.models.email import StoredEmail
 
 
 def main() -> int:

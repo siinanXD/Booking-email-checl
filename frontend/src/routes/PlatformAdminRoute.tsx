@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from "react-router-dom";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore } from "@/features/auth/authStore";
 
 export function PlatformAdminRoute() {
   const isPlatformAdmin = useAuthStore((s) => s.isPlatformAdmin);

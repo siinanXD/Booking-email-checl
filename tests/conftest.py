@@ -10,14 +10,16 @@ from pathlib import Path
 import mongomock
 import pytest
 
-from models.email import IncomingEmail
-from repositories.email_repository import EmailRepository
-from repositories.embedding_repository import EmbeddingRepository
-from repositories.entity_repository import EntityRepository
-from repositories.extraction_repository import ExtractionRepository
-from repositories.mongo import Db
-from services.ingestion import IngestionService
-from services.triage import TriageService
+from backend.ai.services.ingestion import IngestionService
+from backend.ai.services.triage import TriageService
+from backend.core.models.email import IncomingEmail
+from backend.infrastructure.repositories.email_repository import EmailRepository
+from backend.infrastructure.repositories.embedding_repository import EmbeddingRepository
+from backend.infrastructure.repositories.entity_repository import EntityRepository
+from backend.infrastructure.repositories.extraction_repository import (
+    ExtractionRepository,
+)
+from backend.infrastructure.repositories.mongo import Db
 
 
 @pytest.fixture

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from observability.alerts import AlertService, AlertThresholds
-from observability.mail_cost import MailCostTracker
-from services.llm_types import LLMCompletion
+from backend.ai.services.llm_types import LLMCompletion
+from backend.infrastructure.observability.alerts import AlertService, AlertThresholds
+from backend.infrastructure.observability.mail_cost import MailCostTracker
 
 
 def test_finalize_aggregates_tokens_single_alert(caplog) -> None:

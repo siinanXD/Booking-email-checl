@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime
 
-from models.email import StoredEmail
-from models.entities import Guest, Reservation
-from schemas.booking.extraction import BookingExtraction
-from services.retrieval import RetrievalService
+from backend.ai.domain.booking.extraction import BookingExtraction
+from backend.ai.services.retrieval import RetrievalService
+from backend.core.models.email import StoredEmail
+from backend.core.models.entities import Guest, Reservation
 
 
 def test_find_reservations_by_guest_email(

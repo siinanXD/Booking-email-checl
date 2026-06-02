@@ -4,17 +4,17 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from models.email import IncomingEmail, ProcessingState
-from observability.mail_cost import MailCostTracker
-from services.classification import ClassificationService
-from services.extraction import ExtractionService
-from services.grounding import GroundingService
-from services.indexing import IndexingService
-from services.response_generation import ResponseGenerationService
-from services.retrieval import RetrievalService
-from services.validation import ValidationService
+from backend.ai.services.classification import ClassificationService
+from backend.ai.services.extraction import ExtractionService
+from backend.ai.services.grounding import GroundingService
+from backend.ai.services.indexing import IndexingService
+from backend.ai.services.response_generation import ResponseGenerationService
+from backend.ai.services.retrieval import RetrievalService
+from backend.ai.services.validation import ValidationService
+from backend.ai.workflows.email_workflow import EmailWorkflow
+from backend.core.models.email import IncomingEmail, ProcessingState
+from backend.infrastructure.observability.mail_cost import MailCostTracker
 from tests.mocks import MockLLM
-from workflows.email_workflow import EmailWorkflow
 
 
 class _MockEmbed:
@@ -68,7 +68,9 @@ def test_workflow_stops_with_review_pending(
     mock_db,
 ) -> None:
     """Verify workflow stops with review pending."""
-    from repositories.embedding_repository import EmbeddingRepository
+    from backend.infrastructure.repositories.embedding_repository import (
+        EmbeddingRepository,
+    )
 
     payload = IncomingEmail(
         message_id="wf-001",
@@ -78,7 +80,7 @@ def test_workflow_stops_with_review_pending(
         received_at=datetime.now(UTC),
         platform="airbnb",
     )
-    from repositories.review_repository import ReviewRepository
+    from backend.infrastructure.repositories.review_repository import ReviewRepository
 
     wf = _build_workflow(
         ingestion_service,
@@ -106,7 +108,9 @@ def test_workflow_persists_processing_state(
     mock_db,
 ) -> None:
     """Verify workflow persists processing state."""
-    from repositories.embedding_repository import EmbeddingRepository
+    from backend.infrastructure.repositories.embedding_repository import (
+        EmbeddingRepository,
+    )
 
     payload = IncomingEmail(
         message_id="wf-002",
@@ -140,7 +144,9 @@ def test_resume_after_approval_persists_approved_state(
     mock_db,
 ) -> None:
     """Verify approval resume persists the approved processing state."""
-    from repositories.embedding_repository import EmbeddingRepository
+    from backend.infrastructure.repositories.embedding_repository import (
+        EmbeddingRepository,
+    )
 
     payload = IncomingEmail(
         message_id="wf-approve-001",
@@ -179,7 +185,9 @@ def test_workflow_finalize_cost_after_spam_discard(
     booking_emails,
 ) -> None:
     """Spam-Verwurf: MailCostTracker.finalize trotzdem am Laufende."""
-    from repositories.embedding_repository import EmbeddingRepository
+    from backend.infrastructure.repositories.embedding_repository import (
+        EmbeddingRepository,
+    )
 
     finalized: list[str] = []
 

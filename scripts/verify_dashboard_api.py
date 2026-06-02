@@ -18,7 +18,7 @@ require_project_venv()
 
 def main() -> int:
     """Prüft Dashboard-API-Endpunkte gegen laufenden Flask-Dev-Server."""
-    from config.settings import get_settings
+    from backend.core.config.settings import get_settings
 
     settings = get_settings()
     if not settings.admin_password:
@@ -125,9 +125,9 @@ def main() -> int:
                 print(f"  {name}: nicht erreichbar ({exc})")
                 errors += 1
 
-        from config.factory import build_app_context
-        from models.email import StoredEmail
-        from services.booking_relevance import is_marketing_noise
+        from backend.ai.domain.booking.booking_relevance import is_marketing_noise
+        from backend.core.config.factory import build_app_context
+        from backend.core.models.email import StoredEmail
 
         ctx = build_app_context(settings)
         comigo_in_cancel = 0

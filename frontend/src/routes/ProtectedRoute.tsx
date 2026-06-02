@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore } from "@/features/auth/authStore";
 
 function needsMailOnboarding(user: {
   role?: string;

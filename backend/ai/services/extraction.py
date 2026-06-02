@@ -1,0 +1,124 @@
+"""Extraktion strukturierter Felder via OpenAI SDK."""
+
+from __future__ import annotations
+
+import json
+import re
+from datetime import date, datetime
+from typing import Any, cast
+
+from langfuse.decorators import langfuse_context, observe
+
+from backend.ai.domain.booking.extraction import BookingExtraction
+from backend.ai.domain.booking.taxonomy import BookingIntent
+from backend.ai.services.classification import LLMClient
+from backend.ai.services.llm_errors import LLM_PIPELINE_ERRORS, notify_llm_failure
+from backend.ai.services.prompt_loader import format_prompt_with_few_shots
+from backend.core.models.email import StoredEmail
+from backend.core.utils.pii import mask_pii
+from backend.infrastructure.observability.alerts import AlertService
+from backend.infrastructure.observability.mail_cost import MailCostTracker
+
+
+class ExtractionService:
+    """Extrahiert BookingExtraction aus Mail-Text."""
+
+    def __init__(
+        self,
+        llm: LLMClient,
+        model: str,
+        *,
+        tracing: bool = False,
+        alerts: AlertService | None = None,
+        mail_cost: MailCostTracker | None = None,
+    ) -> None:
+        """Initialize the instance with its dependencies."""
+        self._llm = llm
+        self._model = model
+        self._tracing = tracing
+        self._alerts = alerts
+        self._mail_cost = mail_cost
+
+    def extract(
+        self,
+        email: StoredEmail,
+        intent: BookingIntent | None = None,
+    ) -> BookingExtraction:
+        """Extrahiert Felder; setzt intent falls übergeben."""
+        return cast(BookingExtraction, self._extract_observed(email, intent))
+
+    @observe(
+        name="extract",
+        as_type="generation",
+        capture_input=False,
+        capture_output=False,
+    )  # type: ignore[misc]
+    def _extract_observed(
+        self,
+        email: StoredEmail,
+        intent: BookingIntent | None,
+    ) -> BookingExtraction:
+        if self._tracing:
+            langfuse_context.update_current_trace(
+                session_id=email.correlation_id,
+                metadata={
+                    "message_id": mask_pii(email.message_id),
+                    "step": "extract",
+                    "intent": intent.value if intent else None,
+                },
+            )
+            langfuse_context.update_current_observation(model=self._model)
+        prompt = format_prompt_with_few_shots(
+            "booking/extract.md",
+            "booking/examples/extract_examples.json",
+            few_shot_style="extract",
+            subject=email.subject,
+            body=email.body_text,
+        )
+        data: dict[str, Any]
+        try:
+            completion = self._llm.complete(prompt, self._model)
+            if self._mail_cost is not None:
+                self._mail_cost.add(email.correlation_id, completion)
+            data = self._parse_json(completion.text)
+        except LLM_PIPELINE_ERRORS as exc:
+            notify_llm_failure(
+                self._alerts,
+                email.correlation_id,
+                "extract",
+                exc,
+            )
+            data = {"confidence": 0.0}
+        if intent is not None:
+            data["intent"] = intent
+        return BookingExtraction.model_validate(data)
+
+    def _parse_json(self, raw: str) -> dict[str, Any]:
+        """Versucht JSON aus der LLM-Antwort zu parsen."""
+        text = raw.strip()
+        if text.startswith("```"):
+            lines = text.split("\n")
+            text = "\n".join(lines[1:-1] if len(lines) > 2 else lines)
+        payload: dict[str, Any] = json.loads(text)
+        for key in ("check_in", "check_out"):
+            if key in payload and isinstance(payload[key], str):
+                payload[key] = date.fromisoformat(payload[key])
+        if "timestamp" in payload and isinstance(payload["timestamp"], str):
+            payload["timestamp"] = datetime.fromisoformat(payload["timestamp"])
+        if "intent" in payload and isinstance(payload["intent"], str):
+            try:
+                payload["intent"] = BookingIntent(payload["intent"])
+            except ValueError:
+                payload["intent"] = BookingIntent.OTHER
+        if "price" in payload and isinstance(payload["price"], str):
+            price_raw = str(payload["price"]).strip().replace(",", ".")
+            match = re.search(r"[\d.]+", price_raw)
+            if match:
+                try:
+                    payload["price"] = float(match.group())
+                except ValueError:
+                    payload.pop("price", None)
+            else:
+                payload.pop("price", None)
+        payload.setdefault("confidence", 0.8)
+        return payload

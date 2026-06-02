@@ -14,10 +14,10 @@ def main() -> int:
 
     from werkzeug.security import check_password_hash, generate_password_hash
 
-    from config.settings import get_settings
-    from repositories.account_repository import AccountRepository
-    from repositories.mongo import get_database
-    from repositories.user_repository import UserRepository
+    from backend.core.config.settings import get_settings
+    from backend.infrastructure.repositories.account_repository import AccountRepository
+    from backend.infrastructure.repositories.mongo import get_database
+    from backend.infrastructure.repositories.user_repository import UserRepository
 
     settings = get_settings()
     if not settings.admin_password:

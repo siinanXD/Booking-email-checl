@@ -4,16 +4,16 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from models.email import StoredEmail
-from schemas.booking.extraction import BookingExtraction
-from schemas.booking.taxonomy import BookingIntent
-from services.booking_relevance import (
+from backend.ai.domain.booking.booking_relevance import (
     classify_booking_mail,
     is_booking_relevant,
     is_marketing_noise,
     is_probable_booking_mail,
     is_probable_non_booking_mail,
 )
+from backend.ai.domain.booking.extraction import BookingExtraction
+from backend.ai.domain.booking.taxonomy import BookingIntent
+from backend.core.models.email import StoredEmail
 
 
 def test_comigo_newsletter_not_relevant() -> None:

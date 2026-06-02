@@ -21,8 +21,8 @@ _COST_PER_1K = 0.002
 
 def main() -> int:
     """Schätzt fehlende mail_metrics für Mails mit Extraktion."""
-    from config.factory import build_app_context
-    from config.settings import get_settings
+    from backend.core.config.factory import build_app_context
+    from backend.core.config.settings import get_settings
 
     ctx = build_app_context(get_settings())
     written = 0

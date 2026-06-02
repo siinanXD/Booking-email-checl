@@ -18,7 +18,7 @@ if str(_SCRIPTS) not in sys.path:
 try:
     from run_mail_poll import run_poll
 
-    from config.settings import get_settings
+    from backend.core.config.settings import get_settings
 except ModuleNotFoundError as exc:
     print(f"Import fehlgeschlagen: {exc}", file=sys.stderr)
     raise SystemExit(1) from exc

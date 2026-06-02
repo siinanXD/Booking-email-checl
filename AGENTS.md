@@ -20,6 +20,7 @@ python3.11 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts
 pip install -e ".[dev]"
 pre-commit install && pre-commit install --hook-type commit-msg
 pytest -q
+python scripts/check_max_file_lines.py
 ruff check .
 black --check .
 mypy .
@@ -29,7 +30,7 @@ Web-API (Flask):
 
 ```bash
 python scripts/seed_admin.py
-flask --app web.app:create_app run --debug --port 5000
+flask --app backend.api.app:create_app run --debug --port 5000
 pytest tests/web -q
 ```
 
@@ -37,7 +38,7 @@ pytest tests/web -q
 
 - **Zwei Flüsse:** Antwort-Pfad (synchron, kritisch) vs. Indexierung (async). Embedding-Latenz nicht an den Antwortpfad hängen.
 - **RAG sparsam:** Metadaten-/Mongo-Abfragen für Buchungen, Gäste, Threads; Vektorsuche nur für Fallähnlichkeit.
-- **Domänen-Packs** (Booking, später Orders/Support) erweitern die Engine über `schemas/` + Prompts – Engine und diese Datei nicht anfassen beim neuen Pack.
+- **Domänen-Packs** (Booking, später Orders/Support) erweitern die Engine über `backend/ai/domain/` + Prompts – Engine und diese Datei nicht anfassen beim neuen Pack.
 - **Entity Resolution** ist fachlich zentral (Relay-Adressen, mehrdeutige Namen) – keine Einzeiler-Lösung.
 - **DSGVO-Löschung** über Mongo, Vektorindex **und** Langfuse-Traces hinweg.
 

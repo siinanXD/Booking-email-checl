@@ -16,11 +16,11 @@ require_project_venv()
 
 def main() -> int:
     """Setzt Intent auf other für Marketing-/Newsletter-Mails."""
-    from config.factory import build_app_context
-    from config.settings import get_settings
-    from models.email import StoredEmail
-    from schemas.booking.taxonomy import BookingIntent
-    from services.booking_relevance import is_marketing_noise
+    from backend.ai.domain.booking.booking_relevance import is_marketing_noise
+    from backend.ai.domain.booking.taxonomy import BookingIntent
+    from backend.core.config.factory import build_app_context
+    from backend.core.config.settings import get_settings
+    from backend.core.models.email import StoredEmail
 
     ctx = build_app_context(get_settings())
     fixed = 0

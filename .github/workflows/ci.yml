@@ -37,6 +37,9 @@ jobs:
       - name: PyTest
         run: pytest -q
 
+      - name: Max file lines (300)
+        run: python scripts/check_max_file_lines.py
+
   frontend:
     runs-on: ubuntu-latest
     defaults:

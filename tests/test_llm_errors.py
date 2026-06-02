@@ -4,15 +4,15 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from models.email import StoredEmail
-from schemas.booking.extraction import BookingExtraction
-from schemas.booking.taxonomy import BookingIntent
-from services.classification import ClassificationService
-from services.extraction import ExtractionService
-from services.grounding import GroundingService
-from services.llm_types import LLMCompletion
-from services.response_generation import ResponseGenerationService
-from services.retrieval import RetrievalService
+from backend.ai.domain.booking.extraction import BookingExtraction
+from backend.ai.domain.booking.taxonomy import BookingIntent
+from backend.ai.services.classification import ClassificationService
+from backend.ai.services.extraction import ExtractionService
+from backend.ai.services.grounding import GroundingService
+from backend.ai.services.llm_types import LLMCompletion
+from backend.ai.services.response_generation import ResponseGenerationService
+from backend.ai.services.retrieval import RetrievalService
+from backend.core.models.email import StoredEmail
 
 
 class FailingLLM:

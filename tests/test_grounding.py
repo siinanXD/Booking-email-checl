@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from models.entities import Reservation
-from models.response import GeneratedResponse
-from services.grounding import GroundingService
-from services.retrieval import RetrievalHits
+from backend.ai.services.grounding import GroundingService
+from backend.ai.services.retrieval import RetrievalHits
+from backend.core.models.entities import Reservation
+from backend.core.models.response import GeneratedResponse
 
 
 def test_grounding_ok_when_reference_known() -> None:

@@ -7,13 +7,13 @@ from collections.abc import Generator
 import pytest
 from werkzeug.security import generate_password_hash
 
-from config.settings import Settings
-from web.app import create_app
-from web.auth.token_blocklist import (
+from backend.api.app import create_app
+from backend.api.auth.token_blocklist import (
     InMemoryBlocklistBackend,
     clear_for_tests,
     configure,
 )
+from backend.core.config.settings import Settings
 
 
 def _test_settings() -> Settings:
@@ -47,8 +47,8 @@ def app(mock_db: object, web_settings: Settings) -> Generator:
     from unittest.mock import patch
 
     settings = web_settings
-    with patch("config.factory.get_database", return_value=mock_db):
-        with patch("workflows.checkpointer.build_checkpointer") as mock_cp:
+    with patch("backend.core.config.factory.get_database", return_value=mock_db):
+        with patch("backend.ai.workflows.checkpointer.build_checkpointer") as mock_cp:
             from langgraph.checkpoint.memory import MemorySaver
 
             mock_cp.return_value = MemorySaver()

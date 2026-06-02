@@ -4,14 +4,17 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from adapters.mail_ingestion import MailPollItemResult, MailPollRunResult
-from repositories.account_repository import AccountRepository
-from repositories.mail_connection_repository import (
+from backend.features.mail.mail_poll_service import MailPollService
+from backend.infrastructure.adapters.mail.ingestion import (
+    MailPollItemResult,
+    MailPollRunResult,
+)
+from backend.infrastructure.repositories.account_repository import AccountRepository
+from backend.infrastructure.repositories.mail_connection_repository import (
     MailConnectionRecord,
     MailConnectionRepository,
 )
-from repositories.mongo import Db
-from services.mail_poll_service import MailPollService
+from backend.infrastructure.repositories.mongo import Db
 
 
 def _active_account(

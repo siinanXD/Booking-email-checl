@@ -53,24 +53,11 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = [
-    "adapters*",
-    "config*",
-    "models*",
-    "routers*",
-    "prompts*",
-    "schemas*",
-    "services*",
-    "workflows*",
-    "repositories*",
-    "observability*",
-    "utils*",
-    "web*",
-]
+include = ["backend*"]
 exclude = ["tests*", "docs*", ".cursor*", ".github*"]
 
 [tool.setuptools.package-data]
-prompts = ["**/*.md", "**/*.json"]
+"backend.ai.prompts" = ["**/*.md", "**/*.json"]
 
 
 [tool.ruff]
@@ -97,7 +84,7 @@ plugins = ["pydantic.mypy"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
-module = ["workflows.*"]
+module = ["backend.ai.workflows.*"]
 disable_error_code = ["arg-type"]
 
 [[tool.mypy.overrides]]
@@ -114,7 +101,7 @@ disable_error_code = [
 ]
 
 [[tool.mypy.overrides]]
-module = ["web.*"]
+module = ["backend.api.*"]
 disable_error_code = ["misc"]
 
 [[tool.mypy.overrides]]
