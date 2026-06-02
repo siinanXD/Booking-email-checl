@@ -9,10 +9,15 @@ from werkzeug.security import generate_password_hash
 
 from config.settings import Settings
 from web.app import create_app
-from web.auth.token_blocklist import clear_for_tests
+from web.auth.token_blocklist import (
+    InMemoryBlocklistBackend,
+    clear_for_tests,
+    configure,
+)
 
 
 def _test_settings() -> Settings:
+    """Minimale Settings für Web-Tests."""
     return Settings.model_validate(
         {
             "OPENAI_API_KEY": "sk-test",
@@ -37,6 +42,7 @@ def web_settings() -> Settings:
 @pytest.fixture
 def app(mock_db: object, web_settings: Settings) -> Generator:
     """Flask-App mit mongomock (via patch)."""
+    configure(InMemoryBlocklistBackend())
     clear_for_tests()
     from unittest.mock import patch
 

@@ -14,6 +14,7 @@ if str(_ROOT) not in sys.path:
 
 
 def main() -> int:
+    """Live-Smoke-Test für OpenAI Embeddings und Chat (ohne Outlook)."""
     from config.factory import build_app_context
     from config.settings import get_settings
     from models.email import IncomingEmail
@@ -96,8 +97,9 @@ def main() -> int:
     emb_repo = EmbeddingRepository(get_database(settings))
     stored = emb_repo._col.find_one({"correlation_id": email.correlation_id})
     if stored:
-        dim = len(stored.get("embedding") or [])
-        mock_vec = stored.get("embedding")[:3] == [1.0, 0.5, 0.25]
+        embedding = stored.get("embedding") or []
+        dim = len(embedding)
+        mock_vec = len(embedding) >= 3 and embedding[:3] == [1.0, 0.5, 0.25]
         print(f"embedding in Mongo: dimension={dim}, mock_vector={mock_vec}")
     else:
         print("WARN: kein Embedding-Chunk in Mongo")

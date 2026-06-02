@@ -13,6 +13,7 @@ from config.factory import AppContext, build_app_context
 from config.settings import Settings, get_settings
 from web.api import register_api_blueprints
 from web.auth.routes import auth_bp
+from web.auth.token_blocklist import MongoBlocklistBackend, configure
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,7 @@ def create_app(settings: Settings | None = None) -> Flask:
 
     ctx = build_app_context(cfg)
     app.extensions["ctx"] = ctx
+    configure(MongoBlocklistBackend(ctx.revoked_token_repo))
 
     origins = [o.strip() for o in cfg.cors_origins.split(",") if o.strip()]
     CORS(app, origins=origins, supports_credentials=True)

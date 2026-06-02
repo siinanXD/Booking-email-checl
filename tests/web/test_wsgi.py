@@ -10,9 +10,11 @@ import mongomock
 from langgraph.checkpoint.memory import MemorySaver
 
 from config.settings import Settings
+from repositories.mongo import Db
 
 
 def test_wsgi_module_exposes_flask_app() -> None:
+    """WSGI-Modul liefert Flask-App mit funktionierendem /health."""
     settings = Settings.model_validate(
         {
             "OPENAI_API_KEY": "sk-test",
@@ -24,7 +26,8 @@ def test_wsgi_module_exposes_flask_app() -> None:
             "LLM_MODE": "mock",
         }
     )
-    db = mongomock.MongoClient()["wsgi_test"]
+    mongo_client: mongomock.MongoClient = mongomock.MongoClient()
+    db: Db = mongo_client["wsgi_test"]
     sys.modules.pop("wsgi", None)
     with patch("config.factory.get_database", return_value=db):
         with patch("workflows.checkpointer.build_checkpointer") as mock_cp:

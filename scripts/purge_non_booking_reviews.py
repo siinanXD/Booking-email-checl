@@ -20,6 +20,7 @@ from services.booking_relevance import classify_booking_mail
 
 
 def main() -> int:
+    """Entfernt pending Reviews ohne echte Buchungs-Mail."""
     ctx = build_app_context(get_settings())
     removed = 0
     kept = 0

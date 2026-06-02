@@ -8,7 +8,7 @@ from flask import Blueprint, g, jsonify, request
 from werkzeug.security import check_password_hash
 
 from web.auth.models import LoginRequest, TokenResponse, UserResponse
-from web.auth.token_blocklist import is_revoked, revoke
+from web.auth.token_blocklist import _exp_from_payload, is_revoked, revoke
 from web.auth.tokens import create_access_token, create_refresh_token, decode_token
 from web.middleware.auth_guard import require_auth
 
@@ -40,7 +40,7 @@ def logout() -> tuple[Any, int]:
         payload = decode_token(token, g.settings)
         jti = payload.get("jti")
         if isinstance(jti, str):
-            revoke(jti)
+            revoke(jti, expires_at=_exp_from_payload(payload.get("exp")))
     except Exception:
         pass
     return jsonify({"status": "logged_out"}), 200

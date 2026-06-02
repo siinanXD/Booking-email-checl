@@ -19,6 +19,7 @@ from services.booking_relevance import is_booking_relevant
 
 
 def main() -> int:
+    """Erzeugt Review-Entwürfe für verarbeitete Mails ohne pending Review."""
     from config.factory import build_app_context
     from config.settings import get_settings
 

@@ -14,6 +14,7 @@ _VENV_PY = _ROOT / ".venv" / "Scripts" / "python.exe"
 
 
 def _venv_hint() -> None:
+    """Warnt wenn nicht das Projekt-venv aktiv ist."""
     if not _VENV_PY.exists():
         return
     try:
@@ -30,6 +31,7 @@ def _venv_hint() -> None:
 
 
 def _import_error_help(exc: ModuleNotFoundError) -> None:
+    """Zeigt Setup-Hinweis bei fehlenden Abhängigkeiten."""
     print(
         "Import fehlgeschlagen (venv / Pakete fehlen):\n"
         "  py -3.11 -m venv .venv\n"

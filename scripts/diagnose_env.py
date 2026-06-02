@@ -14,6 +14,7 @@ from config.settings import _ENV_FILE, get_settings  # noqa: E402
 
 
 def main() -> int:
+    """Zeigt geladene .env-Pfade und gesetzte Keys (maskiert)."""
     cwd = Path.cwd()
     env_cwd = cwd / ".env"
     print(f"Terminal-Verzeichnis (cwd): {cwd}")

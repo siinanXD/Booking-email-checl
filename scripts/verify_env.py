@@ -45,12 +45,14 @@ def main() -> int:
 
 
 def _mask(value: str) -> str:
+    """Maskiert Secret-Werte für Konsolenausgabe."""
     if len(value) <= 8:
         return "***"
     return f"{value[:4]}...{value[-4:]}"
 
 
 def _mask_uri(uri: str) -> str:
+    """Maskiert Credentials in MongoDB-URIs."""
     if "@" not in uri:
         return _mask(uri)
     prefix, rest = uri.split("@", 1)

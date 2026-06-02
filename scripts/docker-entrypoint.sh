@@ -2,7 +2,7 @@
 set -e
 
 if [ -n "${ADMIN_EMAIL:-}" ] && [ -n "${ADMIN_PASSWORD:-}" ]; then
-  python scripts/seed_admin.py || true
+  python scripts/seed_admin.py
 fi
 
 exec "$@"

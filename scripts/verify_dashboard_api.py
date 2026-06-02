@@ -17,6 +17,7 @@ require_project_venv()
 
 
 def main() -> int:
+    """Prüft Dashboard-API-Endpunkte gegen laufenden Flask-Dev-Server."""
     from config.settings import get_settings
 
     settings = get_settings()
@@ -36,6 +37,7 @@ def main() -> int:
             body: dict[str, Any] | None = None,
             token: str | None = None,
         ) -> tuple[int, Any]:
+            """HTTP-Request gegen base + path; gibt Status und JSON-Body zurück."""
             data = None
             headers = {"Content-Type": "application/json"}
             if token:

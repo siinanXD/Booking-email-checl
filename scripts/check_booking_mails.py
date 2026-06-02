@@ -11,6 +11,7 @@ if str(_ROOT) not in sys.path:
 
 
 def main() -> int:
+    """Listet aktuelle Buchungs-Mails und Extraktionen aus MongoDB."""
     from config.settings import get_settings
     from repositories.email_repository import EmailRepository
     from repositories.extraction_repository import ExtractionRepository

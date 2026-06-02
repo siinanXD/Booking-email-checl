@@ -19,6 +19,7 @@ def test_list_pending_reviews(
     email_repo: Any,
     extraction_repo: ExtractionRepository,
 ) -> None:
+    """GET /api/reviews liefert pending Einträge mit Extraktion."""
     cid = "corr-review-1"
     email_repo.upsert_by_message_id(
         StoredEmail(

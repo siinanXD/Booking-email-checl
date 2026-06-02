@@ -15,6 +15,7 @@ from repositories.extraction_repository import ExtractionRepository
 from repositories.mail_metrics_repository import MailMetricsRepository
 from repositories.mongo import get_database
 from repositories.review_repository import ReviewRepository
+from repositories.revoked_token_repository import RevokedTokenRepository
 from repositories.user_repository import UserRepository
 from routers.ingestion import IngestionRouter
 from routers.review import ReviewRouter
@@ -46,6 +47,7 @@ class AppContext:
     review_repo: ReviewRepository
     metrics_repo: MailMetricsRepository
     user_repo: UserRepository
+    revoked_token_repo: RevokedTokenRepository
 
 
 def build_app_context(settings: Settings | None = None) -> AppContext:
@@ -60,6 +62,7 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
     review_repo = ReviewRepository(db)
     metrics_repo = MailMetricsRepository(db)
     user_repo = UserRepository(db)
+    revoked_token_repo = RevokedTokenRepository(db)
 
     alerts = AlertService(webhook_url=cfg.webhook_alert_url)
     tracing = configure_langfuse_env(cfg) and tracing_enabled(cfg)
@@ -147,4 +150,5 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
         review_repo=review_repo,
         metrics_repo=metrics_repo,
         user_repo=user_repo,
+        revoked_token_repo=revoked_token_repo,
     )

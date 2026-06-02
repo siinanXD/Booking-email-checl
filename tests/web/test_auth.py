@@ -47,3 +47,19 @@ def test_me_with_token(client: Any, auth_headers: dict[str, str]) -> None:
     resp = client.get("/api/auth/me", headers=auth_headers)
     assert resp.status_code == 200
     assert resp.get_json()["email"] == "admin@test.local"
+
+
+def test_logout_revokes_access_token(client: Any, web_settings: Any) -> None:
+    """Logout widerruft Access-Token; /me lehnt danach ab."""
+    login = client.post(
+        "/api/auth/login",
+        json={
+            "email": web_settings.admin_email,
+            "password": web_settings.admin_password,
+        },
+    )
+    token = login.get_json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+    assert client.get("/api/auth/me", headers=headers).status_code == 200
+    assert client.post("/api/auth/logout", headers=headers).status_code == 200
+    assert client.get("/api/auth/me", headers=headers).status_code == 401

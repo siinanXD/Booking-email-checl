@@ -20,6 +20,7 @@ def require_auth(fn: F) -> F:
 
     @wraps(fn)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
+        """Validiert Bearer-JWT und setzt g.current_user."""
         settings: Settings = g.settings
         header = request.headers.get("Authorization", "")
         if not header.startswith("Bearer "):

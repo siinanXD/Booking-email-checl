@@ -21,6 +21,7 @@ from services.booking_relevance import count_booking_mails
 
 
 def main() -> int:
+    """Gibt Zähler für Buchungs-Mails vs. Gesamtbestand aus."""
     ctx = build_app_context(get_settings())
     week_iso = (
         (datetime.now(UTC) - timedelta(days=7))
