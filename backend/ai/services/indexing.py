@@ -10,6 +10,7 @@ from typing import Protocol
 from langfuse.decorators import langfuse_context, observe
 
 from backend.ai.domain.booking.extraction import BookingExtraction
+from backend.infrastructure.observability.alerts import AlertService
 from backend.infrastructure.repositories.embedding_repository import EmbeddingRepository
 
 logger = logging.getLogger(__name__)
@@ -78,10 +79,12 @@ class IndexingService:
         self,
         embedding_repo: EmbeddingRepository,
         embed_client: EmbeddingFn,
+        alerts: AlertService | None = None,
     ) -> None:
         """Initialize the instance with its dependencies."""
         self._repo = embedding_repo
         self._embed = embed_client
+        self._alerts = alerts
 
     def schedule_index(
         self,
@@ -110,16 +113,26 @@ class IndexingService:
         body: str,
         extraction: BookingExtraction | None,
     ) -> None:
-        intent = extraction.intent.value if extraction and extraction.intent else None
-        chunks = chunk_text(body)
-        for i, chunk in enumerate(chunks):
-            vector = await asyncio.to_thread(self._embed.embed, chunk)
-            chunk_id = f"{correlation_id}:{i}"
-            await asyncio.to_thread(
-                self._repo.upsert_chunk,
-                chunk_id,
-                correlation_id,
-                chunk,
-                vector,
-                intent,
+        try:
+            intent = (
+                extraction.intent.value if extraction and extraction.intent else None
             )
+            chunks = chunk_text(body)
+            for i, chunk in enumerate(chunks):
+                vector = await asyncio.to_thread(self._embed.embed, chunk)
+                chunk_id = f"{correlation_id}:{i}"
+                await asyncio.to_thread(
+                    self._repo.upsert_chunk,
+                    chunk_id,
+                    correlation_id,
+                    chunk,
+                    vector,
+                    intent,
+                )
+        except Exception as exc:
+            logger.exception("Async indexing failed for %s", correlation_id)
+            if self._alerts is not None:
+                self._alerts.check_extraction_failure(
+                    correlation_id,
+                    f"indexing: {exc}",
+                )

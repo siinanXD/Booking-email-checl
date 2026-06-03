@@ -57,3 +57,25 @@ def test_search_by_vector_atlas_falls_back_on_operation_failure(mock_db) -> None
     results = repo.search_by_vector_atlas([1.0, 0.0], limit=1)
     assert len(results) == 1
     assert results[0]["_id"] == "c1"
+
+
+def test_index_async_alerts_on_failure(mock_db) -> None:
+    """Verify async indexing emits alert with indexing: prefix on failure."""
+    import asyncio
+    from unittest.mock import MagicMock
+
+    from backend.ai.services.indexing import IndexingService
+    from backend.infrastructure.observability.alerts import AlertService
+
+    class FailingEmbed:
+        def embed(self, text: str) -> list[float]:
+            raise RuntimeError("embed failed")
+
+    alerts = MagicMock(spec=AlertService)
+    repo = EmbeddingRepository(mock_db)
+    svc = IndexingService(repo, FailingEmbed(), alerts=alerts)
+    asyncio.run(svc._index_async("corr-fail", "hello world", None))
+    alerts.check_extraction_failure.assert_called_once()
+    args = alerts.check_extraction_failure.call_args[0]
+    assert args[0] == "corr-fail"
+    assert args[1].startswith("indexing:")

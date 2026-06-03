@@ -186,7 +186,7 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
         alerts=alerts,
         mail_cost=mail_cost,
     )
-    indexing = IndexingService(embedding_repo, embed_client)
+    indexing = IndexingService(embedding_repo, embed_client, alerts=alerts)
 
     checkpointer = build_checkpointer(cfg)
     workflow = EmailWorkflow(
