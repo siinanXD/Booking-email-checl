@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from backend.ai.services.classification import ClassificationService, LLMClient
+from backend.ai.services.entity_resolution import EntityResolutionService
 from backend.ai.services.extraction import ExtractionService
 from backend.ai.services.grounding import GroundingService
 from backend.ai.services.indexing import EmbeddingClient, EmbeddingFn, IndexingService
@@ -155,7 +156,14 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
     )
     validation = ValidationService()
     similarity = SimilaritySearchService(embedding_repo, embed_client)
-    retrieval = RetrievalService(entity_repo, email_repo, similarity=similarity)
+    entity_resolution = EntityResolutionService(entity_repo)
+    retrieval = RetrievalService(
+        entity_repo,
+        email_repo,
+        similarity=similarity,
+        entity_resolution=entity_resolution,
+        alerts=alerts,
+    )
     response_gen = ResponseGenerationService(
         llm,
         cfg.openai_model_draft,

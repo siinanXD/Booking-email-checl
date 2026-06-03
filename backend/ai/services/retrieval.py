@@ -2,14 +2,20 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
+from uuid import uuid4
 
 from backend.ai.domain.booking.extraction import BookingExtraction
+from backend.ai.services.entity_resolution import EntityResolutionService
 from backend.ai.services.similarity_search import SimilaritySearchService
 from backend.core.models.email import StoredEmail
 from backend.core.models.entities import Guest, Reservation
+from backend.infrastructure.observability.alerts import AlertService
 from backend.infrastructure.repositories.email_repository import EmailRepository
 from backend.infrastructure.repositories.entity_repository import EntityRepository
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -17,7 +23,7 @@ class RetrievalHits:
     """Kontext für Antwortgenerierung."""
 
     guest: Guest | None = None
-    reservations: list[Reservation] | None = None
+    reservations: list[Reservation] = field(default_factory=list)
     thread_emails: list[StoredEmail] | None = None
     similar_cases: list[dict[str, object]] = field(default_factory=list)
 
@@ -30,27 +36,50 @@ class RetrievalService:
         entity_repo: EntityRepository,
         email_repo: EmailRepository,
         similarity: SimilaritySearchService | None = None,
+        *,
+        entity_resolution: EntityResolutionService | None = None,
+        alerts: AlertService | None = None,
     ) -> None:
         """Initialize the instance with its dependencies."""
         self._entities = entity_repo
         self._emails = email_repo
         self._similarity = similarity
+        self._entity_resolution = entity_resolution or EntityResolutionService(
+            entity_repo
+        )
+        self._alerts = alerts
 
     def retrieve(
         self,
         email: StoredEmail,
         extraction: BookingExtraction | None = None,
         include_similar: bool = False,
+        max_reservations: int = 20,
     ) -> RetrievalHits:
         """Lädt Gast, Reservierungen und Thread-Kontext."""
         guest: Guest | None = None
         reservations: list[Reservation] = []
 
-        if extraction and extraction.email:
-            guest = self._entities.get_guest_by_email(extraction.email)
-            reservations = self._entities.find_reservations_by_guest_email(
-                extraction.email
+        if extraction is not None:
+            guest, _confidence = self._entity_resolution.resolve_guest(
+                extraction,
+                email.from_address,
             )
+            if guest is None and self._should_create_guest(extraction, email):
+                guest = Guest(
+                    guest_id=str(uuid4()),
+                    name=extraction.guest_name,
+                    email=(extraction.email or email.from_address or None),
+                    phone=extraction.phone,
+                    platform=extraction.platform,
+                )
+                self._entities.upsert_guest(guest)
+
+            if guest is not None:
+                reservations = self._entities.find_reservations_by_guest_id(
+                    guest.guest_id
+                )
+
         if extraction and extraction.booking_number:
             by_number = self._entities.find_reservation_by_booking_number(
                 extraction.booking_number
@@ -70,13 +99,54 @@ class RetrievalService:
                 email.correlation_id
             )
 
+        reservations = self._cap_reservations(
+            reservations,
+            max_reservations,
+            email.correlation_id,
+        )
+
+        if extraction and extraction.booking_number:
+            booking_found = any(
+                r.booking_number == extraction.booking_number for r in reservations
+            )
+            if not booking_found and self._alerts is not None:
+                self._alerts.check_retrieval_empty(
+                    email.correlation_id,
+                    f"booking_number_not_found:{extraction.booking_number}",
+                )
+
         similar: list[dict[str, object]] = []
         if include_similar and self._similarity is not None:
             similar = self._similarity.find_similar_cases(email.body_text, limit=3)
 
         return RetrievalHits(
             guest=guest,
-            reservations=reservations or None,
+            reservations=reservations,
             thread_emails=thread_emails or None,
             similar_cases=similar,
         )
+
+    @staticmethod
+    def _should_create_guest(
+        extraction: BookingExtraction,
+        email: StoredEmail,
+    ) -> bool:
+        return bool(extraction.guest_name or extraction.email or email.from_address)
+
+    @staticmethod
+    def _cap_reservations(
+        reservations: list[Reservation],
+        max_reservations: int,
+        correlation_id: str,
+    ) -> list[Reservation]:
+        if len(reservations) <= max_reservations:
+            return reservations
+        logger.warning(
+            "retrieval_truncated",
+            extra={
+                "correlation_id": correlation_id,
+                "total": len(reservations),
+                "max_reservations": max_reservations,
+            },
+        )
+        return reservations[:max_reservations]

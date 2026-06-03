@@ -70,6 +70,11 @@ class EntityRepository:
         )
         return reservation
 
+    def find_reservations_by_guest_id(self, guest_id: str) -> list[Reservation]:
+        """Reservierungen eines Gastes."""
+        cursor = self._reservations.find({"guest_id": guest_id})
+        return [Reservation.from_mongo(doc) for doc in cursor]
+
     def find_reservations_by_guest_email(self, email: str) -> list[Reservation]:
         """Reservierungen über Gast-E-Mail (über guest_id-Verknüpfung)."""
         guest = self.get_guest_by_email(email)
