@@ -99,5 +99,34 @@
       "intent": "guest_inquiry",
       "booking_number": "AB456"
     }
+  },
+  {
+    "message_id": "eval-009",
+    "from_address": "thomas.weber@booking.com",
+    "subject": "Beschwerde zu Buchung CMP77",
+    "body_text": "Sehr geehrte Damen und Herren, ich bin Thomas Weber und beschwere mich über meinen Aufenthalt. Buchung CMP77.",
+    "received_at": "2026-06-03T10:00:00Z",
+    "platform": "booking.com",
+    "expected_intent": "complaint",
+    "expected_extraction": {
+      "intent": "complaint",
+      "booking_number": "CMP77",
+      "guest_name": "Thomas Weber"
+    }
+  },
+  {
+    "message_id": "eval-010",
+    "from_address": "familie.schmidt@web.de",
+    "subject": "Direktbuchung DIR50",
+    "body_text": "Guten Tag, wir möchten die Direktbuchung DIR50 für 01.08.-05.08.2026 bestätigen.",
+    "received_at": "2026-06-03T11:00:00Z",
+    "expected_intent": "new_booking",
+    "expected_extraction": {
+      "intent": "new_booking",
+      "booking_number": "DIR50",
+      "check_in": "2026-08-01",
+      "check_out": "2026-08-05",
+      "guest_count": 2
+    }
   }
 ]
