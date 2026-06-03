@@ -60,5 +60,44 @@
     "expected_extraction": {
       "intent": "review"
     }
+  },
+  {
+    "message_id": "eval-006",
+    "from_address": "guest@booking.com",
+    "subject": "Änderung Reservierung CHG88",
+    "body_text": "Bitte Check-in auf den 20.06.2026 verschieben. Buchung CHG88.",
+    "received_at": "2026-06-02T10:00:00Z",
+    "platform": "booking.com",
+    "expected_intent": "change",
+    "expected_extraction": {
+      "intent": "change",
+      "booking_number": "CHG88",
+      "check_in": "2026-06-20"
+    }
+  },
+  {
+    "message_id": "eval-007",
+    "from_address": "guest@airbnb.com",
+    "subject": "Frage zur Anreise",
+    "body_text": "Hallo, wann können wir einchecken? Gibt es Parkplätze?",
+    "received_at": "2026-06-02T11:00:00Z",
+    "platform": "airbnb",
+    "expected_intent": "guest_inquiry",
+    "expected_extraction": {
+      "intent": "guest_inquiry"
+    }
+  },
+  {
+    "message_id": "eval-008",
+    "from_address": "abc123@relay.airbnb.com",
+    "subject": "Nachricht zu Ihrer Buchung",
+    "body_text": "Guten Tag, ich habe eine Frage zu meiner Buchung AB456.",
+    "received_at": "2026-06-02T12:00:00Z",
+    "platform": "airbnb",
+    "expected_intent": "guest_inquiry",
+    "expected_extraction": {
+      "intent": "guest_inquiry",
+      "booking_number": "AB456"
+    }
   }
 ]
