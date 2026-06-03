@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from backend.ai.domain.booking.booking_relevance import (
     classify_booking_mail,
     effective_booking_intent,
@@ -50,3 +52,38 @@ def count_booking_mails(
             key = eff.value if eff else "heuristic"
             by_intent[key] = by_intent.get(key, 0) + 1
     return total, booking, by_intent
+
+
+def latest_booking_received_at(
+    email_repo: object,
+    extraction_repo: object,
+    *,
+    account_id: str | None = None,
+) -> datetime | None:
+    """Neuestes received_at einer als Buchung klassifizierten Mail."""
+    emails = email_repo if isinstance(email_repo, EmailRepository) else None
+    extr = (
+        extraction_repo if isinstance(extraction_repo, ExtractionRepository) else None
+    )
+    if emails is None or extr is None:
+        return None
+
+    match: dict[str, object] = {}
+    if account_id:
+        match["account_id"] = account_id
+    latest: datetime | None = None
+    cursor = emails._col.find(match).sort("received_at", -1)
+    for doc in cursor:
+        email = StoredEmail.from_mongo(doc)
+        ext = extr.get_by_correlation_id(
+            email.correlation_id,
+            account_id=account_id,
+        )
+        if not classify_booking_mail(email, ext).is_booking:
+            continue
+        received_at = email.received_at
+        if received_at is None:
+            continue
+        if latest is None or received_at > latest:
+            latest = received_at
+    return latest

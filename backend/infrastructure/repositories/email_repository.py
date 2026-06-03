@@ -219,6 +219,17 @@ class EmailRepository:
         query = with_account_filter({"received_at": {"$gte": since_iso}}, account_id)
         return int(self._col.count_documents(query))
 
+    def max_received_at(self, *, account_id: str | None = None) -> str | None:
+        """Neuestes received_at in der Inbox (ISO-String)."""
+        query = with_account_filter({}, account_id)
+        doc = self._col.find_one(query, sort=[("received_at", -1)])
+        if doc is None:
+            return None
+        received_at = doc.get("received_at")
+        if received_at is None:
+            return None
+        return str(received_at)
+
     @staticmethod
     def _apply_booking_related_match(
         match_stage: dict[str, Any],

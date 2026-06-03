@@ -109,6 +109,23 @@ class ReviewRepository:
         query = with_account_filter({"review_status": "pending"}, account_id)
         return int(self._col.count_documents(query))
 
+    def count_by_status_since(
+        self,
+        statuses: list[str],
+        since_iso: str,
+        *,
+        account_id: str | None = None,
+    ) -> int:
+        """Reviews mit Status in statuses und updated_at seit since_iso."""
+        query = with_account_filter(
+            {
+                "review_status": {"$in": statuses},
+                "updated_at": {"$gte": since_iso},
+            },
+            account_id,
+        )
+        return int(self._col.count_documents(query))
+
     def list_pending(
         self,
         limit: int = 50,
