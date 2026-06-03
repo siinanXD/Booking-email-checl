@@ -87,6 +87,35 @@ def tenant_account_id(client: object, auth_headers: dict[str, str]) -> str:
 
 
 @pytest.fixture
+def tenant_owner_auth_headers(
+    client: object, auth_headers: dict[str, str]
+) -> dict[str, str]:
+    """JWT für freigeschalteten Mandanten-Owner (Mail-Onboarding relevant)."""
+    from tests.web.test_registration import _register_payload
+
+    payload = _register_payload(email="owner-mail@test.local")
+    client.post("/api/auth/register", json=payload)  # type: ignore[union-attr]
+    pending = client.get(  # type: ignore[union-attr]
+        "/api/admin/accounts?status=pending",
+        headers=auth_headers,
+    )
+    tenant = next(
+        i for i in pending.get_json()["items"] if i["contact_email"] == payload["email"]
+    )
+    client.post(  # type: ignore[union-attr]
+        f"/api/admin/accounts/{tenant['id']}/approve",
+        headers=auth_headers,
+    )
+    login = client.post(  # type: ignore[union-attr]
+        "/api/auth/login",
+        json={"email": payload["email"], "password": payload["password"]},
+    )
+    assert login.status_code == 200
+    token = login.get_json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
 def auth_headers(client: object, web_settings: Settings) -> dict[str, str]:
     """JWT Authorization-Header."""
     resp = client.post(  # type: ignore[union-attr]

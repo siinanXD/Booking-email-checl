@@ -1,5 +1,10 @@
 import { apiClient } from "@/lib/api/client";
-import type { AccountListResponse } from "@/lib/types/api";
+import type { AccountListResponse, AdminMeResponse } from "@/lib/types/api";
+
+export async function fetchAdminMe(): Promise<AdminMeResponse> {
+  const { data } = await apiClient.get<AdminMeResponse>("/api/admin/me");
+  return data;
+}
 
 export async function fetchPendingAccounts(): Promise<AccountListResponse> {
   const { data } = await apiClient.get<AccountListResponse>(

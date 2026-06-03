@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuthStore } from "@/features/auth/authStore";
 import {
   fetchMailConnection,
   testMailConnection,
@@ -16,10 +17,12 @@ import { Card } from "@/shared/ui/Card";
 import { Input } from "@/shared/ui/Input";
 
 export function SettingsPage() {
+  const isPlatformAdmin = useAuthStore((s) => s.isPlatformAdmin());
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["settings"],
     queryFn: fetchSettings,
+    enabled: !isPlatformAdmin,
   });
 
   const [whatsappEnabled, setWhatsappEnabled] = useState(false);
@@ -36,6 +39,7 @@ export function SettingsPage() {
   const { data: mailData } = useQuery({
     queryKey: ["mail-connection"],
     queryFn: fetchMailConnection,
+    enabled: !isPlatformAdmin,
   });
 
   const mailTestMut = useMutation({
@@ -104,6 +108,29 @@ export function SettingsPage() {
     },
     onError: () => setSaveMessage("Löschen fehlgeschlagen."),
   });
+
+  if (isPlatformAdmin) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-6">
+        <div>
+          <h2 className="text-xl font-semibold text-slate-800">Einstellungen</h2>
+          <p className="mt-1 text-sm text-slate-600">
+            Als Plattform-Administrator verwaltest du Mandanten über die{" "}
+            <Link to="/admin/overview" className="text-indigo-600 hover:underline">
+              Admin-Konsole
+            </Link>
+            . Postfach- und WhatsApp-Verbindungen richten Mandanten selbst ein.
+          </p>
+        </div>
+        <Card className="space-y-2">
+          <h3 className="font-medium text-slate-800">Plattform-Administration</h3>
+          <p className="text-sm text-slate-600">
+            Verbindungstests pro Mandant folgen unter Admin → Diagnose (Phase 2).
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return <p className="text-slate-500">Einstellungen werden geladen…</p>;

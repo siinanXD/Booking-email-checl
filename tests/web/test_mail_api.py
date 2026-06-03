@@ -237,10 +237,10 @@ def test_mail_sync_reprocess_when_requested(
 
 
 def test_auth_me_includes_mail_onboarding(
-    client: object, auth_headers: dict[str, str]
+    client: object, tenant_owner_auth_headers: dict[str, str]
 ) -> None:
-    client.get("/api/mail/connection", headers=auth_headers)  # type: ignore[union-attr]
-    resp = client.get("/api/auth/me", headers=auth_headers)  # type: ignore[union-attr]
+    client.get("/api/mail/connection", headers=tenant_owner_auth_headers)  # type: ignore[union-attr]
+    resp = client.get("/api/auth/me", headers=tenant_owner_auth_headers)  # type: ignore[union-attr]
     assert resp.status_code == 200
     data = resp.get_json()
     assert data["mail_onboarding_completed"] is False
@@ -248,10 +248,10 @@ def test_auth_me_includes_mail_onboarding(
 
     client.put(  # type: ignore[union-attr]
         "/api/mail/connection",
-        headers=auth_headers,
+        headers=tenant_owner_auth_headers,
         json={"onboarding_completed": True},
     )
-    resp = client.get("/api/auth/me", headers=auth_headers)  # type: ignore[union-attr]
+    resp = client.get("/api/auth/me", headers=tenant_owner_auth_headers)  # type: ignore[union-attr]
     assert resp.get_json()["mail_onboarding_completed"] is True
 
 

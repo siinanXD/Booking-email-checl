@@ -13,9 +13,38 @@ from backend.api.schemas.accounts import (
     AccountListItem,
     AccountListResponse,
     AccountRejectRequest,
+    AdminMeResponse,
 )
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
+
+
+@admin_bp.get("/me")
+@require_auth
+@require_platform_admin
+def admin_me() -> tuple[Any, int]:
+    """Plattform-Admin-Profil (ohne Mail-Onboarding-Pflicht)."""
+    from backend.infrastructure.repositories.user_repository import UserRecord
+
+    user_payload = g.current_user
+    user_id = user_payload.get("id")
+    if not isinstance(user_id, str):
+        return jsonify({"error": "Unauthorized", "code": 401}), 401
+    user = g.ctx.user_repo.get_by_id(user_id)
+    if user is None or not isinstance(user, UserRecord):
+        return jsonify({"error": "Unauthorized", "code": 401}), 401
+    return (
+        jsonify(
+            AdminMeResponse(
+                id=user.id,
+                email=user.email,
+                role=user.role,
+                account_id=user.account_id,
+                mail_onboarding_required=False,
+            ).model_dump()
+        ),
+        200,
+    )
 
 
 def _to_list_item(account: object) -> AccountListItem:

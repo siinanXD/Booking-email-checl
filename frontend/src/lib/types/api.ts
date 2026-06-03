@@ -96,6 +96,14 @@ export interface AccountListResponse {
   total: number;
 }
 
+export interface AdminMeResponse {
+  id: string;
+  email: string;
+  role: string;
+  account_id?: string | null;
+  mail_onboarding_required: boolean;
+}
+
 export interface DashboardStats {
   total_emails_today: number;
   total_emails_week: number;
