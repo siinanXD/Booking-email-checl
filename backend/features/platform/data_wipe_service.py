@@ -6,6 +6,13 @@ from typing import Any
 
 from pymongo.database import Database
 
+from backend.infrastructure.repositories.domain_collections import (
+    BOOKINGS,
+    CHUNKS,
+    CONVERSATIONS,
+    GUESTS,
+    PROPERTIES,
+)
 from backend.infrastructure.repositories.email_repository import EmailRepository
 from backend.infrastructure.repositories.embedding_repository import EmbeddingRepository
 from backend.infrastructure.repositories.extraction_repository import (
@@ -35,8 +42,11 @@ WIPE_COLLECTIONS = (
     PropertyRecipientRepository.COLLECTION,
     PlatformSettingsRepository.COLLECTION,
     "mail_connections",
-    "guests",
-    "reservations",
+    GUESTS,
+    BOOKINGS,
+    PROPERTIES,
+    CONVERSATIONS,
+    CHUNKS,
 )
 
 

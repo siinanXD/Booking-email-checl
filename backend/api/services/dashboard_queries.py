@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from backend.ai.domain.booking.booking_mail_counts import count_booking_mails
+from backend.ai.domain.booking.booking_mail_counts import (
+    count_booking_mails,
+    latest_booking_received_at,
+)
 from backend.ai.domain.booking.taxonomy import BookingIntent
 from backend.api.schemas.costs import CostSeriesPoint, CostsResponse
 from backend.api.schemas.dashboard import DashboardStats
@@ -54,6 +57,26 @@ def dashboard_stats(ctx: AppContext, account_id: str) -> DashboardStats:
         account_id=account_id,
     )
     pending_booking = count_pending_booking_reviews(ctx, account_id)
+    reviewed_today = ctx.review_repo.count_by_status_since(
+        ["approved", "rejected"],
+        today_iso,
+        account_id=account_id,
+    )
+    last_email_received_at = email_repo.max_received_at(account_id=account_id)
+    last_booking_dt = latest_booking_received_at(
+        email_repo,
+        ctx.extraction_repo,
+        account_id=account_id,
+    )
+    last_booking_detected_at = (
+        last_booking_dt.isoformat() if last_booking_dt is not None else None
+    )
+    mail_conn = ctx.mail_connection_repo.get(account_id)
+    last_sync_at = (
+        mail_conn.last_sync_at.isoformat()
+        if mail_conn and mail_conn.last_sync_at
+        else None
+    )
 
     return DashboardStats(
         total_emails_today=total_today,
@@ -70,6 +93,11 @@ def dashboard_stats(ctx: AppContext, account_id: str) -> DashboardStats:
         cost_week_usd=round(cost_week, 4),
         avg_cost_per_mail_usd=round(avg_cost, 4),
         grounding_failures_today=grounding_today,
+        reviewed_today=reviewed_today,
+        last_sync_at=last_sync_at,
+        last_email_received_at=last_email_received_at,
+        last_booking_detected_at=last_booking_detected_at,
+        mail_fetch_unread_only=ctx.settings.outlook_fetch_unread_only,
     )
 
 
@@ -89,6 +117,11 @@ def demo_stats() -> DashboardStats:
         cost_week_usd=2.1,
         avg_cost_per_mail_usd=0.044,
         grounding_failures_today=0,
+        reviewed_today=8,
+        last_sync_at="2026-06-03T10:00:00+00:00",
+        last_email_received_at="2026-06-03T09:45:00+00:00",
+        last_booking_detected_at="2026-06-03T09:30:00+00:00",
+        mail_fetch_unread_only=False,
     )
 
 

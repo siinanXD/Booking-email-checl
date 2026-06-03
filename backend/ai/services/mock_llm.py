@@ -48,6 +48,17 @@ class MockLLM:
                 )
             if "AB456" in mail:
                 return '{"intent": "guest_inquiry", "booking_number": "AB456"}'
+            if "CMP77" in mail:
+                return (
+                    '{"intent": "complaint", "booking_number": "CMP77", '
+                    '"guest_name": "Thomas Weber"}'
+                )
+            if "DIR50" in mail:
+                return (
+                    '{"intent": "new_booking", "booking_number": "DIR50", '
+                    '"check_in": "2026-08-01", "check_out": "2026-08-05", '
+                    '"guest_count": 2}'
+                )
             if "einchecken" in mail.lower() or "Parkplätze" in mail:
                 return '{"intent": "guest_inquiry"}'
             if "Bewertung" in mail or "Aufenthalt" in mail:
@@ -78,6 +89,10 @@ class MockLLM:
             return "guest_inquiry"
         if "Stornierung" in mail or "stornieren" in mail.lower():
             return "cancellation"
+        if "Beschwerde" in mail or "CMP77" in mail:
+            return "complaint"
+        if "Direktbuchung" in mail or "DIR50" in mail:
+            return "new_booking"
         if "Neue Buchung" in mail or "AB123" in mail:
             return "new_booking"
         return "new_booking"

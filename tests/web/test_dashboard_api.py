@@ -20,6 +20,8 @@ def test_dashboard_stats_empty(client: Any, auth_headers: dict[str, str]) -> Non
     data = resp.get_json()
     assert data["pending_review"] == 0
     assert data["total_emails_today"] == 0
+    assert data["reviewed_today"] == 0
+    assert data["last_sync_at"] is None
 
 
 def test_dashboard_stats_with_mail(

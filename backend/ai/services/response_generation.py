@@ -83,11 +83,7 @@ class ResponseGenerationService:
         if hits is None:
             hits = self._retrieval.retrieve(email, extraction)
         facts = self._facts_json(hits, extraction)
-        prompt = format_prompt(
-            "booking/draft.md",
-            facts=facts,
-            body=email.body_text,
-        )
+        prompt = self._build_prompt(email, extraction, facts)
         try:
             completion = self._llm.complete(prompt, self._model)
             if self._mail_cost is not None:
@@ -116,6 +112,19 @@ class ResponseGenerationService:
         draft.grounding_ok = self._grounding.check(draft, hits)
         return draft
 
+    def _build_prompt(
+        self,
+        email: StoredEmail,
+        extraction: BookingExtraction,
+        facts: str,
+    ) -> str:
+        return format_prompt(
+            "booking/draft.md",
+            platform_tone=_platform_tone(extraction.platform),
+            facts=facts,
+            body=email.body_text,
+        )
+
     def _facts_json(
         self,
         hits: RetrievalHits,
@@ -130,3 +139,12 @@ class ResponseGenerationService:
             "similar_cases": hits.similar_cases or [],
         }
         return json.dumps(payload, ensure_ascii=False, indent=2)
+
+
+def _platform_tone(platform: str | None) -> str:
+    normalized = (platform or "").strip().lower()
+    if normalized == "airbnb":
+        return "informell (Du, locker, freundlich)"
+    if normalized in {"booking.com", "booking"}:
+        return "formell (Sie, höflich und professionell)"
+    return "neutral (höflich, weder zu locker noch zu steif)"

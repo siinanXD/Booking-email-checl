@@ -17,6 +17,7 @@ class AlertThresholds:
 
     max_cost_per_mail_usd: float = 0.50
     grounding_failure_rate: float = 0.3
+    max_draft_edit_distance: float = 0.4
 
 
 class AlertService:
@@ -30,6 +31,11 @@ class AlertService:
         """Initialize the instance with its dependencies."""
         self._webhook = webhook_url
         self._thresholds = thresholds or AlertThresholds()
+
+    @property
+    def thresholds(self) -> AlertThresholds:
+        """Expose configured alert thresholds."""
+        return self._thresholds
 
     def check_cost_per_mail(self, cost_usd: float, correlation_id: str) -> None:
         """Warnt bei hohen Kosten pro Mail."""
@@ -55,6 +61,13 @@ class AlertService:
         self._emit(
             "retrieval_empty",
             {"correlation_id": correlation_id, "reason": reason},
+        )
+
+    def check_draft_quality(self, correlation_id: str, distance: float) -> None:
+        """Warnt wenn Draft stark vom freigegebenen Text abweicht."""
+        self._emit(
+            "draft_quality_low",
+            {"correlation_id": correlation_id, "edit_distance": distance},
         )
 
     def _emit(self, alert_type: str, payload: dict[str, Any]) -> None:
