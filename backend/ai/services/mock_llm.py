@@ -41,6 +41,15 @@ class MockLLM:
                 return '{"intent": "cancellation", "booking_number": "XY999"}'
             if "PAY55" in mail:
                 return '{"intent": "payment_issue", "booking_number": "PAY55"}'
+            if "CHG88" in mail:
+                return (
+                    '{"intent": "change", "booking_number": "CHG88", '
+                    '"check_in": "2026-06-20"}'
+                )
+            if "AB456" in mail:
+                return '{"intent": "guest_inquiry", "booking_number": "AB456"}'
+            if "einchecken" in mail.lower() or "Parkplätze" in mail:
+                return '{"intent": "guest_inquiry"}'
             if "Bewertung" in mail or "Aufenthalt" in mail:
                 return '{"intent": "review"}'
             if "stornieren" in mail.lower():
@@ -54,14 +63,23 @@ class MockLLM:
             return "payment_issue"
         if "Bewertung" in mail:
             return "review"
-        if "Stornierung" in mail or "stornieren" in mail.lower():
-            return "cancellation"
-        if "Neue Buchung" in mail or "AB123" in mail:
-            return "new_booking"
         if mail.strip().endswith("Inhalt:\n") or (
             "Inhalt:\n\n" in mail and len(mail.split("Inhalt:")[-1].strip()) < 3
         ):
             return "other"
+        if "Änderung" in mail or "CHG88" in mail:
+            return "change"
+        if (
+            "Frage" in mail
+            or "einchecken" in mail.lower()
+            or "Parkplätze" in mail
+            or "relay.airbnb.com" in mail
+        ):
+            return "guest_inquiry"
+        if "Stornierung" in mail or "stornieren" in mail.lower():
+            return "cancellation"
+        if "Neue Buchung" in mail or "AB123" in mail:
+            return "new_booking"
         return "new_booking"
 
 

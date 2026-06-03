@@ -39,3 +39,10 @@ def test_grounding_alert_when_not_grounded(caplog) -> None:
     if not draft.grounding_ok:
         svc.check_grounding_suspect(draft.correlation_id)
     assert any("grounding_suspect" in r.message for r in caplog.records)
+
+
+def test_retrieval_empty_alert(caplog) -> None:
+    """Verify retrieval empty alert."""
+    svc = AlertService()
+    svc.check_retrieval_empty("corr-ret-empty", "booking_number_not_found:AB999")
+    assert any("retrieval_empty" in r.message for r in caplog.records)

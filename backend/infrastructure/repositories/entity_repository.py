@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from pymongo.collection import Collection
@@ -38,6 +39,27 @@ class EntityRepository:
             return None
         return Guest.from_mongo(doc)
 
+    def get_guest_by_id(self, guest_id: str) -> Guest | None:
+        """Gast anhand guest_id."""
+        doc = self._guests.find_one({"_id": guest_id})
+        if doc is None:
+            return None
+        return Guest.from_mongo(doc)
+
+    def find_guests_by_name_and_platform(
+        self,
+        name: str,
+        platform: str,
+    ) -> list[Guest]:
+        """Gäste mit gleichem Namen (case-insensitive) und Plattform."""
+        pattern = re.compile(f"^{re.escape(name.strip())}$", re.IGNORECASE)
+        cursor = self._guests.find({"platform": platform.strip().lower()})
+        return [
+            Guest.from_mongo(doc)
+            for doc in cursor
+            if doc.get("name") and pattern.match(str(doc["name"]).strip())
+        ]
+
     def upsert_reservation(self, reservation: Reservation) -> Reservation:
         """Reservierung speichern oder aktualisieren."""
         doc = reservation.to_mongo()
@@ -47,6 +69,11 @@ class EntityRepository:
             upsert=True,
         )
         return reservation
+
+    def find_reservations_by_guest_id(self, guest_id: str) -> list[Reservation]:
+        """Reservierungen eines Gastes."""
+        cursor = self._reservations.find({"guest_id": guest_id})
+        return [Reservation.from_mongo(doc) for doc in cursor]
 
     def find_reservations_by_guest_email(self, email: str) -> list[Reservation]:
         """Reservierungen über Gast-E-Mail (über guest_id-Verknüpfung)."""

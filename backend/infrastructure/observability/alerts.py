@@ -50,6 +50,13 @@ class AlertService:
         """Meldet Grounding-Verdacht."""
         self._emit("grounding_suspect", {"correlation_id": correlation_id})
 
+    def check_retrieval_empty(self, correlation_id: str, reason: str) -> None:
+        """Warnt wenn Retrieval keine Treffer liefert obwohl Buchungsnummer bekannt."""
+        self._emit(
+            "retrieval_empty",
+            {"correlation_id": correlation_id, "reason": reason},
+        )
+
     def _emit(self, alert_type: str, payload: dict[str, Any]) -> None:
         message = f"[ALERT] {alert_type}: {payload}"
         logger.warning(message)
