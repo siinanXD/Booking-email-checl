@@ -31,8 +31,14 @@ def get_client(settings: Settings) -> MongoClient[dict[str, object]]:
 
 def get_database(settings: Settings) -> Db:
     """Gibt die konfigurierte Datenbank zurück."""
+    from backend.infrastructure.repositories.domain_collections import (
+        ensure_domain_collections,
+    )
+
     client = get_client(settings)
-    return client[settings.mongodb_db_name]
+    db = client[settings.mongodb_db_name]
+    ensure_domain_collections(db)
+    return db
 
 
 def ping(settings: Settings) -> bool:

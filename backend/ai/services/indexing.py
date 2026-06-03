@@ -11,6 +11,7 @@ from langfuse.decorators import langfuse_context, observe
 
 from backend.ai.domain.booking.extraction import BookingExtraction
 from backend.infrastructure.observability.alerts import AlertService
+from backend.infrastructure.repositories.chunk_repository import ChunkRepository
 from backend.infrastructure.repositories.embedding_repository import EmbeddingRepository
 
 logger = logging.getLogger(__name__)
@@ -79,10 +80,12 @@ class IndexingService:
         self,
         embedding_repo: EmbeddingRepository,
         embed_client: EmbeddingFn,
+        chunk_repo: ChunkRepository | None = None,
         alerts: AlertService | None = None,
     ) -> None:
         """Initialize the instance with its dependencies."""
         self._repo = embedding_repo
+        self._chunk_repo = chunk_repo
         self._embed = embed_client
         self._alerts = alerts
 
@@ -91,18 +94,20 @@ class IndexingService:
         correlation_id: str,
         body: str,
         extraction: BookingExtraction | None = None,
+        *,
+        account_id: str | None = None,
     ) -> None:
         """Startet Indexierung ohne den Aufrufer zu blockieren."""
         try:
             loop = asyncio.get_running_loop()
             loop.create_task(
-                self._index_async(correlation_id, body, extraction),
+                self._index_async(correlation_id, body, extraction, account_id),
                 name=f"index-{correlation_id}",
             )
         except RuntimeError:
             threading.Thread(
                 target=asyncio.run,
-                args=(self._index_async(correlation_id, body, extraction),),
+                args=(self._index_async(correlation_id, body, extraction, account_id),),
                 daemon=True,
                 name=f"index-{correlation_id}",
             ).start()
@@ -112,6 +117,7 @@ class IndexingService:
         correlation_id: str,
         body: str,
         extraction: BookingExtraction | None,
+        account_id: str | None = None,
     ) -> None:
         try:
             intent = (
@@ -121,6 +127,15 @@ class IndexingService:
             for i, chunk in enumerate(chunks):
                 vector = await asyncio.to_thread(self._embed.embed, chunk)
                 chunk_id = f"{correlation_id}:{i}"
+                if self._chunk_repo is not None:
+                    await asyncio.to_thread(
+                        self._chunk_repo.upsert_chunk,
+                        chunk_id,
+                        correlation_id,
+                        chunk,
+                        intent,
+                        account_id=account_id,
+                    )
                 await asyncio.to_thread(
                     self._repo.upsert_chunk,
                     chunk_id,
@@ -128,6 +143,7 @@ class IndexingService:
                     chunk,
                     vector,
                     intent,
+                    account_id=account_id,
                 )
         except Exception as exc:
             logger.exception("Async indexing failed for %s", correlation_id)

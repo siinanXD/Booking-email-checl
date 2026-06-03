@@ -16,6 +16,7 @@ class Guest(BaseModel):
     email: str | None = None
     phone: str | None = None
     platform: str | None = None
+    account_id: str | None = None
     created_at: datetime | None = None
 
     def to_mongo(self) -> dict[str, Any]:
@@ -37,6 +38,7 @@ class Property(BaseModel):
     property_id: str
     name: str
     platform: str | None = None
+    account_id: str | None = None
 
     def to_mongo(self) -> dict[str, Any]:
         """Execute the operation."""
@@ -66,6 +68,7 @@ class Reservation(BaseModel):
     status: str | None = None
     platform: str | None = None
     correlation_id: str | None = None
+    account_id: str | None = None
 
     def to_mongo(self) -> dict[str, Any]:
         """Execute the operation."""

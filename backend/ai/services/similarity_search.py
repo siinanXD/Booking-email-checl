@@ -6,6 +6,7 @@ from typing import Any
 
 from backend.ai.services.indexing import EmbeddingFn
 from backend.infrastructure.repositories.embedding_repository import EmbeddingRepository
+from backend.infrastructure.repositories.tenant_scope import with_account_filter
 
 
 class SimilaritySearchService:
@@ -28,9 +29,20 @@ class SimilaritySearchService:
         query_text: str,
         limit: int = 5,
         filter: dict[str, Any] | None = None,
+        *,
+        account_id: str | None = None,
     ) -> list[dict[str, object]]:
         """Sucht ähnliche historische Fälle."""
+        scoped_filter = with_account_filter(filter or {}, account_id)
         vector = self._embed.embed(query_text)
         if self._use_atlas:
-            return self._repo.search_by_vector_atlas(vector, limit=limit, filter=filter)
-        return self._repo.search_by_vector(vector, limit=limit, filter=filter)
+            return self._repo.search_by_vector_atlas(
+                vector,
+                limit=limit,
+                filter=scoped_filter or None,
+            )
+        return self._repo.search_by_vector(
+            vector,
+            limit=limit,
+            filter=scoped_filter or None,
+        )

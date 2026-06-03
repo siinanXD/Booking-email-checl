@@ -57,6 +57,7 @@ class RetrievalService:
         max_reservations: int = 20,
     ) -> RetrievalHits:
         """Lädt Gast, Reservierungen und Thread-Kontext."""
+        account_id = email.account_id
         guest: Guest | None = None
         reservations: list[Reservation] = []
 
@@ -64,6 +65,7 @@ class RetrievalService:
             guest, _confidence = self._entity_resolution.resolve_guest(
                 extraction,
                 email.from_address,
+                account_id=account_id,
             )
             if guest is None and self._should_create_guest(extraction, email):
                 guest = Guest(
@@ -72,17 +74,20 @@ class RetrievalService:
                     email=(extraction.email or email.from_address or None),
                     phone=extraction.phone,
                     platform=extraction.platform,
+                    account_id=account_id,
                 )
-                self._entities.upsert_guest(guest)
+                self._entities.upsert_guest(guest, account_id=account_id)
 
             if guest is not None:
                 reservations = self._entities.find_reservations_by_guest_id(
-                    guest.guest_id
+                    guest.guest_id,
+                    account_id=account_id,
                 )
 
         if extraction and extraction.booking_number:
             by_number = self._entities.find_reservation_by_booking_number(
-                extraction.booking_number
+                extraction.booking_number,
+                account_id=account_id,
             )
             if by_number and by_number not in reservations:
                 reservations.append(by_number)
@@ -90,13 +95,14 @@ class RetrievalService:
         thread_ids = email.thread_ids()
         thread_emails: list[StoredEmail] = []
         for tid in thread_ids:
-            found = self._emails.get_by_message_id(tid)
+            found = self._emails.get_by_message_id(tid, account_id=account_id)
             if found:
                 thread_emails.append(found)
 
         if not reservations:
             reservations = self._entities.find_reservations_by_correlation_id(
-                email.correlation_id
+                email.correlation_id,
+                account_id=account_id,
             )
 
         reservations = self._cap_reservations(
@@ -117,7 +123,11 @@ class RetrievalService:
 
         similar: list[dict[str, object]] = []
         if include_similar and self._similarity is not None:
-            similar = self._similarity.find_similar_cases(email.body_text, limit=3)
+            similar = self._similarity.find_similar_cases(
+                email.body_text,
+                limit=3,
+                account_id=account_id,
+            )
 
         return RetrievalHits(
             guest=guest,

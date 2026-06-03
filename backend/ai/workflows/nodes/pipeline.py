@@ -144,6 +144,7 @@ class WorkflowNodes:
                     email.correlation_id,
                     email.body_text,
                     extraction,
+                    account_id=email.account_id,
                 )
         return {"validation_errors": result.errors}
 

@@ -23,6 +23,8 @@ class EntityResolutionService:
         self,
         extraction: BookingExtraction,
         from_address: str,
+        *,
+        account_id: str | None = None,
     ) -> tuple[Guest | None, float]:
         """Löst einen Gast mit Konfidenzschwelle auf.
 
@@ -33,16 +35,23 @@ class EntityResolutionService:
         for email in (extraction.email, from_address):
             if not email or "@" not in email:
                 continue
-            guest = self._entities.get_guest_by_email(email.strip().lower())
+            guest = self._entities.get_guest_by_email(
+                email.strip().lower(),
+                account_id=account_id,
+            )
             if guest is not None:
                 return guest, CONFIDENCE_EMAIL_EXACT
 
         if extraction.booking_number:
             reservation = self._entities.find_reservation_by_booking_number(
-                extraction.booking_number
+                extraction.booking_number,
+                account_id=account_id,
             )
             if reservation is not None and reservation.guest_id:
-                guest = self._entities.get_guest_by_id(reservation.guest_id)
+                guest = self._entities.get_guest_by_id(
+                    reservation.guest_id,
+                    account_id=account_id,
+                )
                 if guest is not None:
                     return guest, CONFIDENCE_BOOKING_NUMBER
 
@@ -50,6 +59,7 @@ class EntityResolutionService:
             guests = self._entities.find_guests_by_name_and_platform(
                 extraction.guest_name,
                 extraction.platform,
+                account_id=account_id,
             )
             if guests:
                 return guests[0], CONFIDENCE_NAME_PLATFORM

@@ -24,6 +24,7 @@ class EmbeddingRepository:
     def __init__(self, db: Db) -> None:
         """Initialize the instance with its dependencies."""
         self._col: Collection[dict[str, Any]] = db[self.COLLECTION]
+        self._col.create_index([("account_id", 1), ("correlation_id", 1)])
 
     def upsert_chunk(
         self,
@@ -32,9 +33,11 @@ class EmbeddingRepository:
         text: str,
         embedding: list[float],
         intent: str | None = None,
+        *,
+        account_id: str | None = None,
     ) -> None:
         """Speichert einen Chunk inkl. Embedding-Vektor."""
-        doc = {
+        doc: dict[str, Any] = {
             "_id": chunk_id,
             "correlation_id": correlation_id,
             "text": text,
@@ -42,6 +45,8 @@ class EmbeddingRepository:
             "intent": intent,
             "updated_at": datetime.now(UTC).isoformat(),
         }
+        if account_id:
+            doc["account_id"] = account_id
         self._col.update_one({"_id": chunk_id}, {"$set": doc}, upsert=True)
 
     def search_by_vector(

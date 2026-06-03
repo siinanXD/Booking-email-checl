@@ -31,6 +31,7 @@ from backend.infrastructure.observability.langfuse_setup import (
 from backend.infrastructure.observability.mail_cost import MailCostTracker
 from backend.infrastructure.observability.review_feedback import ReviewFeedbackTracker
 from backend.infrastructure.repositories.account_repository import AccountRepository
+from backend.infrastructure.repositories.chunk_repository import ChunkRepository
 from backend.infrastructure.repositories.email_repository import EmailRepository
 from backend.infrastructure.repositories.embedding_repository import EmbeddingRepository
 from backend.infrastructure.repositories.entity_repository import EntityRepository
@@ -94,6 +95,7 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
     entity_repo = EntityRepository(db)
     extraction_repo = ExtractionRepository(db)
     embedding_repo = EmbeddingRepository(db)
+    chunk_repo = ChunkRepository(db)
     review_repo = ReviewRepository(db)
     metrics_repo = MailMetricsRepository(db)
     user_repo = UserRepository(db)
@@ -186,7 +188,7 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
         alerts=alerts,
         mail_cost=mail_cost,
     )
-    indexing = IndexingService(embedding_repo, embed_client, alerts=alerts)
+    indexing = IndexingService(embedding_repo, embed_client, chunk_repo, alerts=alerts)
 
     checkpointer = build_checkpointer(cfg)
     workflow = EmailWorkflow(

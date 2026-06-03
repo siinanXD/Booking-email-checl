@@ -10,11 +10,14 @@ TENANT_COLLECTIONS = (
     "extractions",
     "reviews",
     "embeddings",
+    "chunks",
     "mail_metrics",
     "notification_outbox",
     "property_whatsapp_recipients",
     "guests",
-    "reservations",
+    "bookings",
+    "properties",
+    "conversations",
 )
 
 
