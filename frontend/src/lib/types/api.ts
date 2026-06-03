@@ -104,6 +104,29 @@ export interface AdminMeResponse {
   mail_onboarding_required: boolean;
 }
 
+export type AdminWhatsAppTestTemplate =
+  | "hello_world"
+  | "cleaning_task"
+  | "status_notice"
+  | "guest_inquiry";
+
+export interface AdminWhatsAppInfoResponse {
+  whatsapp_enabled: boolean;
+  access_token_configured: boolean;
+  phone_number_id: string;
+  test_recipient: string;
+  template_language: string;
+  templates: Record<string, string>;
+}
+
+export interface AdminWhatsAppTestResponse {
+  success: boolean;
+  template: AdminWhatsAppTestTemplate;
+  template_name?: string | null;
+  provider_message_id?: string | null;
+  error?: string | null;
+}
+
 export interface DashboardStats {
   total_emails_today: number;
   total_emails_week: number;
