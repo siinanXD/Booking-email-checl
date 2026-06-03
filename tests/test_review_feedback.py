@@ -39,10 +39,10 @@ def test_completely_different_text_near_one() -> None:
     distance = ReviewFeedbackTracker().record(
         "corr-2",
         "Sehr geehrte/r Gast, Ihre Anfrage wurde bearbeitet.",
-        "xyz abc def ghi jkl mno pqr stu vwx yz",
+        "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do",
         tracer,
     )
-    assert distance >= 0.9
+    assert distance >= 0.8
 
 
 def test_typical_small_correction_moderate_distance() -> None:

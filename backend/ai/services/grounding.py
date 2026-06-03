@@ -15,6 +15,15 @@ _GUEST_NAME = re.compile(
 )
 _DATE_ISO = re.compile(r"\b\d{4}-\d{2}-\d{2}\b")
 _DATE_DE = re.compile(r"\b\d{2}\.\d{2}\.\d{4}\b")
+_NAME_FALSE_POSITIVES = frozenset(
+    {
+        "Ihre Buchung",
+        "Sehr Geehrte",
+        "Sehr Geehrter",
+        "Ihr Aufenthalt",
+        "Nächste Schritte",
+    }
+)
 
 
 @dataclass
@@ -58,7 +67,11 @@ class GroundingService:
                 failed_fields.append("booking_ref")
 
         if hits.guest and hits.guest.name:
-            names_in_draft = _GUEST_NAME.findall(body)
+            names_in_draft = [
+                name
+                for name in _GUEST_NAME.findall(body)
+                if name not in _NAME_FALSE_POSITIVES
+            ]
             if names_in_draft:
                 total_checks += 1
                 if all(_name_grounded(n, hits.guest.name) for n in names_in_draft):
