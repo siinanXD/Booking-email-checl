@@ -16,10 +16,19 @@ from backend.api.schemas.accounts import (
     AdminMeResponse,
 )
 from backend.api.schemas.admin_diagnostics import AdminWhatsAppTestRequest
+from backend.api.schemas.admin_llm_config import (
+    AdminLlmConfigUpdateRequest,
+    AdminLlmPreviewRequest,
+)
 from backend.api.services.admin_diagnostics_service import (
     AccountNotFoundError,
     AdminDiagnosticsService,
     RateLimitExceededError,
+)
+from backend.api.services.admin_llm_config_service import (
+    get_llm_config,
+    preview_llm_config,
+    update_llm_config,
 )
 from backend.api.services.admin_overview_queries import (
     admin_account_detail,
@@ -286,3 +295,38 @@ def admin_config_public() -> tuple[Any, int]:
     """Nicht-sensitive Konfiguration für Admin-UI."""
     data = admin_public_config(g.settings)
     return jsonify(data.model_dump()), 200
+
+
+@admin_bp.get("/llm-config")
+@require_auth
+@require_platform_admin
+def admin_get_llm_config() -> tuple[Any, int]:
+    """Globale LLM-/Prompt-Konfiguration."""
+    return jsonify(get_llm_config(g.ctx).model_dump()), 200
+
+
+@admin_bp.put("/llm-config")
+@require_auth
+@require_platform_admin
+def admin_put_llm_config() -> tuple[Any, int]:
+    """Speichert LLM-/Prompt-Konfiguration."""
+    body = AdminLlmConfigUpdateRequest.model_validate(
+        request.get_json(silent=True) or {}
+    )
+    user_id = g.current_user.get("id")
+    updated = update_llm_config(
+        g.ctx,
+        body,
+        user_id=user_id if isinstance(user_id, str) else None,
+    )
+    return jsonify(updated.model_dump()), 200
+
+
+@admin_bp.post("/llm-config/preview")
+@require_auth
+@require_platform_admin
+def admin_preview_llm_config() -> tuple[Any, int]:
+    """Dry-Run classify/extract auf Beispieltext."""
+    body = AdminLlmPreviewRequest.model_validate(request.get_json(silent=True) or {})
+    result = preview_llm_config(g.ctx, g.settings, body)
+    return jsonify(result.model_dump()), 200

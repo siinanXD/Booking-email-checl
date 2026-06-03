@@ -7,6 +7,10 @@ import type {
   AdminOverviewResponse,
   AdminPublicConfigResponse,
   AdminTokensMetricsResponse,
+  AdminLlmConfigResponse,
+  AdminLlmConfigUpdateRequest,
+  AdminLlmPreviewRequest,
+  AdminLlmPreviewResponse,
   AdminWhatsAppInfoResponse,
   AdminWhatsAppTestResponse,
   AdminWhatsAppTestTemplate,
@@ -126,6 +130,33 @@ export async function fetchAdminTokensMetrics(
 export async function fetchAdminPublicConfig(): Promise<AdminPublicConfigResponse> {
   const { data } = await apiClient.get<AdminPublicConfigResponse>(
     "/api/admin/config/public"
+  );
+  return data;
+}
+
+export async function fetchAdminLlmConfig(): Promise<AdminLlmConfigResponse> {
+  const { data } = await apiClient.get<AdminLlmConfigResponse>(
+    "/api/admin/llm-config"
+  );
+  return data;
+}
+
+export async function updateAdminLlmConfig(
+  payload: AdminLlmConfigUpdateRequest
+): Promise<AdminLlmConfigResponse> {
+  const { data } = await apiClient.put<AdminLlmConfigResponse>(
+    "/api/admin/llm-config",
+    payload
+  );
+  return data;
+}
+
+export async function previewAdminLlmConfig(
+  payload: AdminLlmPreviewRequest
+): Promise<AdminLlmPreviewResponse> {
+  const { data } = await apiClient.post<AdminLlmPreviewResponse>(
+    "/api/admin/llm-config/preview",
+    payload
   );
   return data;
 }

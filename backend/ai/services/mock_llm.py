@@ -8,8 +8,15 @@ from backend.ai.services.llm_types import LLMCompletion
 class MockLLM:
     """Mock für Klassifikation, Extraktion und Draft."""
 
-    def complete(self, prompt: str, model: str) -> LLMCompletion:
+    def complete(
+        self,
+        prompt: str,
+        model: str,
+        *,
+        temperature: float | None = None,
+    ) -> LLMCompletion:
         """Return a deterministic completion for the supplied test prompt."""
+        _ = temperature
         text = self._text_for(prompt)
         return LLMCompletion(text=text, prompt_tokens=10, completion_tokens=20)
 

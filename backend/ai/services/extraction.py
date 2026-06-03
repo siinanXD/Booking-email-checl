@@ -13,11 +13,14 @@ from backend.ai.domain.booking.extraction import BookingExtraction
 from backend.ai.domain.booking.taxonomy import BookingIntent
 from backend.ai.services.classification import LLMClient
 from backend.ai.services.llm_errors import LLM_PIPELINE_ERRORS, notify_llm_failure
-from backend.ai.services.prompt_loader import format_prompt_with_few_shots
+from backend.ai.services.prompt_loader import format_resolved_prompt_with_few_shots
 from backend.core.models.email import StoredEmail
 from backend.core.utils.pii import mask_pii
 from backend.infrastructure.observability.alerts import AlertService
 from backend.infrastructure.observability.mail_cost import MailCostTracker
+from backend.infrastructure.repositories.platform_llm_config_repository import (
+    PlatformLlmConfigRepository,
+)
 
 
 class ExtractionService:
@@ -31,6 +34,7 @@ class ExtractionService:
         tracing: bool = False,
         alerts: AlertService | None = None,
         mail_cost: MailCostTracker | None = None,
+        llm_config_repo: PlatformLlmConfigRepository | None = None,
     ) -> None:
         """Initialize the instance with its dependencies."""
         self._llm = llm
@@ -38,6 +42,7 @@ class ExtractionService:
         self._tracing = tracing
         self._alerts = alerts
         self._mail_cost = mail_cost
+        self._llm_config_repo = llm_config_repo
 
     def extract(
         self,
@@ -68,16 +73,27 @@ class ExtractionService:
                 },
             )
             langfuse_context.update_current_observation(model=self._model)
-        prompt = format_prompt_with_few_shots(
+        config = (
+            self._llm_config_repo.get_or_default()
+            if self._llm_config_repo is not None
+            else None
+        )
+        prompt = format_resolved_prompt_with_few_shots(
             "booking/extract.md",
             "booking/examples/extract_examples.json",
+            config.extract_prompt_override if config else None,
             few_shot_style="extract",
             subject=email.subject,
             body=email.body_text,
         )
         data: dict[str, Any]
         try:
-            completion = self._llm.complete(prompt, self._model)
+            temperature = config.extract_temperature if config else None
+            completion = self._llm.complete(
+                prompt,
+                self._model,
+                temperature=temperature,
+            )
             if self._mail_cost is not None:
                 self._mail_cost.add(email.correlation_id, completion)
             data = self._parse_json(completion.text)

@@ -220,6 +220,45 @@ export interface AdminPublicConfigResponse {
   langfuse_tracing_enabled: boolean;
 }
 
+export type AdminLlmPreviewStep = "classify" | "extract";
+
+export interface AdminLlmConfigResponse {
+  classify_temperature: number;
+  extract_temperature: number;
+  draft_temperature: number;
+  similarity_top_k: number;
+  classify_prompt_override: string | null;
+  extract_prompt_override: string | null;
+  draft_prompt_override: string | null;
+  default_classify_prompt: string;
+  default_extract_prompt: string;
+  default_draft_prompt: string;
+  updated_at: string | null;
+  updated_by_user_id: string | null;
+}
+
+export interface AdminLlmConfigUpdateRequest {
+  classify_temperature: number;
+  extract_temperature: number;
+  draft_temperature: number;
+  similarity_top_k: number;
+  classify_prompt_override?: string | null;
+  extract_prompt_override?: string | null;
+  draft_prompt_override?: string | null;
+}
+
+export interface AdminLlmPreviewRequest {
+  step?: AdminLlmPreviewStep;
+  subject?: string;
+  body?: string;
+}
+
+export interface AdminLlmPreviewResponse {
+  step: AdminLlmPreviewStep;
+  result: string;
+  model: string;
+}
+
 export interface DashboardStats {
   total_emails_today: number;
   total_emails_week: number;

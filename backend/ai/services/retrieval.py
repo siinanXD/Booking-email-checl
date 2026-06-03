@@ -14,6 +14,9 @@ from backend.core.models.entities import Guest, Reservation
 from backend.infrastructure.observability.alerts import AlertService
 from backend.infrastructure.repositories.email_repository import EmailRepository
 from backend.infrastructure.repositories.entity_repository import EntityRepository
+from backend.infrastructure.repositories.platform_llm_config_repository import (
+    PlatformLlmConfigRepository,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +42,7 @@ class RetrievalService:
         *,
         entity_resolution: EntityResolutionService | None = None,
         alerts: AlertService | None = None,
+        llm_config_repo: PlatformLlmConfigRepository | None = None,
     ) -> None:
         """Initialize the instance with its dependencies."""
         self._entities = entity_repo
@@ -48,6 +52,7 @@ class RetrievalService:
             entity_repo
         )
         self._alerts = alerts
+        self._llm_config_repo = llm_config_repo
 
     def retrieve(
         self,
@@ -123,9 +128,12 @@ class RetrievalService:
 
         similar: list[dict[str, object]] = []
         if include_similar and self._similarity is not None:
+            top_k = 3
+            if self._llm_config_repo is not None:
+                top_k = self._llm_config_repo.get_or_default().similarity_top_k
             similar = self._similarity.find_similar_cases(
                 email.body_text,
-                limit=3,
+                limit=top_k,
                 account_id=account_id,
             )
 

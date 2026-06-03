@@ -31,6 +31,9 @@ from backend.infrastructure.observability.langfuse_setup import (
 from backend.infrastructure.observability.mail_cost import MailCostTracker
 from backend.infrastructure.observability.review_feedback import ReviewFeedbackTracker
 from backend.infrastructure.repositories.account_repository import AccountRepository
+from backend.infrastructure.repositories.admin_audit_log_repository import (
+    AdminAuditLogRepository,
+)
 from backend.infrastructure.repositories.chunk_repository import ChunkRepository
 from backend.infrastructure.repositories.email_repository import EmailRepository
 from backend.infrastructure.repositories.embedding_repository import EmbeddingRepository
@@ -50,6 +53,9 @@ from backend.infrastructure.repositories.notification_repository import (
 )
 from backend.infrastructure.repositories.outlook_oauth_flow_repository import (
     OutlookOAuthFlowRepository,
+)
+from backend.infrastructure.repositories.platform_llm_config_repository import (
+    PlatformLlmConfigRepository,
 )
 from backend.infrastructure.repositories.platform_settings_repository import (
     PlatformSettingsRepository,
@@ -84,6 +90,8 @@ class AppContext:
     property_recipient_repo: PropertyRecipientRepository
     mail_connection_repo: MailConnectionRepository
     outlook_oauth_flow_repo: OutlookOAuthFlowRepository
+    platform_llm_config_repo: PlatformLlmConfigRepository
+    admin_audit_log_repo: AdminAuditLogRepository
 
 
 def build_app_context(settings: Settings | None = None) -> AppContext:
@@ -106,6 +114,8 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
     platform_settings_repo = PlatformSettingsRepository(db)
     mail_connection_repo = MailConnectionRepository(db)
     outlook_oauth_flow_repo = OutlookOAuthFlowRepository(db)
+    platform_llm_config_repo = PlatformLlmConfigRepository(db)
+    admin_audit_log_repo = AdminAuditLogRepository(db)
     notification_service = NotificationService(
         cfg,
         notification_repo,
@@ -157,6 +167,7 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
         tracing=tracing,
         alerts=alerts,
         mail_cost=mail_cost,
+        llm_config_repo=platform_llm_config_repo,
     )
     extraction = ExtractionService(
         llm,
@@ -164,6 +175,7 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
         tracing=tracing,
         alerts=alerts,
         mail_cost=mail_cost,
+        llm_config_repo=platform_llm_config_repo,
     )
     validation = ValidationService()
     similarity = SimilaritySearchService(
@@ -178,6 +190,7 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
         similarity=similarity,
         entity_resolution=entity_resolution,
         alerts=alerts,
+        llm_config_repo=platform_llm_config_repo,
     )
     response_gen = ResponseGenerationService(
         llm,
@@ -187,6 +200,7 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
         tracing=tracing,
         alerts=alerts,
         mail_cost=mail_cost,
+        llm_config_repo=platform_llm_config_repo,
     )
     indexing = IndexingService(embedding_repo, embed_client, chunk_repo, alerts=alerts)
 
@@ -228,4 +242,6 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
         property_recipient_repo=property_recipient_repo,
         mail_connection_repo=mail_connection_repo,
         outlook_oauth_flow_repo=outlook_oauth_flow_repo,
+        platform_llm_config_repo=platform_llm_config_repo,
+        admin_audit_log_repo=admin_audit_log_repo,
     )

@@ -11,13 +11,16 @@ from backend.ai.domain.booking.extraction import BookingExtraction
 from backend.ai.services.classification import LLMClient
 from backend.ai.services.grounding import GroundingService
 from backend.ai.services.llm_errors import LLM_PIPELINE_ERRORS, notify_llm_failure
-from backend.ai.services.prompt_loader import format_prompt
+from backend.ai.services.prompt_loader import format_resolved_prompt
 from backend.ai.services.retrieval import RetrievalHits, RetrievalService
 from backend.core.models.email import StoredEmail
 from backend.core.models.response import GeneratedResponse
 from backend.core.utils.pii import mask_pii
 from backend.infrastructure.observability.alerts import AlertService
 from backend.infrastructure.observability.mail_cost import MailCostTracker
+from backend.infrastructure.repositories.platform_llm_config_repository import (
+    PlatformLlmConfigRepository,
+)
 
 _FALLBACK_DRAFT_BODY = (
     "[Automatischer Entwurf fehlgeschlagen. Bitte manuell antworten.]"
@@ -37,6 +40,7 @@ class ResponseGenerationService:
         tracing: bool = False,
         alerts: AlertService | None = None,
         mail_cost: MailCostTracker | None = None,
+        llm_config_repo: PlatformLlmConfigRepository | None = None,
     ) -> None:
         """Initialize the instance with its dependencies."""
         self._llm = llm
@@ -46,6 +50,7 @@ class ResponseGenerationService:
         self._tracing = tracing
         self._alerts = alerts
         self._mail_cost = mail_cost
+        self._llm_config_repo = llm_config_repo
 
     def generate_draft(
         self,
@@ -85,7 +90,17 @@ class ResponseGenerationService:
         facts = self._facts_json(hits, extraction)
         prompt = self._build_prompt(email, extraction, facts)
         try:
-            completion = self._llm.complete(prompt, self._model)
+            config = (
+                self._llm_config_repo.get_or_default()
+                if self._llm_config_repo is not None
+                else None
+            )
+            temperature = config.draft_temperature if config else None
+            completion = self._llm.complete(
+                prompt,
+                self._model,
+                temperature=temperature,
+            )
             if self._mail_cost is not None:
                 self._mail_cost.add(email.correlation_id, completion)
             draft = GeneratedResponse(
@@ -118,8 +133,14 @@ class ResponseGenerationService:
         extraction: BookingExtraction,
         facts: str,
     ) -> str:
-        return format_prompt(
+        config = (
+            self._llm_config_repo.get_or_default()
+            if self._llm_config_repo is not None
+            else None
+        )
+        return format_resolved_prompt(
             "booking/draft.md",
+            config.draft_prompt_override if config else None,
             platform_tone=_platform_tone(extraction.platform),
             facts=facts,
             body=email.body_text,
