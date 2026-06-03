@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
+from backend.infrastructure.observability.alerts import AlertService, AlertThresholds
 from backend.infrastructure.observability.langfuse_client import LangfuseTracer
 from backend.infrastructure.observability.review_feedback import ReviewFeedbackTracker
 
@@ -52,3 +53,17 @@ def test_typical_small_correction_moderate_distance() -> None:
     approved = "Sehr geehrter Gast, Ihre Anfrage wurde bearbeitet. Viele Grüße"
     distance = ReviewFeedbackTracker().record("corr-3", draft, approved, tracer)
     assert 0.1 <= distance <= 0.4
+
+
+def test_high_edit_distance_triggers_alert(caplog) -> None:
+    """Verify alert when edit distance exceeds configured threshold."""
+    tracer = _MockTracer()
+    alerts = AlertService(thresholds=AlertThresholds(max_draft_edit_distance=0.4))
+    distance = ReviewFeedbackTracker(alerts=alerts).record(
+        "corr-4",
+        "Sehr geehrte/r Gast, Ihre Anfrage wurde bearbeitet.",
+        "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do",
+        tracer,
+    )
+    assert distance > 0.4
+    assert any("draft_quality_low" in r.message for r in caplog.records)

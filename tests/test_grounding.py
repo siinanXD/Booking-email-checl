@@ -65,6 +65,18 @@ def test_grounding_fail_unknown_date() -> None:
     assert "date" in result.failed_fields
 
 
+def test_grounding_fail_surname_only_overlap() -> None:
+    """Verify partial surname overlap alone is not enough to pass."""
+    draft = _draft("Sehr geehrter Herr Müller, Ihre Buchung AB100 ist bestätigt.")
+    hits = RetrievalHits(
+        guest=Guest(guest_id="g1", name="Max Müller"),
+        reservations=[Reservation(reservation_id="r1", booking_number="AB100")],
+    )
+    result = GroundingService().check_with_detail(draft, hits)
+    assert result.ok is False
+    assert "guest_name" in result.failed_fields
+
+
 def test_grounding_pass_all_facts_from_hits() -> None:
     """Verify grounding passes when booking, guest name and date match hits."""
     draft = _draft(

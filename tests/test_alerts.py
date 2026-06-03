@@ -46,3 +46,10 @@ def test_retrieval_empty_alert(caplog) -> None:
     svc = AlertService()
     svc.check_retrieval_empty("corr-ret-empty", "booking_number_not_found:AB999")
     assert any("retrieval_empty" in r.message for r in caplog.records)
+
+
+def test_draft_quality_alert_when_edit_distance_high(caplog) -> None:
+    """Verify draft quality alert when edit distance exceeds threshold."""
+    svc = AlertService(thresholds=AlertThresholds(max_draft_edit_distance=0.4))
+    svc.check_draft_quality("corr-draft-quality", 0.85)
+    assert any("draft_quality_low" in r.message for r in caplog.records)

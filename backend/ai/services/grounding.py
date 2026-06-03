@@ -109,13 +109,14 @@ def _known_booking_numbers(hits: RetrievalHits) -> set[str]:
 
 
 def _name_grounded(candidate: str, known: str) -> bool:
-    candidate_lower = candidate.lower().strip()
-    known_lower = known.lower().strip()
-    if candidate_lower in known_lower or known_lower in candidate_lower:
+    candidate_lower = candidate.lower()
+    known_lower = known.lower()
+    if known_lower in candidate_lower:
         return True
     candidate_tokens = set(candidate_lower.split())
     known_tokens = set(known_lower.split())
-    return bool(candidate_tokens & known_tokens)
+    overlap = candidate_tokens & known_tokens
+    return len(overlap) >= 2
 
 
 def _allowed_dates(hits: RetrievalHits) -> set[str]:

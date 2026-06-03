@@ -120,7 +120,7 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
         secret_key=cfg.langfuse_secret_key or None,
         host=cfg.langfuse_host,
     )
-    feedback_tracker = ReviewFeedbackTracker()
+    feedback_tracker = ReviewFeedbackTracker(alerts=alerts)
 
     llm_mode = cfg.llm_mode.strip().lower()
     # Raw mail prompts must not be auto-captured by provider wrappers.

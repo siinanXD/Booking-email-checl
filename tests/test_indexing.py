@@ -53,7 +53,10 @@ def test_search_by_vector_atlas_uses_aggregate(mock_db) -> None:
         assert pipeline[0]["$vectorSearch"]["index"] == VECTOR_INDEX_NAME
 
 
-def test_search_by_vector_atlas_falls_back_on_operation_failure(mock_db) -> None:
+def test_search_by_vector_atlas_falls_back_on_operation_failure(
+    mock_db,
+    caplog,
+) -> None:
     """Verify atlas search falls back to in-memory search."""
     repo = EmbeddingRepository(mock_db)
     with patch.object(
@@ -62,9 +65,14 @@ def test_search_by_vector_atlas_falls_back_on_operation_failure(mock_db) -> None
         side_effect=OperationFailure("vector search unavailable"),
     ):
         repo.upsert_chunk("c1", "corr-1", "hello", [1.0, 0.0], "guest_inquiry")
-        results = repo.search_by_vector_atlas([1.0, 0.0], limit=1)
+        results = repo.search_by_vector_atlas(
+            [1.0, 0.0],
+            limit=1,
+            filter={"correlation_id": "corr-1"},
+        )
         assert len(results) == 1
         assert results[0]["_id"] == "c1"
+    assert any("atlas_vector_search_unavailable" in r.message for r in caplog.records)
 
 
 def test_index_async_alerts_on_failure(mock_db) -> None:

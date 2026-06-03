@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, datetime
 from typing import Any
 
@@ -9,6 +10,8 @@ from pymongo.collection import Collection
 from pymongo.errors import OperationFailure
 
 from backend.infrastructure.repositories.mongo import Db
+
+logger = logging.getLogger(__name__)
 
 VECTOR_INDEX_NAME = "embedding_vector_index"
 
@@ -80,6 +83,12 @@ class EmbeddingRepository:
             pipeline = [{"$vectorSearch": vector_search}]
             return list(self._col.aggregate(pipeline))
         except OperationFailure:
+            logger.warning(
+                "atlas_vector_search_unavailable: falling back to in-memory "
+                "dot-product (correlation_id=%s, index=%s)",
+                filter.get("correlation_id") if filter else "n/a",
+                VECTOR_INDEX_NAME,
+            )
             return self.search_by_vector(
                 query_embedding,
                 limit=limit,
