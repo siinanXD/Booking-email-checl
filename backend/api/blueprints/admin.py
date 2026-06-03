@@ -21,6 +21,13 @@ from backend.api.services.admin_diagnostics_service import (
     AdminDiagnosticsService,
     RateLimitExceededError,
 )
+from backend.api.services.admin_overview_queries import (
+    admin_account_detail,
+    admin_costs_metrics,
+    admin_overview,
+    admin_public_config,
+    admin_tokens_metrics,
+)
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
 
@@ -223,3 +230,59 @@ def admin_test_whatsapp(account_id: str) -> tuple[Any, int]:
         )
     status = 200 if result.success else 502
     return jsonify(result.model_dump()), status
+
+
+def _parse_days(default: int = 30) -> int:
+    raw = request.args.get("days", str(default))
+    try:
+        days = int(raw)
+    except ValueError:
+        days = default
+    return max(1, min(days, 365))
+
+
+@admin_bp.get("/overview")
+@require_auth
+@require_platform_admin
+def admin_overview_route() -> tuple[Any, int]:
+    """Plattform-KPIs und Mandanten-Aktivität."""
+    data = admin_overview(g.ctx, days=_parse_days(30))
+    return jsonify(data.model_dump()), 200
+
+
+@admin_bp.get("/accounts/<account_id>/detail")
+@require_auth
+@require_platform_admin
+def admin_account_detail_route(account_id: str) -> tuple[Any, int]:
+    """Mandanten-Drill-down inkl. DB-Counts."""
+    detail = admin_account_detail(g.ctx, account_id, g.settings, days=_parse_days(30))
+    if detail is None:
+        return jsonify({"error": "Account not found", "code": 404}), 404
+    return jsonify(detail.model_dump()), 200
+
+
+@admin_bp.get("/metrics/costs")
+@require_auth
+@require_platform_admin
+def admin_metrics_costs() -> tuple[Any, int]:
+    """Cross-Tenant Kosten und Top-Mails."""
+    data = admin_costs_metrics(g.ctx, g.settings, days=_parse_days(30))
+    return jsonify(data.model_dump()), 200
+
+
+@admin_bp.get("/metrics/tokens")
+@require_auth
+@require_platform_admin
+def admin_metrics_tokens() -> tuple[Any, int]:
+    """Cross-Tenant Token-Aggregation."""
+    data = admin_tokens_metrics(g.ctx, days=_parse_days(30))
+    return jsonify(data.model_dump()), 200
+
+
+@admin_bp.get("/config/public")
+@require_auth
+@require_platform_admin
+def admin_config_public() -> tuple[Any, int]:
+    """Nicht-sensitive Konfiguration für Admin-UI."""
+    data = admin_public_config(g.settings)
+    return jsonify(data.model_dump()), 200

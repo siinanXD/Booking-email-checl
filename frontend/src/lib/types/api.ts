@@ -127,6 +127,99 @@ export interface AdminWhatsAppTestResponse {
   error?: string | null;
 }
 
+export type ActivityStatus = "active" | "idle" | "never";
+
+export interface AdminTenantRow {
+  account: AccountListItem;
+  activity_status: ActivityStatus;
+  costs_30d_usd: number;
+  tokens_30d: number;
+  mails_processed_30d: number;
+  last_sync_at: string | null;
+  last_mail_received_at: string | null;
+}
+
+export interface AdminOverviewResponse {
+  total_accounts: number;
+  pending_accounts: number;
+  active_accounts: number;
+  active_users_7d: number;
+  total_cost_usd_30d: number;
+  total_tokens_30d: number;
+  mails_processed_30d: number;
+  tenants: AdminTenantRow[];
+}
+
+export interface AdminUserSummary {
+  id: string;
+  email: string;
+  role: string;
+  created_at: string;
+}
+
+export interface MailConnectionSummary {
+  provider: string;
+  status: string;
+  email_address: string;
+  connected: boolean;
+  last_sync_at: string | null;
+  last_error: string | null;
+  onboarding_completed: boolean;
+}
+
+export interface AdminAccountDetailResponse {
+  account: AccountListItem;
+  users: AdminUserSummary[];
+  mail_connection: MailConnectionSummary | null;
+  activity_status: ActivityStatus;
+  db_counts: Record<string, number>;
+  costs_30d_usd: number;
+  tokens_30d: number;
+  mails_processed_30d: number;
+  last_mail_received_at: string | null;
+  latest_correlation_id: string | null;
+  langfuse_session_url: string | null;
+}
+
+export interface AdminAccountCostRow {
+  account_id: string;
+  display_name: string;
+  cost_usd: number;
+  total_tokens: number;
+  mail_count: number;
+}
+
+export interface AdminExpensiveMailRow {
+  correlation_id: string;
+  account_id: string | null;
+  cost_usd: number;
+  total_tokens: number;
+  processed_at: string;
+  langfuse_session_url: string | null;
+}
+
+export interface AdminCostsMetricsResponse {
+  days: number;
+  series: CostSeriesPoint[];
+  total_usd: number;
+  by_account: AdminAccountCostRow[];
+  top_mails: AdminExpensiveMailRow[];
+}
+
+export interface AdminTokensMetricsResponse {
+  days: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  by_account: AdminAccountCostRow[];
+}
+
+export interface AdminPublicConfigResponse {
+  langfuse_host: string;
+  langfuse_project_id: string | null;
+  langfuse_tracing_enabled: boolean;
+}
+
 export interface DashboardStats {
   total_emails_today: number;
   total_emails_week: number;

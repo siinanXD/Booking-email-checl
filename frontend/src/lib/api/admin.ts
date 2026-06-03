@@ -1,7 +1,12 @@
 import { apiClient } from "@/lib/api/client";
 import type {
   AccountListResponse,
+  AdminAccountDetailResponse,
+  AdminCostsMetricsResponse,
   AdminMeResponse,
+  AdminOverviewResponse,
+  AdminPublicConfigResponse,
+  AdminTokensMetricsResponse,
   AdminWhatsAppInfoResponse,
   AdminWhatsAppTestResponse,
   AdminWhatsAppTestTemplate,
@@ -78,6 +83,49 @@ export async function testAccountWhatsApp(
   const { data } = await apiClient.post<AdminWhatsAppTestResponse>(
     `/api/admin/accounts/${accountId}/whatsapp/test`,
     payload
+  );
+  return data;
+}
+
+export async function fetchAdminOverview(): Promise<AdminOverviewResponse> {
+  const { data } = await apiClient.get<AdminOverviewResponse>(
+    "/api/admin/overview"
+  );
+  return data;
+}
+
+export async function fetchAdminAccountDetail(
+  accountId: string
+): Promise<AdminAccountDetailResponse> {
+  const { data } = await apiClient.get<AdminAccountDetailResponse>(
+    `/api/admin/accounts/${accountId}/detail`
+  );
+  return data;
+}
+
+export async function fetchAdminCostsMetrics(
+  days = 30
+): Promise<AdminCostsMetricsResponse> {
+  const { data } = await apiClient.get<AdminCostsMetricsResponse>(
+    "/api/admin/metrics/costs",
+    { params: { days } }
+  );
+  return data;
+}
+
+export async function fetchAdminTokensMetrics(
+  days = 30
+): Promise<AdminTokensMetricsResponse> {
+  const { data } = await apiClient.get<AdminTokensMetricsResponse>(
+    "/api/admin/metrics/tokens",
+    { params: { days } }
+  );
+  return data;
+}
+
+export async function fetchAdminPublicConfig(): Promise<AdminPublicConfigResponse> {
+  const { data } = await apiClient.get<AdminPublicConfigResponse>(
+    "/api/admin/config/public"
   );
   return data;
 }

@@ -109,6 +109,15 @@ class ReviewRepository:
         query = with_account_filter({"review_status": "pending"}, account_id)
         return int(self._col.count_documents(query))
 
+    def max_updated_at(self, *, account_id: str) -> str | None:
+        """Neuester Review-Zeitstempel für Aktivitäts-Heuristik."""
+        query = with_account_filter({}, account_id)
+        doc = self._col.find_one(query, sort=[("updated_at", -1)])
+        if doc is None:
+            return None
+        value = doc.get("updated_at")
+        return str(value) if value else None
+
     def count_by_status_since(
         self,
         statuses: list[str],

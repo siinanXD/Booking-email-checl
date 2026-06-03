@@ -33,6 +33,7 @@ class Settings(BaseSettings):
         default="https://cloud.langfuse.com",
         alias="LANGFUSE_HOST",
     )
+    langfuse_project_id: str = Field(default="", alias="LANGFUSE_PROJECT_ID")
 
     app_env: str = Field(default="development", alias="APP_ENV")
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")

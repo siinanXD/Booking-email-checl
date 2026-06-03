@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "@/shared/layout/Layout";
+import { AdminAccountDetailPage } from "@/features/admin/AdminAccountDetailPage";
 import { AdminApprovalsPage } from "@/features/admin/AdminApprovalsPage";
 import { AdminDiagnosticsPage } from "@/features/admin/AdminDiagnosticsPage";
 import { AdminLayout } from "@/features/admin/AdminLayout";
@@ -36,6 +37,7 @@ export function App() {
                 <Route index element={<Navigate to="overview" replace />} />
                 <Route path="overview" element={<AdminOverviewPage />} />
                 <Route path="accounts" element={<AdminApprovalsPage />} />
+                <Route path="accounts/:accountId" element={<AdminAccountDetailPage />} />
                 <Route path="diagnostics" element={<AdminDiagnosticsPage />} />
                 <Route
                   path="observability"
