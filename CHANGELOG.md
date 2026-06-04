@@ -1,6 +1,39 @@
 # CHANGELOG
 
 
+## v0.8.0 (2026-06-04)
+
+### Features
+
+- **admin**: Cross-tenant monitoring and cost observability
+  ([`b3a15af`](https://github.com/siinanXD/Booking-email-checl/commit/b3a15af2e5daf899f0b8e1c736c8155321c2f3cd))
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+- **admin**: Llm config UI with prompt overrides and similarity top-k
+  ([`853b62d`](https://github.com/siinanXD/Booking-email-checl/commit/853b62db033b1c0de87a289e4fbb0388a7aa7466))
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+- **admin**: Per-tenant mail and whatsapp connection tests
+  ([`9bf92fc`](https://github.com/siinanXD/Booking-email-checl/commit/9bf92fcc5d6bfafe3087f78c1c32d35e019df85a))
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+- **admin**: Separate platform admin from tenant mail onboarding
+  ([`428c144`](https://github.com/siinanXD/Booking-email-checl/commit/428c144147233df8db7e7546eac8dcf8f5d92429))
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+- **triage**: Llm gate for unknown senders, tenant workflows, admin charts
+  ([`2324d0f`](https://github.com/siinanXD/Booking-email-checl/commit/2324d0f1206a3dcdc4a6ec8fbac7151029a46dab))
+
+Add optional cheap triage model before classify/extract, tenant workflow API/runtime, prompt history
+  in admin LLM config, and observability charts plus cost-triage docs.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+
 ## v0.7.0 (2026-06-03)
 
 ### Bug Fixes
