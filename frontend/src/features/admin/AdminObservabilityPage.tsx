@@ -5,6 +5,12 @@ import {
   fetchAdminPublicConfig,
   fetchAdminTokensMetrics,
 } from "@/lib/api/admin";
+import { AdminPageIntro } from "@/features/admin/components/AdminPageIntro";
+import {
+  TenantCostRankingChart,
+  TopCostMailsChart,
+} from "@/features/admin/components/charts/ObservabilityCharts";
+import { TokenSplitChart } from "@/features/admin/components/charts/TokenSplitChart";
 import { CostChart } from "@/shared/components/CostChart";
 import { StatCard } from "@/shared/components/StatCard";
 import { Card } from "@/shared/ui/Card";
@@ -39,6 +45,12 @@ export function AdminObservabilityPage() {
 
   return (
     <div className="space-y-6">
+      <AdminPageIntro
+        title="Observability & Kosten"
+        description="Alle Mandanten zusammen: API-Kosten, Token-Verbrauch und teure Einzelläufe. Daten stammen aus der mail_metrics-Collection — erfasst wird jede Mail, die durch Klassifikation, Extraktion oder Entwurf gelaufen ist."
+        impact="Reine Auswertung — hier änderst du keine Einstellungen. Hohe Kosten? Prüfe unter LLM-Konfiguration Temperatur und Top-K, oder öffne Langfuse-Sessions für einzelne teure Mails."
+      />
+
       <div className="grid gap-4 sm:grid-cols-3">
         <StatCard
           title="Plattform-Kosten (30 Tage)"
@@ -54,20 +66,37 @@ export function AdminObservabilityPage() {
         />
       </div>
 
-      <Card>
-        <h2 className="mb-4 text-lg font-medium text-slate-900">
-          Kosten (alle Mandanten)
-        </h2>
-        <CostChart
-          series={costs?.series ?? []}
-          emptyHint="Noch keine plattformweiten API-Kosten erfasst."
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <h2 className="mb-1 text-lg font-medium text-slate-900">
+            Kostenverlauf (30 Tage)
+          </h2>
+          <p className="mb-4 text-xs text-slate-500">
+            Tägliche Summe über alle Mandanten — Spitzen deuten auf viele oder komplexe Mails hin
+          </p>
+          <CostChart
+            series={costs?.series ?? []}
+            emptyHint="Noch keine plattformweiten API-Kosten erfasst."
+          />
+        </Card>
+        <TokenSplitChart
+          promptTokens={tokens?.prompt_tokens ?? 0}
+          completionTokens={tokens?.completion_tokens ?? 0}
         />
-      </Card>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        {costs?.by_account && (
+          <TenantCostRankingChart rows={costs.by_account} />
+        )}
+        {costs?.top_mails && (
+          <TopCostMailsChart mails={costs.top_mails} />
+        )}
+      </div>
 
       <Card className="overflow-x-auto">
-        <h2 className="mb-4 text-lg font-medium text-slate-900">
-          Kosten pro Mandant
-        </h2>
+        <h2 className="mb-1 text-lg font-medium text-slate-900">Kosten pro Mandant</h2>
+        <p className="mb-4 text-xs text-slate-500">Tabellarische Detailansicht zum Abgleich mit dem Diagramm</p>
         {!costs?.by_account.length ? (
           <p className="text-sm text-slate-500">Keine Daten.</p>
         ) : (
@@ -104,9 +133,10 @@ export function AdminObservabilityPage() {
       </Card>
 
       <Card className="overflow-x-auto">
-        <h2 className="mb-4 text-lg font-medium text-slate-900">
-          Teuerste Mails (Top 10)
-        </h2>
+        <h2 className="mb-1 text-lg font-medium text-slate-900">Teuerste Mails (Top 10)</h2>
+        <p className="mb-4 text-xs text-slate-500">
+          Langfuse-Links öffnen die Trace-Session zur Fehleranalyse (kein Mail-Inhalt in der Admin-UI)
+        </p>
         {!costs?.top_mails.length ? (
           <p className="text-sm text-slate-500">Keine Metriken.</p>
         ) : (
@@ -152,7 +182,7 @@ export function AdminObservabilityPage() {
 
       {config && !config.langfuse_tracing_enabled && (
         <p className="text-xs text-slate-500">
-          Langfuse-Tracing ist deaktiviert (Keys fehlen oder Test-Umgebung).
+          Langfuse-Tracing ist deaktiviert — Session-Links erscheinen erst mit gültigen LANGFUSE_* Keys.
         </p>
       )}
     </div>

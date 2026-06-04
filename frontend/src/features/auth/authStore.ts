@@ -18,6 +18,7 @@ interface AuthState {
   loadUser: () => Promise<void>;
   isAuthenticated: () => boolean;
   isPlatformAdmin: () => boolean;
+  isAccountAdmin: () => boolean;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -29,6 +30,10 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: () =>
         Boolean(get().accessToken && get().user),
       isPlatformAdmin: () => get().user?.role === "platform_admin",
+      isAccountAdmin: () => {
+        const role = get().user?.role;
+        return role === "owner" || role === "admin" || role === "platform_admin";
+      },
       login: async (email, password) => {
         const tokens = await loginApi(email, password);
         try {

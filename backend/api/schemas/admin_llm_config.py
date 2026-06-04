@@ -7,6 +7,7 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 LlmPreviewStep = Literal["classify", "extract"]
+LlmPromptType = Literal["classify", "extract", "draft"]
 
 
 class AdminLlmConfigResponse(BaseModel):
@@ -50,5 +51,24 @@ class AdminLlmPreviewResponse(BaseModel):
     """Ergebnis eines Dry-Runs."""
 
     step: LlmPreviewStep
-    result: str
+    success: bool
+    result: str | None = None
+    error: str | None = None
     model: str
+
+
+class AdminLlmPromptHistoryEntry(BaseModel):
+    """Ein gespeicherter Prompt aus der Historie."""
+
+    id: str
+    prompt_type: LlmPromptType
+    prompt_text: str | None = None
+    user_id: str | None = None
+    created_at: str
+
+
+class AdminLlmPromptHistoryResponse(BaseModel):
+    """Liste der letzten Prompt-Versionen für einen Schritt."""
+
+    prompt_type: LlmPromptType
+    entries: list[AdminLlmPromptHistoryEntry] = Field(default_factory=list)

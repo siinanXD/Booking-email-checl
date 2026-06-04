@@ -13,6 +13,7 @@ import {
   Stethoscope,
   LineChart,
   SlidersHorizontal,
+  GitBranch,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchDashboardStats } from "@/lib/api/dashboard";
@@ -27,6 +28,7 @@ const tenantLinks = [
   { to: "/messages", label: "Nachrichten", icon: MessageSquare },
   { to: "/properties", label: "Unterkünfte", icon: Building2 },
   { to: "/review", label: "Review", icon: ClipboardCheck, badge: true },
+  { to: "/workflows", label: "Workflows", icon: GitBranch },
   { to: "/costs", label: "API-Kosten", icon: DollarSign },
 ];
 
@@ -36,6 +38,7 @@ const adminLinks = [
   { to: "/admin/diagnostics", label: "Diagnose", icon: Stethoscope },
   { to: "/admin/observability", label: "Observability", icon: LineChart },
   { to: "/admin/llm-config", label: "LLM-Konfiguration", icon: SlidersHorizontal },
+  { to: "/admin/workflows", label: "Workflows", icon: GitBranch },
 ];
 
 export function Sidebar() {

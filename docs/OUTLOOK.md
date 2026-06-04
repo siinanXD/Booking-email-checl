@@ -98,8 +98,11 @@ Ablauf: neueste Inbox-Mails (Standard: **100**, `OUTLOOK_FETCH_MAX`) →
 `IncomingEmail` → `workflow.run()` → bei Erfolg als gelesen markieren (oder
 verschieben). Bereits bekannte `message_id` (Mongo Dedup) werden übersprungen.
 
-Standard: die **100 neuesten** Mails im Posteingang (`OUTLOOK_FETCH_UNREAD_ONLY=false`).
+Standard: die **100 neuesten** Mails im **Posteingang (INBOX)** (`OUTLOOK_FETCH_UNREAD_ONLY=false`).
 Nur ungelesene: `OUTLOOK_FETCH_UNREAD_ONLY=true` (trotzdem max. 100).
+
+IMAP- und Graph-Connector lesen **keine** Junk-/Spam-Ordner — Provider-Spamfilter
+bleibt die erste Schicht. Triage-Regeln und Kosten-Gate: [`COST_TRIAGE.md`](COST_TRIAGE.md).
 
 ## Tests
 

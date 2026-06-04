@@ -35,8 +35,9 @@ Historie abgerufen und ein Antwortentwurf erzeugt – der Entwurf geht immer in
 eine **menschliche Freigabe**, nie direkt an den Gast. Parallel läuft im
 Hintergrund der **Indexierungs-Fluss**, der Chunks, Embeddings und Entitäten
 speichert, ohne den Antwortpfad zu verlangsamen. Ein vorgeschaltetes
-**Triage-Gate** sortiert Spam und irrelevante Mails günstig aus, bevor ein
-teures Modell überhaupt anläuft.
+**Triage-Gate** sortiert Spam und irrelevante Mails günstig aus (Regeln + optional
+kleines Modell für unbekannte Absender), bevor classify/extract laufen. Details:
+[`docs/COST_TRIAGE.md`](docs/COST_TRIAGE.md). Postfach-Sync liest nur die **INBOX**.
 
 ![E-Mail-Pipeline](docs/images/email-pipeline.svg)
 

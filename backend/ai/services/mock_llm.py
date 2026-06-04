@@ -32,6 +32,15 @@ class MockLLM:
 
     def _text_for(self, prompt: str) -> str:
         """Choose a stable response based on the isolated mail body."""
+        if "Du triagierst eingehende Mails" in prompt:
+            mail = self._mail_section(prompt)
+            if "Generic inquiry" in mail or "Hello" in mail:
+                return "spam_phishing"
+            if "appointment" in mail.lower() or "weird-startup" in mail:
+                return "relevant"
+            if "Reservierung" in mail or "Buchung" in mail:
+                return "relevant"
+            return "spam_phishing"
         if "Antwortentwurf" in prompt or "Gast-Mail" in prompt:
             return "Sehr geehrte/r Gast, Ihre Anfrage wurde bearbeitet."
         if "Extrahiere strukturierte" in prompt:
@@ -102,6 +111,10 @@ class MockLLM:
             return "new_booking"
         if "Neue Buchung" in mail or "AB123" in mail:
             return "new_booking"
+        if "match oder other" in prompt.lower() or "slug: match" in prompt.lower():
+            if any(k in mail.lower() for k in ("bestellung", "order", "ord-", "kauf")):
+                return "match"
+            return "other"
         return "new_booking"
 
 

@@ -8,6 +8,7 @@ import {
   testAccountWhatsApp,
 } from "@/lib/api/admin";
 import type { AdminWhatsAppTestTemplate } from "@/lib/types/api";
+import { AdminPageIntro } from "@/features/admin/components/AdminPageIntro";
 import { Button } from "@/shared/ui/Button";
 import { Card } from "@/shared/ui/Card";
 import { Input } from "@/shared/ui/Input";
@@ -85,6 +86,12 @@ export function AdminDiagnosticsPage() {
 
   return (
     <div className="space-y-6">
+      <AdminPageIntro
+        title="Diagnose: Mail & WhatsApp"
+        description="Wähle einen Mandanten und teste dessen gespeicherte Verbindungen — du verbindest kein eigenes Postfach. Der Mail-Test prüft IMAP/Outlook mit den Mandanten-Credentials; der WhatsApp-Test sendet eine Template-Nachricht an eine Testnummer."
+        impact="Tests lösen echte Verbindungsversuche aus (max. 5 pro Minute pro Mandant). Erfolg oder Fehler werden sofort angezeigt; Credentials bleiben serverseitig und erscheinen nicht in der Antwort."
+      />
+
       <Card className="space-y-4">
         <h2 className="text-lg font-medium text-slate-900">Mandant wählen</h2>
         <label className="block text-sm text-slate-600">

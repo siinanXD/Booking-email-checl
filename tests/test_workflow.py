@@ -33,12 +33,26 @@ def _build_workflow(
     embedding_repo,
     mail_cost: MailCostTracker | None = None,
     review_repo=None,
+    tenant_workflow_repo=None,
 ) -> EmailWorkflow:
+    from backend.ai.services.tenant_workflow_runtime import (
+        TenantWorkflowExecutor,
+        WorkflowRouter,
+    )
+
     llm = MockLLM()
     retrieval = RetrievalService(entity_repo, email_repo)
     indexing = IndexingService(embedding_repo, _MockEmbed())  # type: ignore[arg-type]
     classify = ClassificationService(llm, "gpt-4o-mini", mail_cost=mail_cost)
     extract = ExtractionService(llm, "gpt-4o-mini", mail_cost=mail_cost)
+    workflow_router = (
+        WorkflowRouter(tenant_workflow_repo) if tenant_workflow_repo else None
+    )
+    tenant_executor = TenantWorkflowExecutor(
+        llm,
+        classify_model="gpt-4o-mini",
+        extract_model="gpt-4o-mini",
+    )
     return EmailWorkflow(
         ingestion=ingestion_service,
         classification=classify,
@@ -57,6 +71,9 @@ def _build_workflow(
         indexing=indexing,
         mail_cost=mail_cost,
         review_repo=review_repo,
+        workflow_router=workflow_router,
+        tenant_workflow_executor=tenant_executor,
+        tenant_workflow_repo=tenant_workflow_repo,
     )
 
 
@@ -220,6 +237,65 @@ def test_resume_after_rejection_persists_rejected_state(
     assert record is not None
     assert record.review_status == "rejected"
     assert record.reviewer_note == "Inaccurate draft"
+
+
+def test_workflow_skips_classify_llm_on_unknown_discard(
+    email_repo,
+    entity_repo,
+    extraction_repo,
+    mock_db,
+) -> None:
+    """Verworfene Fremdmail: kein classify/extract-LLM-Aufruf."""
+    from backend.ai.services.ingestion import IngestionService
+    from backend.ai.services.triage import TriageService
+    from backend.infrastructure.repositories.embedding_repository import (
+        EmbeddingRepository,
+    )
+
+    class _CountingLLM(MockLLM):
+        def __init__(self) -> None:
+            self.complete_calls = 0
+
+        def complete(self, prompt, model, *, temperature=None):
+            self.complete_calls += 1
+            return super().complete(prompt, model, temperature=temperature)
+
+    counting = _CountingLLM()
+    ingestion = IngestionService(
+        email_repo,
+        TriageService(triage_llm_enabled=False),
+    )
+    llm = counting
+    embedding_repo = EmbeddingRepository(mock_db)
+    retrieval = RetrievalService(entity_repo, email_repo)
+    indexing = IndexingService(embedding_repo, _MockEmbed())  # type: ignore[arg-type]
+    classify = ClassificationService(llm, "gpt-4o-mini")
+    extract = ExtractionService(llm, "gpt-4o-mini")
+    wf = EmailWorkflow(
+        ingestion=ingestion,
+        classification=classify,
+        extraction=extract,
+        validation=ValidationService(),
+        retrieval=retrieval,
+        response_gen=ResponseGenerationService(
+            llm,
+            "gpt-4o",
+            retrieval,
+            GroundingService(),
+        ),
+        email_repo=email_repo,
+        extraction_repo=extraction_repo,
+        indexing=indexing,
+    )
+    payload = IncomingEmail(
+        message_id="wf-unknown-discard",
+        from_address="unknown@random.org",
+        subject="Hello",
+        body_text="Generic inquiry",
+        received_at=datetime.now(UTC),
+    )
+    wf.run(payload, thread_id=payload.correlation_id)
+    assert counting.complete_calls == 0
 
 
 def test_workflow_finalize_cost_after_spam_discard(

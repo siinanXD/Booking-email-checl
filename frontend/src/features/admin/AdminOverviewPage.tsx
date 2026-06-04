@@ -1,9 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { fetchAdminOverview } from "@/lib/api/admin";
+import { AdminPageIntro } from "@/features/admin/components/AdminPageIntro";
+import { ActivityStatusChart } from "@/features/admin/components/charts/ActivityStatusChart";
+import {
+  TenantCostBarChart,
+  TenantMailsBarChart,
+} from "@/features/admin/components/charts/TenantMetricsBarChart";
+import { ActivityBadge } from "@/features/admin/components/ActivityBadge";
 import { StatCard } from "@/shared/components/StatCard";
 import { Card } from "@/shared/ui/Card";
-import { ActivityBadge } from "@/features/admin/components/ActivityBadge";
 
 function formatUsd(value: number): string {
   return `$${value.toFixed(4)}`;
@@ -37,6 +43,12 @@ export function AdminOverviewPage() {
 
   return (
     <div className="space-y-6">
+      <AdminPageIntro
+        title="Plattform-Übersicht"
+        description="Hier siehst du auf einen Blick, wie viele Mandanten registriert sind, wer die Plattform aktiv nutzt und welche LLM-Kosten in den letzten 30 Tagen entstanden sind. Die Aktivitäts-Ampel basiert auf Mail-Sync, empfangenen Mails, Reviews oder API-Nutzung."
+        impact="Du änderst hier nichts direkt — nutze die Tabelle für Details pro Mandant oder wechsle zu Diagnose/Observability, wenn du Verbindungen testen oder Kosten vertiefen willst."
+      />
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Mandanten gesamt"
@@ -46,7 +58,7 @@ export function AdminOverviewPage() {
         <StatCard
           title="Aktive Mandanten (7 Tage)"
           value={data.active_users_7d}
-          hint="Mail-Sync, Mails, Reviews oder API-Nutzung"
+          hint="Sync, Mails, Reviews oder API in 7 Tagen"
         />
         <StatCard
           title="Kosten (30 Tage)"
@@ -59,8 +71,18 @@ export function AdminOverviewPage() {
         />
       </div>
 
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ActivityStatusChart tenants={data.tenants} />
+        <TenantCostBarChart tenants={data.tenants} />
+      </div>
+
+      <TenantMailsBarChart tenants={data.tenants} />
+
       <Card className="overflow-x-auto">
-        <h2 className="mb-4 text-lg font-medium text-slate-900">Mandanten</h2>
+        <h2 className="mb-1 text-lg font-medium text-slate-900">Mandanten im Detail</h2>
+        <p className="mb-4 text-xs text-slate-500">
+          Sortiert nach Kosten — „Details“ öffnet DB-Counts, Benutzer und Postfach-Status
+        </p>
         {data.tenants.length === 0 ? (
           <p className="text-sm text-slate-500">Keine aktiven Mandanten.</p>
         ) : (

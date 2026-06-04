@@ -27,3 +27,6 @@ class EmailWorkflowState(TypedDict, total=False):
     review: ReviewStatus
     grounding_flag: bool
     error: str
+    workflow_id: str
+    workflow_slug: str
+    custom_extraction: dict[str, object]

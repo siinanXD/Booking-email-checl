@@ -11,6 +11,8 @@ import { Button } from "@/shared/ui/Button";
 import { Card } from "@/shared/ui/Card";
 import { Input } from "@/shared/ui/Input";
 import type { AccountListItem } from "@/lib/types/api";
+import { AdminPageIntro } from "@/features/admin/components/AdminPageIntro";
+import { AccountStatusChart } from "@/features/admin/components/charts/AccountStatusChart";
 
 function AccountRow({
   account,
@@ -115,13 +117,21 @@ export function AdminApprovalsPage() {
 
   return (
     <div className="space-y-6">
+      <AdminPageIntro
+        title="Mandanten-Freischaltung"
+        description="Neue Registrierungen erscheinen zuerst als „pending“. Nach Freischaltung kann der Mandant Postfach verbinden und Mails verarbeiten. Ablehnung ist endgültig und kann optional begründet werden."
+        impact="Freischalten setzt den Account-Status auf „active“ — der Mandant erhält sofort Zugriff auf das Dashboard. Ablehnen sperrt den Zugang; der Grund wird dem Mandanten angezeigt."
+      />
+
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="text-xl font-semibold text-slate-900">
-            Freischaltungen
+            {showAll ? "Alle Accounts" : "Ausstehende Freischaltungen"}
           </h2>
           <p className="text-sm text-slate-500">
-            Neue Registrierungen prüfen und freischalten.
+            {showAll
+              ? "Übersicht aller Mandanten inkl. Status"
+              : "Neue Registrierungen prüfen und freischalten"}
           </p>
         </div>
         <Button
@@ -131,6 +141,12 @@ export function AdminApprovalsPage() {
           {showAll ? "Nur ausstehende" : "Alle Accounts"}
         </Button>
       </div>
+
+      {showAll && data?.items && data.items.length > 0 && (
+        <div className="max-w-md">
+          <AccountStatusChart accounts={data.items} />
+        </div>
+      )}
 
       {isLoading && <p className="text-sm text-slate-500">Lade…</p>}
       {error && (

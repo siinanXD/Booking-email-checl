@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 
 from backend.ai.domain.booking.booking_relevance import (
     classify_booking_mail,
+    has_text_booking_signals,
     is_booking_relevant,
     is_marketing_noise,
     is_probable_booking_mail,
@@ -44,6 +45,19 @@ def test_temu_not_booking() -> None:
         email,
         BookingExtraction(intent=BookingIntent.NEW_BOOKING, booking_number="AB200"),
     ).is_booking
+
+
+def test_gmail_reservation_keywords() -> None:
+    email = StoredEmail(
+        message_id="m-gmail",
+        from_address="guest@gmail.com",
+        subject="Frage zur Reservierung",
+        body_text="Wann kann ich einchecken?",
+        received_at=datetime.now(UTC),
+        correlation_id="c-gmail",
+    )
+    assert has_text_booking_signals(email)
+    assert is_probable_booking_mail(email)
 
 
 def test_beds24_booking_detected() -> None:

@@ -99,6 +99,18 @@ def _from_domain(from_address: str) -> str:
     return from_address.split("@")[-1].lower().strip()
 
 
+def is_trusted_booking_domain(from_address: str) -> bool:
+    """Absender-Domain gehört zu bekannten Buchungs-/PMS-Plattformen."""
+    domain = _from_domain(from_address)
+    return bool(domain) and any(known in domain for known in _TRUSTED_BOOKING_DOMAINS)
+
+
+def has_text_booking_signals(email: EmailLike) -> bool:
+    """Buchungs-Keywords in Betreff oder Body (ohne Extraktion)."""
+    combined = f"{email.subject or ''}\n{email.body_text or ''}"
+    return bool(_BOOKING_SIGNAL_RE.search(combined))
+
+
 def is_marketing_noise(email: EmailLike) -> bool:
     """Newsletter / interne Infos."""
     from_addr = (email.from_address or "").lower()
@@ -146,10 +158,7 @@ def is_probable_booking_mail(email: EmailLike) -> bool:
     domain = _from_domain(email.from_address)
     if any(known in domain for known in _TRUSTED_BOOKING_DOMAINS):
         return _BOOKING_SIGNAL_RE.search(subject) is not None
-    if _BOOKING_SIGNAL_RE.search(f"{subject}\n{email.body_text or ''}"):
-        if re.search(r"münzbach|muenzbach|ferienzimmer", subject, re.I):
-            return True
-    return False
+    return has_text_booking_signals(email)
 
 
 def is_plausible_booking_number(

@@ -11,6 +11,8 @@ import type {
   AdminLlmConfigUpdateRequest,
   AdminLlmPreviewRequest,
   AdminLlmPreviewResponse,
+  AdminLlmPromptHistoryResponse,
+  AdminLlmPromptType,
   AdminWhatsAppInfoResponse,
   AdminWhatsAppTestResponse,
   AdminWhatsAppTestTemplate,
@@ -157,6 +159,17 @@ export async function previewAdminLlmConfig(
   const { data } = await apiClient.post<AdminLlmPreviewResponse>(
     "/api/admin/llm-config/preview",
     payload
+  );
+  return data;
+}
+
+export async function fetchAdminLlmPromptHistory(
+  promptType: AdminLlmPromptType,
+  limit = 15
+): Promise<AdminLlmPromptHistoryResponse> {
+  const { data } = await apiClient.get<AdminLlmPromptHistoryResponse>(
+    `/api/admin/llm-config/prompt-history/${promptType}`,
+    { params: { limit } }
   );
   return data;
 }

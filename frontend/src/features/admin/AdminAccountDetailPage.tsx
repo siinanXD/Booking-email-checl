@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "react-router-dom";
 import { fetchAdminAccountDetail } from "@/lib/api/admin";
+import { AdminPageIntro } from "@/features/admin/components/AdminPageIntro";
 import { ActivityBadge } from "@/features/admin/components/ActivityBadge";
+import { DbCountsBarChart } from "@/features/admin/components/charts/DbCountsBarChart";
 import { Card } from "@/shared/ui/Card";
 
 function formatUsd(value: number): string {
@@ -45,6 +47,12 @@ export function AdminAccountDetailPage() {
 
   return (
     <div className="space-y-6">
+      <AdminPageIntro
+        title={`Mandant: ${data.account.display_name}`}
+        description="Detailansicht eines einzelnen Mandanten: Nutzung, Kosten, Postfach-Status und gespeicherte Daten in MongoDB. Die Aktivitäts-Ampel entspricht der Plattform-Übersicht."
+        impact="Read-only — Änderungen an Verbindungen testest du unter Diagnose; LLM-Verhalten unter LLM-Konfiguration. Freischaltung erfolgt unter Mandanten."
+      />
+
       <div className="flex items-center justify-between gap-4">
         <div>
           <Link
@@ -59,6 +67,12 @@ export function AdminAccountDetailPage() {
           <p className="text-sm text-slate-500">{data.account.contact_email}</p>
         </div>
         <ActivityBadge status={data.activity_status} />
+        <Link
+          to={`/admin/workflows?account=${accountId}`}
+          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
+        >
+          Workflows verwalten
+        </Link>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
@@ -116,8 +130,10 @@ export function AdminAccountDetailPage() {
         )}
       </Card>
 
+      <DbCountsBarChart counts={data.db_counts} />
+
       <Card className="space-y-3">
-        <h3 className="font-medium text-slate-900">Datenbank-Counts</h3>
+        <h3 className="font-medium text-slate-900">Datenbank-Counts (Tabelle)</h3>
         <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
           {Object.entries(data.db_counts).map(([key, count]) => (
             <div key={key}>

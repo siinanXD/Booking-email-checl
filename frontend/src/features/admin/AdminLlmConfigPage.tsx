@@ -6,6 +6,9 @@ import {
   updateAdminLlmConfig,
 } from "@/lib/api/admin";
 import type { AdminLlmPreviewStep } from "@/lib/types/api";
+import { AdminPageIntro } from "@/features/admin/components/AdminPageIntro";
+import { PromptHistoryPanel } from "@/features/admin/components/PromptHistoryPanel";
+import { LlmTemperatureChart } from "@/features/admin/components/charts/LlmTemperatureChart";
 import { Button } from "@/shared/ui/Button";
 import { Card } from "@/shared/ui/Card";
 import { Input } from "@/shared/ui/Input";
@@ -34,6 +37,7 @@ export function AdminLlmConfigPage() {
   );
   const [previewStep, setPreviewStep] = useState<AdminLlmPreviewStep>("classify");
   const [previewResult, setPreviewResult] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
@@ -65,6 +69,9 @@ export function AdminLlmConfigPage() {
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin-llm-config"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["admin-llm-prompt-history"],
+      });
       setSaveMessage("Konfiguration gespeichert.");
     },
     onError: () => setSaveMessage("Speichern fehlgeschlagen."),
@@ -77,8 +84,14 @@ export function AdminLlmConfigPage() {
         subject: previewSubject,
         body: previewBody,
       }),
-    onSuccess: (res) => setPreviewResult(res.result),
-    onError: () => setPreviewResult("Preview fehlgeschlagen."),
+    onSuccess: (res) => {
+      setPreviewResult(res.success ? res.result : null);
+      setPreviewError(res.success ? null : res.error ?? "Unbekannter Fehler");
+    },
+    onError: () => {
+      setPreviewResult(null);
+      setPreviewError("Preview-Anfrage fehlgeschlagen (Netzwerk oder Server).");
+    },
   });
 
   if (isLoading || !data) {
@@ -118,20 +131,37 @@ export function AdminLlmConfigPage() {
 
   return (
     <div className="space-y-6">
+      <AdminPageIntro
+        title="LLM-Konfiguration"
+        description="Steuere plattformweit Temperatur, Similarity Top-K und optionale Prompt-Texte für Klassifikation, Extraktion und Antwortentwurf. Leere Prompt-Felder nutzen weiterhin die Markdown-Dateien im Repository."
+        impact="Nach dem Speichern gelten neue Werte sofort für alle Mandanten und jede neu verarbeitete Mail — ohne Neustart. Top-K steuert, wie viele ähnliche Fälle beim Entwurf herangezogen werden; höhere Temperatur kann Kosten und Varianz erhöhen."
+      />
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <LlmTemperatureChart
+          classify={classifyTemp}
+          extract={extractTemp}
+          draft={draftTemp}
+        />
+        <Card className="space-y-3">
+          <h3 className="font-medium text-slate-900">Similarity Top-K</h3>
+          <p className="text-sm text-slate-600">
+            Aktuell: <strong>{similarityTopK}</strong> ähnliche Fälle pro Entwurf
+          </p>
+          <p className="text-xs text-slate-500">
+            Mehr Top-K = mehr Kontext aus der Vektorsuche, oft höhere Token-Kosten.
+            Weniger = schneller und günstiger, aber weniger historischer Kontext.
+          </p>
+        </Card>
+      </div>
+
       <Card className="space-y-4">
-        <h2 className="text-lg font-medium text-slate-900">Globale LLM-Einstellungen</h2>
-        <p className="text-sm text-slate-600">
-          Overrides gelten plattformweit. Leere Prompt-Felder nutzen die Standard-Dateien
-          aus dem Repository.
-        </p>
+        <h2 className="text-lg font-medium text-slate-900">Prompts & Parameter</h2>
         {data.updated_at && (
           <p className="text-xs text-slate-500">
             Zuletzt geändert: {new Date(data.updated_at).toLocaleString("de-DE")}
           </p>
         )}
-      </Card>
-
-      <Card className="space-y-4">
         <label className="block text-sm text-slate-600">
           Ähnliche Fälle (Similarity Top-K)
           <Input
@@ -192,6 +222,12 @@ export function AdminLlmConfigPage() {
           />
         </label>
 
+        <PromptHistoryPanel
+          promptType={tab}
+          currentText={overrideValue}
+          onRestore={(text) => setOverride(text)}
+        />
+
         <div className="flex gap-2">
           <Button
             disabled={saveMut.isPending}
@@ -243,12 +279,25 @@ export function AdminLlmConfigPage() {
         <Button
           variant="secondary"
           disabled={previewMut.isPending}
-          onClick={() => previewMut.mutate()}
+          onClick={() => {
+            setPreviewResult(null);
+            setPreviewError(null);
+            previewMut.mutate();
+          }}
         >
           Preview ausführen
         </Button>
+        {previewError && (
+          <div
+            className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+            role="alert"
+          >
+            <p className="font-medium">Preview fehlgeschlagen</p>
+            <p className="mt-1 whitespace-pre-wrap">{previewError}</p>
+          </div>
+        )}
         {previewResult && (
-          <pre className="max-h-48 overflow-auto rounded bg-slate-50 p-3 text-xs text-slate-800">
+          <pre className="max-h-48 overflow-auto rounded border border-emerald-200 bg-emerald-50 p-3 text-xs text-slate-800">
             {previewResult}
           </pre>
         )}

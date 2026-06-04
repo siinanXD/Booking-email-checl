@@ -14,6 +14,10 @@ from backend.ai.services.openai_client import OpenAIClient
 from backend.ai.services.response_generation import ResponseGenerationService
 from backend.ai.services.retrieval import RetrievalService
 from backend.ai.services.similarity_search import SimilaritySearchService
+from backend.ai.services.tenant_workflow_runtime import (
+    TenantWorkflowExecutor,
+    WorkflowRouter,
+)
 from backend.ai.services.triage import TriageService
 from backend.ai.services.validation import ValidationService
 from backend.ai.workflows.checkpointer import build_checkpointer
@@ -57,6 +61,9 @@ from backend.infrastructure.repositories.outlook_oauth_flow_repository import (
 from backend.infrastructure.repositories.platform_llm_config_repository import (
     PlatformLlmConfigRepository,
 )
+from backend.infrastructure.repositories.platform_llm_prompt_history_repository import (
+    PlatformLlmPromptHistoryRepository,
+)
 from backend.infrastructure.repositories.platform_settings_repository import (
     PlatformSettingsRepository,
 )
@@ -66,6 +73,9 @@ from backend.infrastructure.repositories.property_recipient_repository import (
 from backend.infrastructure.repositories.review_repository import ReviewRepository
 from backend.infrastructure.repositories.revoked_token_repository import (
     RevokedTokenRepository,
+)
+from backend.infrastructure.repositories.tenant_workflow_repository import (
+    TenantWorkflowRepository,
 )
 from backend.infrastructure.repositories.user_repository import UserRepository
 
@@ -91,6 +101,8 @@ class AppContext:
     mail_connection_repo: MailConnectionRepository
     outlook_oauth_flow_repo: OutlookOAuthFlowRepository
     platform_llm_config_repo: PlatformLlmConfigRepository
+    platform_llm_prompt_history_repo: PlatformLlmPromptHistoryRepository
+    tenant_workflow_repo: TenantWorkflowRepository
     admin_audit_log_repo: AdminAuditLogRepository
 
 
@@ -115,6 +127,8 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
     mail_connection_repo = MailConnectionRepository(db)
     outlook_oauth_flow_repo = OutlookOAuthFlowRepository(db)
     platform_llm_config_repo = PlatformLlmConfigRepository(db)
+    platform_llm_prompt_history_repo = PlatformLlmPromptHistoryRepository(db)
+    tenant_workflow_repo = TenantWorkflowRepository(db)
     admin_audit_log_repo = AdminAuditLogRepository(db)
     notification_service = NotificationService(
         cfg,
@@ -160,7 +174,16 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
         tracing=tracing,
         metrics_repo=metrics_repo,
     )
-    ingestion = IngestionService(email_repo, TriageService())
+    triage = TriageService(
+        llm=llm,
+        model=cfg.openai_model_triage,
+        triage_llm_enabled=cfg.triage_llm_enabled,
+        max_body_chars=cfg.triage_llm_max_body_chars,
+        tracing=tracing,
+        alerts=alerts,
+        mail_cost=mail_cost,
+    )
+    ingestion = IngestionService(email_repo, triage)
     classification = ClassificationService(
         llm,
         cfg.openai_model_classify,
@@ -204,6 +227,13 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
     )
     indexing = IndexingService(embedding_repo, embed_client, chunk_repo, alerts=alerts)
 
+    workflow_router = WorkflowRouter(tenant_workflow_repo)
+    tenant_workflow_executor = TenantWorkflowExecutor(
+        llm,
+        classify_model=cfg.openai_model_classify,
+        extract_model=cfg.openai_model_extract,
+    )
+
     checkpointer = build_checkpointer(cfg)
     workflow = EmailWorkflow(
         ingestion=ingestion,
@@ -222,6 +252,9 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
         checkpointer=checkpointer,
         feedback_tracker=feedback_tracker,
         langfuse_tracer=langfuse_tracer,
+        workflow_router=workflow_router,
+        tenant_workflow_executor=tenant_workflow_executor,
+        tenant_workflow_repo=tenant_workflow_repo,
         tracing=tracing,
     )
 
@@ -243,5 +276,7 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
         mail_connection_repo=mail_connection_repo,
         outlook_oauth_flow_repo=outlook_oauth_flow_repo,
         platform_llm_config_repo=platform_llm_config_repo,
+        platform_llm_prompt_history_repo=platform_llm_prompt_history_repo,
+        tenant_workflow_repo=tenant_workflow_repo,
         admin_audit_log_repo=admin_audit_log_repo,
     )

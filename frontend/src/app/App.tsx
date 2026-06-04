@@ -5,6 +5,7 @@ import { AdminApprovalsPage } from "@/features/admin/AdminApprovalsPage";
 import { AdminDiagnosticsPage } from "@/features/admin/AdminDiagnosticsPage";
 import { AdminLayout } from "@/features/admin/AdminLayout";
 import { AdminLlmConfigPage } from "@/features/admin/AdminLlmConfigPage";
+import { AdminWorkflowsPage } from "@/features/admin/AdminWorkflowsPage";
 import { AdminObservabilityPage } from "@/features/admin/AdminObservabilityPage";
 import { AdminOverviewPage } from "@/features/admin/AdminOverviewPage";
 import { BookingsPage } from "@/features/emails/BookingsPage";
@@ -19,6 +20,7 @@ import { PropertiesPage } from "@/features/properties/PropertiesPage";
 import { RegisterPage } from "@/features/auth/RegisterPage";
 import { ReviewQueuePage } from "@/features/review/ReviewQueuePage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
+import { WorkflowsPage } from "@/features/workflows/WorkflowsPage";
 import { PlatformAdminRoute } from "@/routes/PlatformAdminRoute";
 import { ProtectedRoute } from "@/routes/ProtectedRoute";
 import { TenantRoute } from "@/routes/TenantRoute";
@@ -44,6 +46,7 @@ export function App() {
                   element={<AdminObservabilityPage />}
                 />
                 <Route path="llm-config" element={<AdminLlmConfigPage />} />
+                <Route path="workflows" element={<AdminWorkflowsPage />} />
               </Route>
               <Route
                 path="admin/approvals"
@@ -59,6 +62,7 @@ export function App() {
               <Route path="properties" element={<PropertiesPage />} />
               <Route path="review" element={<ReviewQueuePage />} />
               <Route path="settings" element={<SettingsPage />} />
+              <Route path="workflows" element={<WorkflowsPage />} />
               <Route path="costs" element={<CostsPage />} />
             </Route>
           </Route>

@@ -6,6 +6,7 @@ const adminTabs = [
   { to: "/admin/diagnostics", label: "Diagnose", end: false },
   { to: "/admin/observability", label: "Observability", end: false },
   { to: "/admin/llm-config", label: "LLM-Konfiguration", end: false },
+  { to: "/admin/workflows", label: "Workflows", end: false },
 ];
 
 export function AdminLayout() {

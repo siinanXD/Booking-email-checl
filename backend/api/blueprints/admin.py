@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from flask import Blueprint, g, jsonify, request
 
@@ -19,6 +19,7 @@ from backend.api.schemas.admin_diagnostics import AdminWhatsAppTestRequest
 from backend.api.schemas.admin_llm_config import (
     AdminLlmConfigUpdateRequest,
     AdminLlmPreviewRequest,
+    LlmPromptType,
 )
 from backend.api.services.admin_diagnostics_service import (
     AccountNotFoundError,
@@ -27,6 +28,7 @@ from backend.api.services.admin_diagnostics_service import (
 )
 from backend.api.services.admin_llm_config_service import (
     get_llm_config,
+    get_prompt_history,
     preview_llm_config,
     update_llm_config,
 )
@@ -329,4 +331,189 @@ def admin_preview_llm_config() -> tuple[Any, int]:
     """Dry-Run classify/extract auf Beispieltext."""
     body = AdminLlmPreviewRequest.model_validate(request.get_json(silent=True) or {})
     result = preview_llm_config(g.ctx, g.settings, body)
+    return jsonify(result.model_dump()), 200
+
+
+@admin_bp.get("/llm-config/prompt-history/<prompt_type>")
+@require_auth
+@require_platform_admin
+def admin_llm_prompt_history(prompt_type: str) -> tuple[Any, int]:
+    """Letzte gespeicherte Prompt-Versionen für classify/extract/draft."""
+    if prompt_type not in {"classify", "extract", "draft"}:
+        return jsonify({"error": "invalid prompt_type"}), 400
+    limit = request.args.get("limit", default=15, type=int)
+    result = get_prompt_history(
+        g.ctx,
+        cast(LlmPromptType, prompt_type),
+        limit=limit,
+    )
+    return jsonify(result.model_dump()), 200
+
+
+def _account_or_404(account_id: str) -> tuple[Any, int] | None:
+    if g.ctx.account_repo.get_by_id(account_id) is None:
+        return jsonify({"error": "Account not found"}), 404
+    return None
+
+
+@admin_bp.get("/accounts/<account_id>/workflows")
+@require_auth
+@require_platform_admin
+def admin_list_account_workflows(account_id: str) -> tuple[Any, int]:
+    """Workflows eines Mandanten (Plattform-Admin)."""
+    missing = _account_or_404(account_id)
+    if missing:
+        return missing
+    from backend.api.services.tenant_workflow_service import list_workflows
+
+    return jsonify(list_workflows(g.ctx, account_id).model_dump()), 200
+
+
+@admin_bp.post("/accounts/<account_id>/workflows")
+@require_auth
+@require_platform_admin
+def admin_create_account_workflow(account_id: str) -> tuple[Any, int]:
+    missing = _account_or_404(account_id)
+    if missing:
+        return missing
+    from backend.api.schemas.tenant_workflows import TenantWorkflowCreateRequest
+    from backend.api.services.tenant_workflow_service import create_workflow
+
+    body = TenantWorkflowCreateRequest.model_validate(
+        request.get_json(silent=True) or {}
+    )
+    user_id = g.current_user.get("id")
+    try:
+        created = create_workflow(
+            g.ctx,
+            account_id,
+            body,
+            user_id=user_id if isinstance(user_id, str) else None,
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 409
+    return jsonify(created.model_dump()), 201
+
+
+@admin_bp.post("/accounts/<account_id>/workflows/suggest")
+@require_auth
+@require_platform_admin
+def admin_suggest_account_workflow(account_id: str) -> tuple[Any, int]:
+    missing = _account_or_404(account_id)
+    if missing:
+        return missing
+    from backend.api.schemas.tenant_workflows import TenantWorkflowSuggestRequest
+    from backend.api.services.tenant_workflow_service import suggest_workflow
+
+    body = TenantWorkflowSuggestRequest.model_validate(
+        request.get_json(silent=True) or {}
+    )
+    suggestion = suggest_workflow(g.ctx, g.settings, body)
+    return jsonify(suggestion.model_dump()), 200
+
+
+@admin_bp.get("/accounts/<account_id>/workflows/<workflow_id>")
+@require_auth
+@require_platform_admin
+def admin_get_account_workflow(
+    account_id: str,
+    workflow_id: str,
+) -> tuple[Any, int]:
+    missing = _account_or_404(account_id)
+    if missing:
+        return missing
+    from backend.api.services.tenant_workflow_service import get_workflow
+
+    record = get_workflow(g.ctx, account_id, workflow_id)
+    if record is None:
+        return jsonify({"error": "Not found"}), 404
+    return jsonify(record.model_dump()), 200
+
+
+@admin_bp.put("/accounts/<account_id>/workflows/<workflow_id>")
+@require_auth
+@require_platform_admin
+def admin_update_account_workflow(
+    account_id: str,
+    workflow_id: str,
+) -> tuple[Any, int]:
+    missing = _account_or_404(account_id)
+    if missing:
+        return missing
+    from backend.api.schemas.tenant_workflows import TenantWorkflowUpdateRequest
+    from backend.api.services.tenant_workflow_service import update_workflow
+
+    body = TenantWorkflowUpdateRequest.model_validate(
+        request.get_json(silent=True) or {}
+    )
+    user_id = g.current_user.get("id")
+    try:
+        updated = update_workflow(
+            g.ctx,
+            account_id,
+            workflow_id,
+            body,
+            user_id=user_id if isinstance(user_id, str) else None,
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 409
+    if updated is None:
+        return jsonify({"error": "Not found"}), 404
+    return jsonify(updated.model_dump()), 200
+
+
+@admin_bp.delete("/accounts/<account_id>/workflows/<workflow_id>")
+@require_auth
+@require_platform_admin
+def admin_delete_account_workflow(
+    account_id: str,
+    workflow_id: str,
+) -> tuple[Any, int]:
+    missing = _account_or_404(account_id)
+    if missing:
+        return missing
+    from backend.api.services.tenant_workflow_service import delete_workflow
+
+    if not delete_workflow(g.ctx, account_id, workflow_id):
+        return jsonify({"error": "Not found"}), 404
+    return jsonify({"deleted": True}), 200
+
+
+@admin_bp.post("/accounts/<account_id>/workflows/<workflow_id>/preview")
+@require_auth
+@require_platform_admin
+def admin_preview_account_workflow(
+    account_id: str,
+    workflow_id: str,
+) -> tuple[Any, int]:
+    missing = _account_or_404(account_id)
+    if missing:
+        return missing
+    from backend.api.schemas.tenant_workflows import TenantWorkflowPreviewRequest
+    from backend.api.services.tenant_workflow_service import preview_workflow
+
+    body = TenantWorkflowPreviewRequest.model_validate(
+        request.get_json(silent=True) or {}
+    )
+    result = preview_workflow(g.ctx, g.settings, account_id, workflow_id, body)
+    if result is None:
+        return jsonify({"error": "Not found"}), 404
+    return jsonify(result.model_dump()), 200
+
+
+@admin_bp.post("/accounts/<account_id>/workflows/<workflow_id>/run-tests")
+@require_auth
+@require_platform_admin
+def admin_run_account_workflow_tests(
+    account_id: str,
+    workflow_id: str,
+) -> tuple[Any, int]:
+    missing = _account_or_404(account_id)
+    if missing:
+        return missing
+    from backend.api.services.tenant_workflow_service import run_workflow_tests
+
+    result = run_workflow_tests(g.ctx, g.settings, account_id, workflow_id)
+    if result is None:
+        return jsonify({"error": "Not found"}), 404
     return jsonify(result.model_dump()), 200

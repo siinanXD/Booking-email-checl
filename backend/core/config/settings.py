@@ -48,6 +48,15 @@ class Settings(BaseSettings):
         alias="OPENAI_MODEL_EXTRACT",
     )
     openai_model_draft: str = Field(default="gpt-4o-mini", alias="OPENAI_MODEL_DRAFT")
+    openai_model_triage: str = Field(
+        default="gpt-4o-mini",
+        alias="OPENAI_MODEL_TRIAGE",
+    )
+    triage_llm_enabled: bool = Field(default=True, alias="TRIAGE_LLM_ENABLED")
+    triage_llm_max_body_chars: int = Field(
+        default=2000,
+        alias="TRIAGE_LLM_MAX_BODY_CHARS",
+    )
     embedding_model: str = Field(
         default="text-embedding-3-small",
         alias="EMBEDDING_MODEL",
