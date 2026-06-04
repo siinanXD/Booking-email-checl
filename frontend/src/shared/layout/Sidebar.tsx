@@ -14,13 +14,22 @@ import {
   LineChart,
   SlidersHorizontal,
   GitBranch,
+  Tag,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchDashboardStats } from "@/lib/api/dashboard";
 import { fetchPendingAccounts } from "@/lib/api/admin";
+import { fetchWorkflowNav } from "@/lib/api/workflows";
 import { useAuthStore } from "@/features/auth/authStore";
 
-const tenantLinks = [
+type SidebarLink = {
+  to: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  badge?: boolean;
+};
+
+const tenantLinks: SidebarLink[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/bookings", label: "Buchungen", icon: CalendarCheck },
   { to: "/cancellations", label: "Stornos", icon: XCircle },
@@ -28,11 +37,10 @@ const tenantLinks = [
   { to: "/messages", label: "Nachrichten", icon: MessageSquare },
   { to: "/properties", label: "Unterkünfte", icon: Building2 },
   { to: "/review", label: "Review", icon: ClipboardCheck, badge: true },
-  { to: "/workflows", label: "Workflows", icon: GitBranch },
   { to: "/costs", label: "API-Kosten", icon: DollarSign },
 ];
 
-const adminLinks = [
+const adminLinks: SidebarLink[] = [
   { to: "/admin/overview", label: "Übersicht", icon: Shield },
   { to: "/admin/accounts", label: "Mandanten", icon: Users, badge: true },
   { to: "/admin/diagnostics", label: "Diagnose", icon: Stethoscope },
@@ -55,9 +63,26 @@ export function Sidebar() {
     enabled: isPlatformAdmin,
     refetchInterval: 60_000,
   });
+  const { data: workflowNav } = useQuery({
+    queryKey: ["workflows", "nav"],
+    queryFn: fetchWorkflowNav,
+    enabled: !isPlatformAdmin,
+    refetchInterval: 60_000,
+  });
   const pending = stats?.pending_review ?? 0;
   const pendingApprovals = pendingAccounts?.total ?? 0;
-  const links = isPlatformAdmin ? adminLinks : tenantLinks;
+  const workflowRubrics: SidebarLink[] = (workflowNav?.items ?? []).map((wf) => ({
+    to: `/rubrics/${wf.slug}`,
+    label: wf.label,
+    icon: Tag,
+  }));
+  const links = isPlatformAdmin
+    ? adminLinks
+    : [
+        ...tenantLinks.slice(0, 7),
+        ...workflowRubrics,
+        ...tenantLinks.slice(7),
+      ];
 
   return (
     <aside className="flex w-56 flex-col bg-slate-900 text-slate-200">

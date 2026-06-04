@@ -6,6 +6,8 @@ import type {
   TenantWorkflowCreateRequest,
   TenantWorkflowSuggestResponse,
   WorkflowImportance,
+  WorkflowLlmProvider,
+  WorkflowMediaAttachment,
 } from "@/lib/types/api";
 import { Badge } from "@/shared/ui/Badge";
 import { Button } from "@/shared/ui/Button";
@@ -55,6 +57,7 @@ function applySuggestion(
     match_rules: suggestion.match_rules,
     llm_provider: suggestion.llm_provider,
     supports_multimodal: suggestion.supports_multimodal,
+    multimodal_prompt: suggestion.multimodal_prompt ?? "",
     enabled: false,
     sandbox_only: true,
   };
@@ -71,6 +74,32 @@ function textToFields(text: string): string[] {
     .filter(Boolean);
 }
 
+async function filesToAttachments(files: FileList | null): Promise<WorkflowMediaAttachment[]> {
+  if (!files?.length) return [];
+  const allowed = new Set([
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "application/pdf",
+  ]);
+  const out: WorkflowMediaAttachment[] = [];
+  for (const file of Array.from(files).slice(0, 5)) {
+    if (!allowed.has(file.type)) continue;
+    const buffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.length; i += 1) {
+      binary += String.fromCharCode(bytes[i] ?? 0);
+    }
+    out.push({
+      filename: file.name,
+      mime_type: file.type,
+      data_base64: btoa(binary),
+    });
+  }
+  return out;
+}
+
 export interface WorkflowsPageProps {
   /** Plattform-Admin: Workflows für diesen Mandanten bearbeiten. */
   adminAccountId?: string;
@@ -80,7 +109,7 @@ export interface WorkflowsPageProps {
 export function WorkflowsPage(props: WorkflowsPageProps = {}) {
   const { adminAccountId, subtitle } = props;
   const queryClient = useQueryClient();
-  const isAccountAdmin = useAuthStore((s) => s.isAccountAdmin());
+  const isPlatformAdmin = useAuthStore((s) => s.isPlatformAdmin());
   const api = useMemo(() => createWorkflowApi(adminAccountId), [adminAccountId]);
   const queryKey = useMemo(
     () => (adminAccountId ? ["workflows", "admin", adminAccountId] : ["workflows"]),
@@ -90,30 +119,68 @@ export function WorkflowsPage(props: WorkflowsPageProps = {}) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<TenantWorkflowCreateRequest>(EMPTY_FORM);
   const [assistDescription, setAssistDescription] = useState("");
+  const [assistFiles, setAssistFiles] = useState<FileList | null>(null);
   const [previewSubject, setPreviewSubject] = useState("Test-Betreff");
   const [previewBody, setPreviewBody] = useState("Test-Inhalt");
   const [previewResult, setPreviewResult] = useState<string | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewNotice, setPreviewNotice] = useState<string | null>(null);
+  const [previewFiles, setPreviewFiles] = useState<FileList | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [testsPassed, setTestsPassed] = useState(false);
 
   const { data: list, isLoading } = useQuery({
     queryKey,
     queryFn: () => api.fetchWorkflows(),
-    enabled: Boolean(adminAccountId) || isAccountAdmin,
+    enabled: Boolean(adminAccountId) || isPlatformAdmin,
+  });
+
+  const { data: geminiStatus } = useQuery({
+    queryKey: [...queryKey, "gemini-status"],
+    queryFn: () => api.fetchGeminiStatus(),
+    enabled: Boolean(adminAccountId) || isPlatformAdmin,
   });
 
   const suggestMut = useMutation({
-    mutationFn: () =>
-      api.suggestWorkflow({
-        description: assistDescription,
+    mutationFn: async () => {
+      const attachments = await filesToAttachments(assistFiles);
+      const description =
+        assistDescription.trim() ||
+        (attachments.length > 0 ? "Workflow aus Beispiel-Screenshot" : "");
+      return api.suggestWorkflow({
+        description,
         label_hint: form.label || null,
-      }),
+        attachments,
+      });
+    },
     onSuccess: (res) => {
       setForm(applySuggestion(res));
-      setMessage("KI-Vorschlag übernommen — bitte prüfen und speichern.");
+      if (res.test_emails[0]) {
+        setPreviewSubject(res.test_emails[0].subject);
+        setPreviewBody(res.test_emails[0].body);
+      }
+      setMessage(
+        res.supports_multimodal
+          ? "KI-Vorschlag aus Beispiel übernommen (Felder, Regeln, Test-Mail) — bitte prüfen und speichern."
+          : "KI-Vorschlag übernommen — bitte prüfen und speichern."
+      );
     },
-    onError: () => setMessage("KI-Vorschlag fehlgeschlagen."),
+    onError: (err: unknown) => {
+      const msg =
+        err &&
+        typeof err === "object" &&
+        "response" in err &&
+        err.response &&
+        typeof err.response === "object" &&
+        "data" in err.response &&
+        err.response.data &&
+        typeof err.response.data === "object" &&
+        "error" in err.response.data &&
+        typeof err.response.data.error === "string"
+          ? err.response.data.error
+          : "KI-Vorschlag fehlgeschlagen.";
+      setMessage(msg);
+    },
   });
 
   const saveMut = useMutation({
@@ -151,14 +218,18 @@ export function WorkflowsPage(props: WorkflowsPageProps = {}) {
   });
 
   const previewMut = useMutation({
-    mutationFn: () =>
-      api.previewWorkflow(editingId!, {
+    mutationFn: async () => {
+      const attachments = await filesToAttachments(previewFiles);
+      return api.previewWorkflow(editingId!, {
         subject: previewSubject,
         body: previewBody,
-      }),
+        attachments,
+      });
+    },
     onSuccess: (res) => {
       setPreviewResult(res.success ? res.result : null);
       setPreviewError(res.success ? null : res.error ?? "Unbekannter Fehler");
+      setPreviewNotice(res.notice ?? null);
     },
   });
 
@@ -180,6 +251,7 @@ export function WorkflowsPage(props: WorkflowsPageProps = {}) {
     setForm(EMPTY_FORM);
     setEditingId(null);
     setAssistDescription("");
+    setAssistFiles(null);
     setPreviewResult(null);
     setPreviewError(null);
     setMessage(null);
@@ -226,11 +298,12 @@ export function WorkflowsPage(props: WorkflowsPageProps = {}) {
     }
   };
 
-  if (!adminAccountId && !isAccountAdmin) {
+  if (!adminAccountId && !isPlatformAdmin) {
     return (
       <Card>
         <p className="text-sm text-slate-600">
-          Workflow-Verwaltung ist nur für Mandanten-Admins verfügbar.
+          Workflow-Verwaltung ist nur für Plattform-Administratoren verfügbar
+          (Menü Admin → Workflows, Mandant wählen).
         </p>
       </Card>
     );
@@ -309,18 +382,38 @@ export function WorkflowsPage(props: WorkflowsPageProps = {}) {
       <Card className="space-y-3">
         <h2 className="font-medium text-slate-900">KI-Assistent</h2>
         <p className="text-xs text-slate-500">
-          Beschreibe, wonach gesucht werden soll, welche Felder wichtig sind und
-          ob Bilder/PDFs relevant sind.
+          Lade einen Screenshot oder ein PDF einer Beispiel-Mail hoch — Gemini
+          schlägt Felder, Routing-Keywords und eine Test-Mail vor. Optional
+          ergänzt du eine kurze Beschreibung.
         </p>
+        <label className="block text-sm text-slate-600">
+          Beispiel-Mail (Screenshot/PDF, max. 5)
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,application/pdf"
+            multiple
+            className="mt-1 block w-full text-sm"
+            onChange={(e) => setAssistFiles(e.target.files)}
+          />
+        </label>
         <textarea
           className="min-h-[100px] w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
           value={assistDescription}
           onChange={(e) => setAssistDescription(e.target.value)}
-          placeholder="z.B. Kaufbestätigungen von Online-Shops. Order-ID und Betrag sind Pflicht, Tracking optional. Screenshots von Rechnungen können vorkommen."
+          placeholder="Optional: z.B. Tracking-Mails von DHL — Sendungsnummer ist Pflicht."
         />
+        {assistFiles?.length && geminiStatus && !geminiStatus.available && (
+          <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+            GEMINI_API_KEY fehlt — Screenshot-Vorschläge sind nur mit Gemini möglich.
+          </p>
+        )}
         <Button
           variant="secondary"
-          disabled={assistDescription.length < 10 || suggestMut.isPending}
+          disabled={
+            (assistDescription.trim().length < 10 && !assistFiles?.length) ||
+            suggestMut.isPending ||
+            Boolean(assistFiles?.length && geminiStatus && !geminiStatus.available)
+          }
           onClick={() => suggestMut.mutate()}
         >
           Vorschlag generieren
@@ -402,16 +495,62 @@ export function WorkflowsPage(props: WorkflowsPageProps = {}) {
             />
           </label>
         </div>
+        <label className="block text-sm text-slate-600">
+          LLM-Provider
+          <select
+            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            value={form.llm_provider ?? "openai"}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                llm_provider: e.target.value as WorkflowLlmProvider,
+              })
+            }
+          >
+            <option value="openai">OpenAI (Text)</option>
+            <option value="gemini">Gemini (Multimodal Sandbox)</option>
+          </select>
+        </label>
         <label className="flex items-center gap-2 text-sm text-slate-600">
           <input
             type="checkbox"
             checked={form.supports_multimodal}
-            onChange={(e) =>
-              setForm({ ...form, supports_multimodal: e.target.checked })
-            }
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setForm({
+                ...form,
+                supports_multimodal: checked,
+                llm_provider: checked ? "gemini" : form.llm_provider,
+              });
+            }}
           />
-          Multimodal (Gemini Bilder/PDF — Phase C)
+          Multimodal (Bilder/PDF in Preview/Tests)
         </label>
+        {form.llm_provider === "gemini" && geminiStatus && !geminiStatus.available && (
+          <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+            GEMINI_API_KEY fehlt in der Server-.env (Google AI Studio). OpenAI bleibt
+            für andere Schritte aktiv; Gemini-Preview schlägt fehl bis der Key gesetzt ist.
+          </p>
+        )}
+        {form.supports_multimodal && (
+          <label className="block text-sm text-slate-600">
+            Multimodal-Prompt
+            <textarea
+              className="mt-1 min-h-[80px] w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              value={form.multimodal_prompt ?? ""}
+              onChange={(e) =>
+                setForm({ ...form, multimodal_prompt: e.target.value })
+              }
+              placeholder="z.B. Lies Rechnungsbeträge und Bestellnummern aus Screenshots/PDFs."
+            />
+          </label>
+        )}
+        {form.llm_provider === "gemini" && (
+          <p className="text-xs text-slate-500">
+            Live-Workflows nutzen Gemini nur mit Mail-Text; Anhänge aus echten Mails
+            kommen in einer späteren Phase.
+          </p>
+        )}
         <label className="flex items-center gap-2 text-sm text-slate-600">
           <input
             type="checkbox"
@@ -530,6 +669,21 @@ export function WorkflowsPage(props: WorkflowsPageProps = {}) {
             value={previewBody}
             onChange={(e) => setPreviewBody(e.target.value)}
           />
+          {form.supports_multimodal && form.llm_provider === "gemini" && (
+            <label className="block text-sm text-slate-600">
+              Anhänge (JPEG, PNG, WebP, PDF — max. 5)
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,application/pdf"
+                multiple
+                className="mt-1 block w-full text-sm"
+                onChange={(e) => setPreviewFiles(e.target.files)}
+              />
+            </label>
+          )}
+          {previewNotice && (
+            <p className="text-xs text-amber-800">{previewNotice}</p>
+          )}
           {previewError && (
             <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
               {previewError}

@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+from backend.core.models.workflow_media import (
+    MAX_ATTACHMENTS_PER_REQUEST,
+    WorkflowMediaAttachment,
+)
 
 WorkflowImportance = Literal["high", "medium", "low"]
 WorkflowLlmProvider = Literal["openai", "gemini"]
@@ -20,6 +25,17 @@ class WorkflowTestEmailSchema(BaseModel):
     subject: str
     body: str
     expected_fields: dict[str, Any] | None = None
+    attachments: list[WorkflowMediaAttachment] = Field(default_factory=list)
+
+    @field_validator("attachments")
+    @classmethod
+    def validate_attachments(
+        cls, value: list[WorkflowMediaAttachment]
+    ) -> list[WorkflowMediaAttachment]:
+        if len(value) > MAX_ATTACHMENTS_PER_REQUEST:
+            msg = f"At most {MAX_ATTACHMENTS_PER_REQUEST} attachments per test email"
+            raise ValueError(msg)
+        return value
 
 
 class WorkflowFewShotExampleSchema(BaseModel):
@@ -44,6 +60,19 @@ class TenantWorkflowSummary(BaseModel):
 
 class TenantWorkflowListResponse(BaseModel):
     items: list[TenantWorkflowSummary]
+
+
+class TenantWorkflowNavItem(BaseModel):
+    """Öffentliche Nav-Metadaten für Mandanten (nur Live-Workflows)."""
+
+    id: str
+    slug: str
+    label: str
+    description: str
+
+
+class TenantWorkflowNavResponse(BaseModel):
+    items: list[TenantWorkflowNavItem]
 
 
 class TenantWorkflowResponse(BaseModel):
@@ -109,10 +138,33 @@ class TenantWorkflowUpdateRequest(TenantWorkflowCreateRequest):
 
 
 class TenantWorkflowSuggestRequest(BaseModel):
-    """Beschreibung für KI-Assistent."""
+    """Beschreibung und/oder Beispiel-Screenshot für KI-Assistent."""
 
-    description: str = Field(min_length=10, max_length=4000)
+    description: str = Field(default="", max_length=4000)
     label_hint: str | None = Field(default=None, max_length=120)
+    attachments: list[WorkflowMediaAttachment] = Field(default_factory=list)
+
+    @field_validator("attachments")
+    @classmethod
+    def validate_suggest_attachments(
+        cls, value: list[WorkflowMediaAttachment]
+    ) -> list[WorkflowMediaAttachment]:
+        if len(value) > MAX_ATTACHMENTS_PER_REQUEST:
+            msg = f"At most {MAX_ATTACHMENTS_PER_REQUEST} attachments per suggest"
+            raise ValueError(msg)
+        return value
+
+    @model_validator(mode="after")
+    def require_description_or_attachment(self) -> TenantWorkflowSuggestRequest:
+        if self.attachments:
+            return self
+        if len(self.description.strip()) < 10:
+            msg = (
+                "description must be at least 10 characters when no "
+                "attachments are provided"
+            )
+            raise ValueError(msg)
+        return self
 
 
 class TenantWorkflowSuggestResponse(BaseModel):
@@ -128,6 +180,7 @@ class TenantWorkflowSuggestResponse(BaseModel):
     extraction_schema: dict[str, Any]
     classify_prompt: str
     extract_prompt: str
+    multimodal_prompt: str = ""
     match_rules: WorkflowMatchRulesSchema
     test_emails: list[WorkflowTestEmailSchema]
     llm_provider: WorkflowLlmProvider = "openai"
@@ -137,12 +190,30 @@ class TenantWorkflowSuggestResponse(BaseModel):
 class TenantWorkflowPreviewRequest(BaseModel):
     subject: str = "Test-Betreff"
     body: str = "Test-Inhalt der E-Mail."
+    attachments: list[WorkflowMediaAttachment] = Field(default_factory=list)
+
+    @field_validator("attachments")
+    @classmethod
+    def validate_attachments(
+        cls, value: list[WorkflowMediaAttachment]
+    ) -> list[WorkflowMediaAttachment]:
+        if len(value) > MAX_ATTACHMENTS_PER_REQUEST:
+            msg = f"At most {MAX_ATTACHMENTS_PER_REQUEST} attachments per preview"
+            raise ValueError(msg)
+        return value
 
 
 class TenantWorkflowPreviewResponse(BaseModel):
     success: bool
     result: str | None = None
     error: str | None = None
+    model: str
+    notice: str | None = None
+
+
+class GeminiStatusResponse(BaseModel):
+    configured: bool
+    available: bool
     model: str
 
 

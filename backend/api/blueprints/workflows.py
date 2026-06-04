@@ -1,4 +1,4 @@
-"""Mandanten-Workflows (Phase A — Sandbox, pro account_id)."""
+"""Mandanten-Workflows: Nav für User, Verwaltung nur Plattform-Admin."""
 
 from __future__ import annotations
 
@@ -6,8 +6,11 @@ from typing import Any
 
 from flask import Blueprint, g, jsonify, request
 
+from backend.ai.services.tenant_workflow_suggest_gemini import (
+    SuggestRequiresGeminiError,
+)
 from backend.api.middleware.auth_guard import require_auth
-from backend.api.middleware.roles import is_account_admin
+from backend.api.middleware.roles import is_platform_admin
 from backend.api.middleware.tenant import get_request_account_id, require_account
 from backend.api.schemas.tenant_workflows import (
     TenantWorkflowCreateRequest,
@@ -18,7 +21,9 @@ from backend.api.schemas.tenant_workflows import (
 from backend.api.services.tenant_workflow_service import (
     create_workflow,
     delete_workflow,
+    gemini_status,
     get_workflow,
+    list_nav_workflows,
     list_workflows,
     preview_workflow,
     run_workflow_tests,
@@ -28,11 +33,14 @@ from backend.api.services.tenant_workflow_service import (
 
 workflows_bp = Blueprint("workflows", __name__, url_prefix="/api/workflows")
 
+_PLATFORM_ONLY_MSG = (
+    "Workflows dürfen nur von Plattform-Administratoren verwaltet werden."
+)
 
-def _require_admin() -> tuple[Any, int] | None:
-    role = g.current_user.get("role")
-    if not is_account_admin(role):
-        return jsonify({"error": "Admin required", "code": 403}), 403
+
+def _require_platform_admin() -> tuple[Any, int] | None:
+    if not is_platform_admin(g.current_user.get("role")):
+        return jsonify({"error": _PLATFORM_ONLY_MSG, "code": 403}), 403
     return None
 
 
@@ -42,10 +50,33 @@ def _account_id() -> str:
     return account_id
 
 
+@workflows_bp.get("/nav")
+@require_auth
+@require_account
+def tenant_workflow_nav() -> tuple[Any, int]:
+    """Live-Workflow-Rubriken für die Mandanten-Navigation."""
+    data = list_nav_workflows(g.ctx, _account_id())
+    return jsonify(data.model_dump()), 200
+
+
+@workflows_bp.get("/gemini-status")
+@require_auth
+@require_account
+def tenant_gemini_status() -> tuple[Any, int]:
+    denied = _require_platform_admin()
+    if denied:
+        return denied
+    data = gemini_status(g.settings, g.ctx)
+    return jsonify(data.model_dump()), 200
+
+
 @workflows_bp.get("")
 @require_auth
 @require_account
 def tenant_list_workflows() -> tuple[Any, int]:
+    denied = _require_platform_admin()
+    if denied:
+        return denied
     data = list_workflows(g.ctx, _account_id())
     return jsonify(data.model_dump()), 200
 
@@ -54,7 +85,7 @@ def tenant_list_workflows() -> tuple[Any, int]:
 @require_auth
 @require_account
 def tenant_create_workflow() -> tuple[Any, int]:
-    denied = _require_admin()
+    denied = _require_platform_admin()
     if denied:
         return denied
     body = TenantWorkflowCreateRequest.model_validate(
@@ -77,13 +108,19 @@ def tenant_create_workflow() -> tuple[Any, int]:
 @require_auth
 @require_account
 def tenant_suggest_workflow() -> tuple[Any, int]:
-    denied = _require_admin()
+    denied = _require_platform_admin()
     if denied:
         return denied
-    body = TenantWorkflowSuggestRequest.model_validate(
-        request.get_json(silent=True) or {}
-    )
-    suggestion = suggest_workflow(g.ctx, g.settings, body)
+    try:
+        body = TenantWorkflowSuggestRequest.model_validate(
+            request.get_json(silent=True) or {}
+        )
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 422
+    try:
+        suggestion = suggest_workflow(g.ctx, g.settings, body)
+    except SuggestRequiresGeminiError as exc:
+        return jsonify({"error": str(exc), "code": "gemini_required"}), 503
     return jsonify(suggestion.model_dump()), 200
 
 
@@ -91,6 +128,9 @@ def tenant_suggest_workflow() -> tuple[Any, int]:
 @require_auth
 @require_account
 def tenant_get_workflow(workflow_id: str) -> tuple[Any, int]:
+    denied = _require_platform_admin()
+    if denied:
+        return denied
     record = get_workflow(g.ctx, _account_id(), workflow_id)
     if record is None:
         return jsonify({"error": "Not found"}), 404
@@ -101,7 +141,7 @@ def tenant_get_workflow(workflow_id: str) -> tuple[Any, int]:
 @require_auth
 @require_account
 def tenant_update_workflow(workflow_id: str) -> tuple[Any, int]:
-    denied = _require_admin()
+    denied = _require_platform_admin()
     if denied:
         return denied
     body = TenantWorkflowUpdateRequest.model_validate(
@@ -127,7 +167,7 @@ def tenant_update_workflow(workflow_id: str) -> tuple[Any, int]:
 @require_auth
 @require_account
 def tenant_delete_workflow(workflow_id: str) -> tuple[Any, int]:
-    denied = _require_admin()
+    denied = _require_platform_admin()
     if denied:
         return denied
     if not delete_workflow(g.ctx, _account_id(), workflow_id):
@@ -139,7 +179,7 @@ def tenant_delete_workflow(workflow_id: str) -> tuple[Any, int]:
 @require_auth
 @require_account
 def tenant_preview_workflow(workflow_id: str) -> tuple[Any, int]:
-    denied = _require_admin()
+    denied = _require_platform_admin()
     if denied:
         return denied
     body = TenantWorkflowPreviewRequest.model_validate(
@@ -155,7 +195,7 @@ def tenant_preview_workflow(workflow_id: str) -> tuple[Any, int]:
 @require_auth
 @require_account
 def tenant_run_workflow_tests(workflow_id: str) -> tuple[Any, int]:
-    denied = _require_admin()
+    denied = _require_platform_admin()
     if denied:
         return denied
     result = run_workflow_tests(g.ctx, g.settings, _account_id(), workflow_id)

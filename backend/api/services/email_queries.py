@@ -25,9 +25,19 @@ def list_emails(
     platform: str | None,
     search: str | None,
     booking_related: bool,
+    workflow_slug: str | None,
     page: int,
     limit: int,
 ) -> EmailListResponse:
+    if workflow_slug:
+        return _list_emails_for_workflow(
+            ctx,
+            account_id,
+            workflow_slug=workflow_slug.strip(),
+            search=search,
+            page=page,
+            limit=limit,
+        )
     fetch_limit = 500 if booking_related else limit
     fetch_page = 1 if booking_related else page
     intent_filter: list[str] = []
@@ -66,6 +76,72 @@ def list_emails(
         emails = strict[offset : offset + limit]
     items: list[EmailListItem] = []
     for email in emails:
+        ext = ctx.extraction_repo.get_by_correlation_id(
+            email.correlation_id,
+            account_id=account_id,
+        )
+        review = ctx.review_repo.get(email.correlation_id, account_id=account_id)
+        intent_val = effective_booking_intent(email, ext)
+        intent_str = intent_val.value if intent_val else None
+        items.append(
+            EmailListItem(
+                correlation_id=email.correlation_id,
+                message_id=email.message_id,
+                subject=email.subject,
+                from_address=email.from_address,
+                received_at=(
+                    email.received_at.isoformat() if email.received_at else None
+                ),
+                platform=email.platform or (ext.platform if ext else None),
+                intent=intent_str,
+                booking_number=ext.booking_number if ext else None,
+                processing_state=email.processing_state.value,
+                review_status=review.review_status if review else None,
+                grounding_flag=review.grounding_flag if review else False,
+            )
+        )
+    pages = ceil(total / limit) if limit else 0
+    return EmailListResponse(items=items, total=total, page=page, pages=pages)
+
+
+def _list_emails_for_workflow(
+    ctx: AppContext,
+    account_id: str,
+    *,
+    workflow_slug: str,
+    search: str | None,
+    page: int,
+    limit: int,
+) -> EmailListResponse:
+    correlation_ids = ctx.extraction_repo.list_correlation_ids_by_workflow_slug(
+        workflow_slug,
+        account_id=account_id,
+    )
+    if not correlation_ids:
+        return EmailListResponse(items=[], total=0, page=page, pages=0)
+    emails = ctx.email_repo.list_by_correlation_ids(
+        correlation_ids,
+        account_id=account_id,
+    )
+    if search:
+        needle = search.lower()
+        emails = [
+            e
+            for e in emails
+            if needle in e.subject.lower()
+            or needle in e.from_address.lower()
+            or needle in e.correlation_id.lower()
+        ]
+    matched = emails
+    matched.sort(
+        key=lambda e: e.received_at.timestamp() if e.received_at else 0,
+        reverse=True,
+    )
+    total = len(matched)
+    offset = max(page - 1, 0) * limit
+    page_emails = matched[offset : offset + limit]
+    items: list[EmailListItem] = []
+    for email in page_emails:
         ext = ctx.extraction_repo.get_by_correlation_id(
             email.correlation_id,
             account_id=account_id,

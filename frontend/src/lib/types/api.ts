@@ -417,10 +417,17 @@ export interface WorkflowMatchRules {
   body_keywords: string[];
 }
 
+export interface WorkflowMediaAttachment {
+  filename: string;
+  mime_type: string;
+  data_base64: string;
+}
+
 export interface WorkflowTestEmail {
   subject: string;
   body: string;
   expected_fields?: Record<string, unknown> | null;
+  attachments?: WorkflowMediaAttachment[];
 }
 
 export interface WorkflowFewShotExample {
@@ -445,6 +452,17 @@ export interface TenantWorkflowSummary {
 
 export interface TenantWorkflowListResponse {
   items: TenantWorkflowSummary[];
+}
+
+export interface TenantWorkflowNavItem {
+  id: string;
+  slug: string;
+  label: string;
+  description: string;
+}
+
+export interface TenantWorkflowNavResponse {
+  items: TenantWorkflowNavItem[];
 }
 
 export interface TenantWorkflowResponse {
@@ -508,6 +526,7 @@ export type TenantWorkflowUpdateRequest = TenantWorkflowCreateRequest;
 export interface TenantWorkflowSuggestRequest {
   description: string;
   label_hint?: string | null;
+  attachments?: WorkflowMediaAttachment[];
 }
 
 export interface TenantWorkflowSuggestResponse {
@@ -521,6 +540,7 @@ export interface TenantWorkflowSuggestResponse {
   extraction_schema: Record<string, unknown>;
   classify_prompt: string;
   extract_prompt: string;
+  multimodal_prompt?: string;
   match_rules: WorkflowMatchRules;
   test_emails: WorkflowTestEmail[];
   llm_provider: WorkflowLlmProvider;
@@ -530,12 +550,20 @@ export interface TenantWorkflowSuggestResponse {
 export interface TenantWorkflowPreviewRequest {
   subject?: string;
   body?: string;
+  attachments?: WorkflowMediaAttachment[];
 }
 
 export interface TenantWorkflowPreviewResponse {
   success: boolean;
   result: string | null;
   error: string | null;
+  model: string;
+  notice?: string | null;
+}
+
+export interface GeminiStatusResponse {
+  configured: boolean;
+  available: boolean;
   model: string;
 }
 

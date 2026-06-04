@@ -98,6 +98,22 @@ class EmailRepository:
             return None
         return StoredEmail.from_mongo(doc)
 
+    def list_by_correlation_ids(
+        self,
+        correlation_ids: list[str],
+        *,
+        account_id: str | None = None,
+    ) -> list[StoredEmail]:
+        """Mails zu einer Liste von Correlation-IDs (Reihenfolge unbestimmt)."""
+        if not correlation_ids:
+            return []
+        query = with_account_filter(
+            {"correlation_id": {"$in": correlation_ids}},
+            account_id,
+        )
+        cursor = self._col.find(query)
+        return [StoredEmail.from_mongo(doc) for doc in cursor]
+
     def list_filtered(
         self,
         *,

@@ -21,6 +21,19 @@ from backend.infrastructure.repositories.extraction_repository import (
 )
 from backend.infrastructure.repositories.mongo import Db
 
+# 1x1 PNG (base64) for multimodal workflow tests
+TINY_PNG_B64 = (
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8"  # noqa: E501
+    "z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="
+)
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Lädt .env für Integrationstests (MONGODB_URI etc.)."""
+    from dotenv import load_dotenv
+
+    load_dotenv(Path(__file__).resolve().parents[1] / ".env")
+
 
 @pytest.fixture
 def mock_db() -> Generator[Db, None, None]:

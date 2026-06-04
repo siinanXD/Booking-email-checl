@@ -6,6 +6,7 @@ import logging
 from dataclasses import dataclass, field
 
 from backend.ai.domain.booking.booking_relevance import classify_booking_mail
+from backend.ai.workflows.checkpointer import clear_thread_checkpoints
 from backend.ai.workflows.email_workflow import EmailWorkflow
 from backend.core.config.factory import AppContext
 from backend.core.models.email import ProcessingState, StoredEmail
@@ -88,6 +89,10 @@ class MailReprocessService:
                 continue
             result.attempted += 1
             try:
+                clear_thread_checkpoints(
+                    self._workflow._checkpointer,  # noqa: SLF001
+                    email.correlation_id,
+                )
                 self._workflow.run(email, thread_id=email.correlation_id)
                 result.completed += 1
             except Exception as exc:

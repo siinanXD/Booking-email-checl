@@ -83,3 +83,19 @@ class ExtractionRepository:
             return None
         custom = doc.get("custom_fields")
         return custom if isinstance(custom, dict) else None
+
+    def list_correlation_ids_by_workflow_slug(
+        self,
+        workflow_slug: str,
+        *,
+        account_id: str | None = None,
+        limit: int = 2000,
+    ) -> list[str]:
+        """Correlation-IDs mit Tenant-Workflow-Zuordnung."""
+        query = with_account_filter({"workflow_slug": workflow_slug}, account_id)
+        cursor = (
+            self._col.find(query, {"_id": 1})
+            .sort("updated_at", -1)
+            .limit(max(limit, 1))
+        )
+        return [str(doc["_id"]) for doc in cursor]

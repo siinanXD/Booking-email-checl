@@ -16,6 +16,7 @@ dependencies = [
     "openai==1.109.1",
     "pymongo==4.17.0",
     "langfuse==2.60.10",
+    "google-genai==1.16.1",
     "python-dotenv==1.2.2",
     "tenacity==8.5.0",                 # Retry/Backoff für externe Aufrufe
     "msal==1.37.0",                    # Microsoft Graph (delegated + application)

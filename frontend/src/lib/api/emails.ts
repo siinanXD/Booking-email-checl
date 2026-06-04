@@ -7,6 +7,7 @@ export interface EmailListParams {
   /** Komma-getrennte Intent-Liste (z. B. guest_inquiry,other) */
   intents?: string;
   booking_related?: boolean;
+  workflow_slug?: string;
   platform?: string;
   search?: string;
   page?: number;
