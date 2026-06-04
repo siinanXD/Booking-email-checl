@@ -71,8 +71,21 @@ set MONGODB_URI=mongodb+srv://...
 pytest -m integration -v
 ```
 
+## PR erstellen / mergen
+
+```bash
+git push -u origin feat/mvp-step-4-5-generation-vector
+```
+
+Auf GitHub: **Compare & pull request** → `main` ← `feat/mvp-step-4-5-generation-vector`.  
+Titel-Vorschlag: `feat: MVP steps 4–5, tenant workflows, and admin platform`.  
+Beschreibung: Abschnitte aus diesem Dokument übernehmen. Nach grüner CI mergen (Squash oder Merge-Commit).
+
+Release: Conventional Commits auf `main` triggern [`.github/workflows/release.yml`](../.github/workflows/release.yml) (SemVer + `CHANGELOG.md`).
+
 ## Nach dem Merge (Owner)
 
-- [ ] Live-Eval-Baseline in `tests/eval/README.md` dokumentieren
-- [ ] Atlas-Index anlegen und `SIMILARITY_USE_ATLAS` in Staging testen
+- [ ] Live-Eval-Baseline lokal fahren und in `tests/eval/README.md` oder PR-Kommentar notieren
+- [ ] Atlas-Index anlegen und `SIMILARITY_USE_ATLAS=true` in Staging testen
+- [ ] `pytest -m integration -v` mit `MONGODB_URI`
 - [ ] Einmaliger End-to-End-Smoke: Ingest → Review → Freigabe → Langfuse
