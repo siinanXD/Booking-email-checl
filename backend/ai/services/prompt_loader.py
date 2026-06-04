@@ -14,6 +14,39 @@ def load_prompt(relative_path: str) -> str:
     return path.read_text(encoding="utf-8")
 
 
+def resolve_prompt_text(relative_path: str, override: str | None) -> str:
+    """DB-Override zuerst, sonst Datei."""
+    if override and override.strip():
+        return override.strip()
+    return load_prompt(relative_path)
+
+
+def format_resolved_prompt(
+    relative_path: str,
+    override: str | None,
+    **kwargs: str,
+) -> str:
+    """Lädt (mit Override) und formatiert ein Template."""
+    template = resolve_prompt_text(relative_path, override)
+    return template.format(**kwargs)
+
+
+def format_resolved_prompt_with_few_shots(
+    relative_path: str,
+    few_shot_path: str,
+    override: str | None,
+    few_shot_style: str = "classify",
+    **kwargs: str,
+) -> str:
+    """Prompt inkl. Few-Shot-Block mit optionalem Override."""
+    few_shots = format_few_shots(
+        load_few_shot_examples(few_shot_path),
+        style=few_shot_style,
+    )
+    base = format_resolved_prompt(relative_path, override, **kwargs)
+    return f"{few_shots}\n\n{base}"
+
+
 def load_few_shot_examples(relative_path: str) -> list[dict[str, object]]:
     """Lädt Few-Shot-Beispiele aus JSON."""
     path = _PROMPTS_ROOT / relative_path

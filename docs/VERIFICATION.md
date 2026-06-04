@@ -21,6 +21,8 @@ mypy .
 | Kosten pro Mail | `observability/mail_cost.py`, `finalize` in `EmailWorkflow.run` finally |
 | Grounding-Alert Negativ | `tests/test_alerts.py::test_no_grounding_alert_when_grounded` |
 | Spam + finalize | `tests/test_workflow.py::test_workflow_finalize_cost_after_spam_discard` |
+| Triage-Gate / kein classify bei Verwurf | `tests/test_triage.py`, `tests/test_workflow.py::test_workflow_skips_classify_llm_on_unknown_discard` |
+| Triage-Kosten-Doku | `docs/COST_TRIAGE.md` |
 
 Neue Eval-Fälle: nur `tests/eval/cases.json` ergänzen (`expected_extraction`).
 

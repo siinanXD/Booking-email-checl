@@ -31,7 +31,10 @@ export function LoginPage() {
   }
 
   if (isAuthenticated()) {
-    return <Navigate to="/" replace />;
+    const isPlatformAdmin = useAuthStore.getState().isPlatformAdmin();
+    return (
+      <Navigate to={isPlatformAdmin ? "/admin/overview" : "/"} replace />
+    );
   }
 
   async function handleSubmit(e: FormEvent) {

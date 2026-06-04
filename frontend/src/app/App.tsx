@@ -1,6 +1,13 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "@/shared/layout/Layout";
+import { AdminAccountDetailPage } from "@/features/admin/AdminAccountDetailPage";
 import { AdminApprovalsPage } from "@/features/admin/AdminApprovalsPage";
+import { AdminDiagnosticsPage } from "@/features/admin/AdminDiagnosticsPage";
+import { AdminLayout } from "@/features/admin/AdminLayout";
+import { AdminLlmConfigPage } from "@/features/admin/AdminLlmConfigPage";
+import { AdminWorkflowsPage } from "@/features/admin/AdminWorkflowsPage";
+import { AdminObservabilityPage } from "@/features/admin/AdminObservabilityPage";
+import { AdminOverviewPage } from "@/features/admin/AdminOverviewPage";
 import { BookingsPage } from "@/features/emails/BookingsPage";
 import { CancellationsPage } from "@/features/emails/CancellationsPage";
 import { ChangesPage } from "@/features/emails/ChangesPage";
@@ -13,8 +20,10 @@ import { PropertiesPage } from "@/features/properties/PropertiesPage";
 import { RegisterPage } from "@/features/auth/RegisterPage";
 import { ReviewQueuePage } from "@/features/review/ReviewQueuePage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
+import { WorkflowsPage } from "@/features/workflows/WorkflowsPage";
 import { PlatformAdminRoute } from "@/routes/PlatformAdminRoute";
 import { ProtectedRoute } from "@/routes/ProtectedRoute";
+import { TenantRoute } from "@/routes/TenantRoute";
 
 export function App() {
   return (
@@ -25,17 +34,36 @@ export function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route element={<Layout />}>
-            <Route index element={<DashboardPage />} />
-            <Route path="bookings" element={<BookingsPage />} />
-            <Route path="cancellations" element={<CancellationsPage />} />
-            <Route path="changes" element={<ChangesPage />} />
-            <Route path="messages" element={<MessagesPage />} />
-            <Route path="properties" element={<PropertiesPage />} />
-            <Route path="review" element={<ReviewQueuePage />} />
-            <Route path="settings" element={<SettingsPage />} />
-            <Route path="costs" element={<CostsPage />} />
             <Route element={<PlatformAdminRoute />}>
-              <Route path="admin/approvals" element={<AdminApprovalsPage />} />
+              <Route path="admin" element={<AdminLayout />}>
+                <Route index element={<Navigate to="overview" replace />} />
+                <Route path="overview" element={<AdminOverviewPage />} />
+                <Route path="accounts" element={<AdminApprovalsPage />} />
+                <Route path="accounts/:accountId" element={<AdminAccountDetailPage />} />
+                <Route path="diagnostics" element={<AdminDiagnosticsPage />} />
+                <Route
+                  path="observability"
+                  element={<AdminObservabilityPage />}
+                />
+                <Route path="llm-config" element={<AdminLlmConfigPage />} />
+                <Route path="workflows" element={<AdminWorkflowsPage />} />
+              </Route>
+              <Route
+                path="admin/approvals"
+                element={<Navigate to="/admin/accounts" replace />}
+              />
+            </Route>
+            <Route element={<TenantRoute />}>
+              <Route index element={<DashboardPage />} />
+              <Route path="bookings" element={<BookingsPage />} />
+              <Route path="cancellations" element={<CancellationsPage />} />
+              <Route path="changes" element={<ChangesPage />} />
+              <Route path="messages" element={<MessagesPage />} />
+              <Route path="properties" element={<PropertiesPage />} />
+              <Route path="review" element={<ReviewQueuePage />} />
+              <Route path="settings" element={<SettingsPage />} />
+              <Route path="workflows" element={<WorkflowsPage />} />
+              <Route path="costs" element={<CostsPage />} />
             </Route>
           </Route>
         </Route>

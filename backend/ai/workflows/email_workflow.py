@@ -13,6 +13,10 @@ from backend.ai.services.indexing import IndexingService
 from backend.ai.services.ingestion import IngestionService
 from backend.ai.services.response_generation import ResponseGenerationService
 from backend.ai.services.retrieval import RetrievalService
+from backend.ai.services.tenant_workflow_runtime import (
+    TenantWorkflowExecutor,
+    WorkflowRouter,
+)
 from backend.ai.services.validation import ValidationService
 from backend.ai.workflows.helpers import finalize_mail_cost
 from backend.ai.workflows.nodes.pipeline import WorkflowNodes
@@ -29,6 +33,9 @@ from backend.infrastructure.repositories.extraction_repository import (
     ExtractionRepository,
 )
 from backend.infrastructure.repositories.review_repository import ReviewRepository
+from backend.infrastructure.repositories.tenant_workflow_repository import (
+    TenantWorkflowRepository,
+)
 
 
 class EmailWorkflow:
@@ -52,6 +59,9 @@ class EmailWorkflow:
         checkpointer: object | None = None,
         feedback_tracker: ReviewFeedbackTracker | None = None,
         langfuse_tracer: LangfuseTracer | None = None,
+        workflow_router: WorkflowRouter | None = None,
+        tenant_workflow_executor: TenantWorkflowExecutor | None = None,
+        tenant_workflow_repo: TenantWorkflowRepository | None = None,
         *,
         tracing: bool = False,
     ) -> None:
@@ -75,6 +85,9 @@ class EmailWorkflow:
             notification_service=notification_service,
             feedback_tracker=feedback_tracker,
             langfuse_tracer=langfuse_tracer,
+            workflow_router=workflow_router,
+            tenant_workflow_executor=tenant_workflow_executor,
+            tenant_workflow_repo=tenant_workflow_repo,
         )
         self._alerts = alerts
         self._graph = self._build()

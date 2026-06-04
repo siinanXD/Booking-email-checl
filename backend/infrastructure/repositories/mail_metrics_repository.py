@@ -20,6 +20,7 @@ class MailMetricRecord(BaseModel):
     cost_usd: float
     prompt_tokens: int = 0
     completion_tokens: int = 0
+    account_id: str | None = None
     processed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
@@ -145,4 +146,139 @@ class MailMetricsRepository:
     def top_expensive(self, limit: int = 10) -> list[MailMetricRecord]:
         """Teuerste Mails."""
         cursor = self._col.find().sort("cost_usd", -1).limit(limit)
-        return [MailMetricRecord.model_validate(doc) for doc in cursor]
+        return [self._record_from_doc(doc) for doc in cursor]
+
+    def aggregate_platform(
+        self,
+        start: datetime,
+        end: datetime,
+    ) -> dict[str, float | int]:
+        """Plattformweite Summen im Zeitraum."""
+        match = {
+            "processed_at": {
+                "$gte": start.isoformat(),
+                "$lte": end.isoformat(),
+            }
+        }
+        pipeline: Sequence[Mapping[str, Any]] = [
+            {"$match": match},
+            {
+                "$group": {
+                    "_id": None,
+                    "cost_usd": {"$sum": "$cost_usd"},
+                    "prompt_tokens": {"$sum": "$prompt_tokens"},
+                    "completion_tokens": {"$sum": "$completion_tokens"},
+                    "mail_count": {"$sum": 1},
+                }
+            },
+        ]
+        rows = list(self._col.aggregate(pipeline))
+        if not rows:
+            return {
+                "cost_usd": 0.0,
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "total_tokens": 0,
+                "mail_count": 0,
+            }
+        row = rows[0]
+        prompt = int(row.get("prompt_tokens", 0))
+        completion = int(row.get("completion_tokens", 0))
+        return {
+            "cost_usd": float(row.get("cost_usd", 0.0)),
+            "prompt_tokens": prompt,
+            "completion_tokens": completion,
+            "total_tokens": prompt + completion,
+            "mail_count": int(row.get("mail_count", 0)),
+        }
+
+    def sum_cost_by_account(
+        self,
+        start: datetime,
+        end: datetime,
+    ) -> list[dict[str, Any]]:
+        """Kosten/Tokens pro Mandant im Zeitraum."""
+        match = {
+            "processed_at": {
+                "$gte": start.isoformat(),
+                "$lte": end.isoformat(),
+            }
+        }
+        pipeline: Sequence[Mapping[str, Any]] = [
+            {"$match": match},
+            {
+                "$group": {
+                    "_id": "$account_id",
+                    "cost_usd": {"$sum": "$cost_usd"},
+                    "prompt_tokens": {"$sum": "$prompt_tokens"},
+                    "completion_tokens": {"$sum": "$completion_tokens"},
+                    "mail_count": {"$sum": 1},
+                }
+            },
+            {"$sort": {"cost_usd": -1}},
+        ]
+        rows: list[dict[str, Any]] = []
+        for row in self._col.aggregate(pipeline):
+            prompt = int(row.get("prompt_tokens", 0))
+            completion = int(row.get("completion_tokens", 0))
+            rows.append(
+                {
+                    "account_id": row.get("_id"),
+                    "cost_usd": round(float(row.get("cost_usd", 0.0)), 4),
+                    "total_tokens": prompt + completion,
+                    "mail_count": int(row.get("mail_count", 0)),
+                }
+            )
+        return rows
+
+    def top_expensive_between(
+        self,
+        start: datetime,
+        end: datetime,
+        *,
+        limit: int = 10,
+        account_id: str | None = None,
+    ) -> list[MailMetricRecord]:
+        """Teuerste Mails im Zeitraum."""
+        query = with_account_filter(
+            {
+                "processed_at": {
+                    "$gte": start.isoformat(),
+                    "$lte": end.isoformat(),
+                }
+            },
+            account_id,
+        )
+        cursor = self._col.find(query).sort("cost_usd", -1).limit(limit)
+        return [self._record_from_doc(doc) for doc in cursor]
+
+    def latest_for_account(self, account_id: str) -> MailMetricRecord | None:
+        """Neuester Metrik-Eintrag eines Mandanten."""
+        doc = self._col.find_one(
+            {"account_id": account_id},
+            sort=[("processed_at", -1)],
+        )
+        if doc is None:
+            return None
+        return self._record_from_doc(doc)
+
+    def has_metric_since(self, since_iso: str, *, account_id: str) -> bool:
+        """Ob seit Datum Metriken für den Mandanten existieren."""
+        query = with_account_filter({"processed_at": {"$gte": since_iso}}, account_id)
+        return int(self._col.count_documents(query, limit=1)) > 0
+
+    def has_any_for_account(self, account_id: str) -> bool:
+        """Ob jemals Metriken für den Mandanten existieren."""
+        return int(self._col.count_documents({"account_id": account_id}, limit=1)) > 0
+
+    @staticmethod
+    def _record_from_doc(doc: dict[str, Any]) -> MailMetricRecord:
+        payload = {k: v for k, v in doc.items() if k != "_id"}
+        if "correlation_id" not in payload:
+            payload["correlation_id"] = str(doc.get("_id", ""))
+        processed = payload.get("processed_at")
+        if isinstance(processed, str):
+            payload["processed_at"] = datetime.fromisoformat(
+                processed.replace("Z", "+00:00")
+            )
+        return MailMetricRecord.model_validate(payload)

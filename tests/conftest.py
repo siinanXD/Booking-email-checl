@@ -55,8 +55,11 @@ def embedding_repo(mock_db: Db) -> EmbeddingRepository:
 
 @pytest.fixture
 def ingestion_service(email_repo: EmailRepository) -> IngestionService:
-    """Execute the operation."""
-    return IngestionService(email_repo, TriageService())
+    """Ingestion mit deterministischer Regel-Triage (ohne Triage-LLM)."""
+    return IngestionService(
+        email_repo,
+        TriageService(triage_llm_enabled=False),
+    )
 
 
 @pytest.fixture

@@ -32,6 +32,8 @@ def after_validate(
                 "; ".join(errors),
             )
         return "end"
+    if state.get("workflow_id"):
+        return "end"
     extraction = state.get("extraction")
     if not classify_booking_mail(email, extraction).is_booking:
         email_repo.update_processing_state(

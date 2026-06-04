@@ -38,3 +38,13 @@ class AccountActionResponse(BaseModel):
     id: str
     status: str
     message: str
+
+
+class AdminMeResponse(BaseModel):
+    """Plattform-Admin-Kontext."""
+
+    id: str
+    email: str
+    role: str
+    account_id: str | None = None
+    mail_onboarding_required: bool = False

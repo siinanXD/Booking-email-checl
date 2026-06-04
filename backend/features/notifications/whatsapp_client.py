@@ -183,6 +183,62 @@ def send_whatsapp_hello_world_test(
     return MetaCloudWhatsAppClient(settings).send_hello_world(recipient_e164)
 
 
+_ADMIN_TEST_PARAMS: dict[str, list[str]] = {
+    "cleaning_task": [
+        "Test-Unterkunft",
+        "01.06.2026",
+        "05.06.2026",
+        "Standard",
+        "TEST-001",
+    ],
+    "status_notice": [
+        "Neue Buchung",
+        "Test-Unterkunft",
+        "01.06.2026",
+        "05.06.2026",
+        "Max Mustermann",
+        "TEST-001",
+    ],
+    "guest_inquiry": [
+        "Gastanfrage",
+        "Test-Unterkunft",
+        "TEST-001",
+        "01.06.2026",
+        "05.06.2026",
+        "Max Mustermann",
+    ],
+}
+
+
+def send_whatsapp_admin_test(
+    settings: Settings,
+    recipient_e164: str,
+    template: str,
+) -> WhatsAppSendResult:
+    """Admin-Diagnose: hello_world oder konfigurierte Mandanten-Templates."""
+    if template == "hello_world":
+        return send_whatsapp_hello_world_test(settings, recipient_e164)
+    name_map = {
+        "cleaning_task": settings.whatsapp_template_cleaning_task,
+        "status_notice": settings.whatsapp_template_status_notice,
+        "guest_inquiry": settings.whatsapp_template_guest_inquiry,
+    }
+    template_name = name_map.get(template)
+    if not template_name:
+        return WhatsAppSendResult(
+            success=False,
+            error=f"Unbekanntes Test-Template: {template!r}",
+        )
+    params = _ADMIN_TEST_PARAMS.get(template, [])
+    message = WhatsAppTemplateMessage(
+        recipient_e164=recipient_e164,
+        template_name=template_name,
+        template_language=settings.whatsapp_template_language,
+        template_params=params,
+    )
+    return MetaCloudWhatsAppClient(settings).send_template(message)
+
+
 def build_whatsapp_client(settings: Settings) -> WhatsAppClient:
     """Factory: disabled default, sonst Meta Cloud API."""
     if not settings.whatsapp_enabled:

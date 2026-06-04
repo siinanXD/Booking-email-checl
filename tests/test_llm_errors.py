@@ -18,8 +18,15 @@ from backend.core.models.email import StoredEmail
 class FailingLLM:
     """Test helper used by the suite."""
 
-    def complete(self, prompt: str, model: str) -> LLMCompletion:
+    def complete(
+        self,
+        prompt: str,
+        model: str,
+        *,
+        temperature: float | None = None,
+    ) -> LLMCompletion:
         """Execute the operation."""
+        _ = temperature
         raise ConnectionError("simulated network failure")
 
 

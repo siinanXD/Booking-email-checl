@@ -138,6 +138,13 @@ class UserRepository:
         )
         return self.get_by_id(user_id)
 
+    def list_by_account_id(self, account_id: str) -> list[UserRecord]:
+        """Alle Benutzer eines Mandanten."""
+        users: list[UserRecord] = []
+        for doc in self._col.find({"account_id": account_id}).sort("created_at", 1):
+            users.append(self._from_doc(doc))
+        return users
+
     @staticmethod
     def _from_doc(doc: dict[str, Any]) -> UserRecord:
         payload = {k: v for k, v in doc.items() if k != "_id"}

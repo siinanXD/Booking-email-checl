@@ -28,6 +28,9 @@ class ExtractionRepository:
         extraction: BookingExtraction,
         *,
         account_id: str | None = None,
+        workflow_id: str | None = None,
+        workflow_slug: str | None = None,
+        custom_fields: dict[str, Any] | None = None,
     ) -> None:
         """Extraktion speichern."""
         doc: dict[str, Any] = {
@@ -38,6 +41,12 @@ class ExtractionRepository:
         }
         if account_id:
             doc["account_id"] = account_id
+        if workflow_id:
+            doc["workflow_id"] = workflow_id
+        if workflow_slug:
+            doc["workflow_slug"] = workflow_slug
+        if custom_fields is not None:
+            doc["custom_fields"] = custom_fields
         self._col.update_one({"_id": correlation_id}, {"$set": doc}, upsert=True)
 
     def get_by_correlation_id(
@@ -56,3 +65,21 @@ class ExtractionRepository:
         if doc is None or "extraction" not in doc:
             return None
         return BookingExtraction.model_validate(doc["extraction"])
+
+    def get_custom_fields(
+        self,
+        correlation_id: str,
+        *,
+        account_id: str | None = None,
+    ) -> dict[str, Any] | None:
+        """Custom-Felder aus Tenant-Workflow-Extraktion."""
+        query = with_account_filter({"_id": correlation_id}, account_id)
+        doc = self._col.find_one(query)
+        if doc is None and account_id:
+            doc = self._col.find_one({"_id": correlation_id})
+            if doc and doc.get("account_id") not in (None, account_id):
+                return None
+        if doc is None:
+            return None
+        custom = doc.get("custom_fields")
+        return custom if isinstance(custom, dict) else None

@@ -34,7 +34,9 @@ def _user_response(user: object) -> UserResponse:
     account = load_user_account(user, g.ctx.account_repo)
     mail_status: str | None = None
     mail_onboarding_done: bool | None = None
-    if user.account_id:
+    if user.role == "platform_admin":
+        mail_onboarding_done = True
+    elif user.account_id:
         mail_conn = g.ctx.mail_connection_repo.get(user.account_id)
         if mail_conn is not None:
             mail_status = mail_conn.status

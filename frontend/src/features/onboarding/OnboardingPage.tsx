@@ -27,6 +27,10 @@ export function OnboardingPage() {
     return <Navigate to="/" replace />;
   }
 
+  if (user?.role === "platform_admin") {
+    return <Navigate to="/admin/overview" replace />;
+  }
+
   if (user?.mail_onboarding_completed && !isEditMode) {
     return <Navigate to="/" replace />;
   }

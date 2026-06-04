@@ -2,21 +2,7 @@ import { useEffect } from "react";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuthStore } from "@/features/auth/authStore";
 import { useAuthHydrated } from "@/features/auth/useAuthHydrated";
-
-function needsMailOnboarding(user: {
-  role?: string;
-  account_status?: string | null;
-  mail_onboarding_completed?: boolean | null;
-} | null): boolean {
-  if (!user) return false;
-  const isAdmin =
-    user.role === "owner" ||
-    user.role === "admin" ||
-    user.role === "platform_admin";
-  if (!isAdmin) return false;
-  if (user.account_status !== "active") return false;
-  return user.mail_onboarding_completed !== true;
-}
+import { needsMailOnboarding } from "@/features/onboarding/mailOnboarding";
 
 export function ProtectedRoute() {
   const hydrated = useAuthHydrated();

@@ -32,7 +32,13 @@ class OpenAIClient:
         client_cls = _chat_openai_module(use_langfuse=use_langfuse)
         self._client = client_cls(api_key=api_key)
 
-    def complete(self, prompt: str, model: str) -> LLMCompletion:
+    def complete(
+        self,
+        prompt: str,
+        model: str,
+        *,
+        temperature: float | None = None,
+    ) -> LLMCompletion:
         """Run a chat completion and return text plus token usage."""
         create_kwargs: dict[str, Any] = {
             "model": model,
@@ -43,7 +49,7 @@ class OpenAIClient:
         }
         # gpt-5-* erlaubt nur temperature=1 (Default); 0 fuehrt zu 400.
         if not model.lower().startswith("gpt-5"):
-            create_kwargs["temperature"] = 0
+            create_kwargs["temperature"] = 0 if temperature is None else temperature
         response = self._client.chat.completions.create(**create_kwargs)
         content = response.choices[0].message.content or ""
         usage = response.usage

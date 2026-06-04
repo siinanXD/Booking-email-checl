@@ -8,14 +8,19 @@ import {
   ClipboardCheck,
   DollarSign,
   Building2,
-  UserCheck,
+  Shield,
+  Users,
+  Stethoscope,
+  LineChart,
+  SlidersHorizontal,
+  GitBranch,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchDashboardStats } from "@/lib/api/dashboard";
 import { fetchPendingAccounts } from "@/lib/api/admin";
 import { useAuthStore } from "@/features/auth/authStore";
 
-const links = [
+const tenantLinks = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/bookings", label: "Buchungen", icon: CalendarCheck },
   { to: "/cancellations", label: "Stornos", icon: XCircle },
@@ -23,7 +28,17 @@ const links = [
   { to: "/messages", label: "Nachrichten", icon: MessageSquare },
   { to: "/properties", label: "Unterkünfte", icon: Building2 },
   { to: "/review", label: "Review", icon: ClipboardCheck, badge: true },
+  { to: "/workflows", label: "Workflows", icon: GitBranch },
   { to: "/costs", label: "API-Kosten", icon: DollarSign },
+];
+
+const adminLinks = [
+  { to: "/admin/overview", label: "Übersicht", icon: Shield },
+  { to: "/admin/accounts", label: "Mandanten", icon: Users, badge: true },
+  { to: "/admin/diagnostics", label: "Diagnose", icon: Stethoscope },
+  { to: "/admin/observability", label: "Observability", icon: LineChart },
+  { to: "/admin/llm-config", label: "LLM-Konfiguration", icon: SlidersHorizontal },
+  { to: "/admin/workflows", label: "Workflows", icon: GitBranch },
 ];
 
 export function Sidebar() {
@@ -32,6 +47,7 @@ export function Sidebar() {
     queryKey: ["dashboard-stats"],
     queryFn: fetchDashboardStats,
     refetchInterval: 30_000,
+    enabled: !isPlatformAdmin,
   });
   const { data: pendingAccounts } = useQuery({
     queryKey: ["admin-accounts", "pending-count"],
@@ -41,6 +57,7 @@ export function Sidebar() {
   });
   const pending = stats?.pending_review ?? 0;
   const pendingApprovals = pendingAccounts?.total ?? 0;
+  const links = isPlatformAdmin ? adminLinks : tenantLinks;
 
   return (
     <aside className="flex w-56 flex-col bg-slate-900 text-slate-200">
@@ -48,14 +65,16 @@ export function Sidebar() {
         <p className="text-xs uppercase tracking-wide text-slate-400">
           AI Mail
         </p>
-        <p className="font-semibold text-white">Platform</p>
+        <p className="font-semibold text-white">
+          {isPlatformAdmin ? "Plattform" : "Platform"}
+        </p>
       </div>
       <nav className="flex-1 space-y-1 p-3">
         {links.map(({ to, label, icon: Icon, badge }) => (
           <NavLink
             key={to}
             to={to}
-            end={to === "/"}
+            end={to === "/" || to === "/admin/overview"}
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
                 isActive
@@ -66,33 +85,18 @@ export function Sidebar() {
           >
             <Icon size={18} />
             <span className="flex-1">{label}</span>
-            {badge && pending > 0 && (
+            {badge && !isPlatformAdmin && pending > 0 && (
               <span className="animate-pulse rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
                 {pending}
               </span>
             )}
-          </NavLink>
-        ))}
-        {isPlatformAdmin && (
-          <NavLink
-            to="/admin/approvals"
-            className={({ isActive }) =>
-              `flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
-                isActive
-                  ? "bg-indigo-600 text-white"
-                  : "text-slate-300 hover:bg-slate-800"
-              }`
-            }
-          >
-            <UserCheck size={18} />
-            <span className="flex-1">Freischaltungen</span>
-            {pendingApprovals > 0 && (
+            {badge && isPlatformAdmin && pendingApprovals > 0 && (
               <span className="rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-white">
                 {pendingApprovals}
               </span>
             )}
           </NavLink>
-        )}
+        ))}
       </nav>
     </aside>
   );
