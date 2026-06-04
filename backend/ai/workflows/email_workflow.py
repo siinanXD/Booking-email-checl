@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any, cast
 
 from langfuse.decorators import langfuse_context, observe
@@ -18,6 +19,7 @@ from backend.ai.services.tenant_workflow_runtime import (
     WorkflowRouter,
 )
 from backend.ai.services.validation import ValidationService
+from backend.ai.workflows.checkpointer import clear_thread_checkpoints
 from backend.ai.workflows.helpers import finalize_mail_cost
 from backend.ai.workflows.nodes.pipeline import WorkflowNodes
 from backend.ai.workflows.routing import after_ingest, after_validate
@@ -36,6 +38,14 @@ from backend.infrastructure.repositories.review_repository import ReviewReposito
 from backend.infrastructure.repositories.tenant_workflow_repository import (
     TenantWorkflowRepository,
 )
+
+logger = logging.getLogger(__name__)
+
+
+def _is_stale_checkpoint_key_error(exc: BaseException) -> bool:
+    return bool(
+        isinstance(exc, KeyError) and exc.args and exc.args[0] == "pending_sends"
+    )
 
 
 class EmailWorkflow:
@@ -145,10 +155,29 @@ class EmailWorkflow:
         initial: EmailWorkflowState = {"email": email_input}
         result_dict: dict[str, Any] | None = None
         try:
-            result_dict = dict(self._app.invoke(initial, config=config))
+            result_dict = self._invoke_workflow(initial, config, thread_id)
             return result_dict
         finally:
             finalize_mail_cost(self._mail_cost, email_input, result_dict)
+
+    def _invoke_workflow(
+        self,
+        initial: EmailWorkflowState,
+        config: dict[str, Any],
+        thread_id: str,
+    ) -> dict[str, Any]:
+        try:
+            return dict(self._app.invoke(initial, config=config))
+        except KeyError as exc:
+            if not _is_stale_checkpoint_key_error(exc):
+                raise
+            logger.warning(
+                "Inkompatibler LangGraph-Checkpoint für thread_id=%s — wird gelöscht "
+                "und einmal neu gestartet.",
+                thread_id,
+            )
+            clear_thread_checkpoints(self._checkpointer, thread_id)
+            return dict(self._app.invoke(initial, config=config))
 
     def resume_after_approval(
         self,

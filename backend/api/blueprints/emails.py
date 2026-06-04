@@ -28,6 +28,7 @@ def list_emails() -> tuple[Any, int]:
         "yes",
     )
     svc = tenant_query_service()
+    workflow_slug = (request.args.get("workflow_slug") or "").strip() or None
     result = svc.list_emails(
         status=request.args.get("status"),
         intent=request.args.get("intent"),
@@ -35,6 +36,7 @@ def list_emails() -> tuple[Any, int]:
         platform=request.args.get("platform"),
         search=request.args.get("search"),
         booking_related=booking_related,
+        workflow_slug=workflow_slug,
         page=page,
         limit=limit,
     )

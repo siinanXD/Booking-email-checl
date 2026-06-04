@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from backend.ai.services.classification import ClassificationService, LLMClient
 from backend.ai.services.entity_resolution import EntityResolutionService
 from backend.ai.services.extraction import ExtractionService
+from backend.ai.services.gemini_client import GeminiClientProtocol
+from backend.ai.services.gemini_factory import build_gemini_client
 from backend.ai.services.grounding import GroundingService
 from backend.ai.services.indexing import EmbeddingClient, EmbeddingFn, IndexingService
 from backend.ai.services.ingestion import IngestionService
@@ -104,6 +106,7 @@ class AppContext:
     platform_llm_prompt_history_repo: PlatformLlmPromptHistoryRepository
     tenant_workflow_repo: TenantWorkflowRepository
     admin_audit_log_repo: AdminAuditLogRepository
+    gemini_client: GeminiClientProtocol | None = None
 
 
 def build_app_context(settings: Settings | None = None) -> AppContext:
@@ -227,11 +230,14 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
     )
     indexing = IndexingService(embedding_repo, embed_client, chunk_repo, alerts=alerts)
 
+    gemini_client = build_gemini_client(cfg)
     workflow_router = WorkflowRouter(tenant_workflow_repo)
     tenant_workflow_executor = TenantWorkflowExecutor(
         llm,
         classify_model=cfg.openai_model_classify,
         extract_model=cfg.openai_model_extract,
+        gemini=gemini_client,
+        gemini_extract_model=cfg.gemini_model_extract,
     )
 
     checkpointer = build_checkpointer(cfg)
@@ -279,4 +285,5 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
         platform_llm_prompt_history_repo=platform_llm_prompt_history_repo,
         tenant_workflow_repo=tenant_workflow_repo,
         admin_audit_log_repo=admin_audit_log_repo,
+        gemini_client=gemini_client,
     )

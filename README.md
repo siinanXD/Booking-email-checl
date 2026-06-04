@@ -262,4 +262,5 @@ Mailversand**. DSGVO-Löschung über MongoDB, Vektorindex und Langfuse-Traces.
 | [`docs/SPEC.md`](docs/SPEC.md) | Fachliche Spezifikation |
 | [`docs/OUTLOOK.md`](docs/OUTLOOK.md) | Microsoft Graph / Ingestion |
 | [`docs/LANGFUSE.md`](docs/LANGFUSE.md) | Tracing und Observability |
+| [`docs/GEMINI.md`](docs/GEMINI.md) | Gemini Multimodal (Workflow-Sandbox) |
 | [`docs/images/`](docs/images/) | Architektur-Diagramme für diese README |

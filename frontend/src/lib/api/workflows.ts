@@ -1,7 +1,9 @@
 import { apiClient } from "@/lib/api/client";
 import type {
+  GeminiStatusResponse,
   TenantWorkflowCreateRequest,
   TenantWorkflowListResponse,
+  TenantWorkflowNavResponse,
   TenantWorkflowPreviewRequest,
   TenantWorkflowPreviewResponse,
   TenantWorkflowResponse,
@@ -12,6 +14,7 @@ import type {
 } from "@/lib/types/api";
 
 export interface WorkflowApiClient {
+  fetchWorkflowNav: () => Promise<TenantWorkflowNavResponse>;
   fetchWorkflows: () => Promise<TenantWorkflowListResponse>;
   fetchWorkflow: (id: string) => Promise<TenantWorkflowResponse>;
   createWorkflow: (payload: TenantWorkflowCreateRequest) => Promise<TenantWorkflowResponse>;
@@ -28,6 +31,7 @@ export interface WorkflowApiClient {
     payload: TenantWorkflowPreviewRequest
   ) => Promise<TenantWorkflowPreviewResponse>;
   runWorkflowTests: (id: string) => Promise<TenantWorkflowRunTestsResponse>;
+  fetchGeminiStatus: () => Promise<GeminiStatusResponse>;
 }
 
 function basePath(adminAccountId?: string): string {
@@ -40,6 +44,12 @@ function basePath(adminAccountId?: string): string {
 export function createWorkflowApi(adminAccountId?: string): WorkflowApiClient {
   const base = basePath(adminAccountId);
   return {
+    fetchWorkflowNav: async () => {
+      const { data } = await apiClient.get<TenantWorkflowNavResponse>(
+        `${base}/nav`
+      );
+      return data;
+    },
     fetchWorkflows: async () => {
       const { data } = await apiClient.get<TenantWorkflowListResponse>(base);
       return data;
@@ -82,11 +92,18 @@ export function createWorkflowApi(adminAccountId?: string): WorkflowApiClient {
       );
       return data;
     },
+    fetchGeminiStatus: async () => {
+      const { data } = await apiClient.get<GeminiStatusResponse>(
+        `${base}/gemini-status`
+      );
+      return data;
+    },
   };
 }
 
 const tenantApi = createWorkflowApi();
 
+export const fetchWorkflowNav = tenantApi.fetchWorkflowNav;
 export const fetchWorkflows = tenantApi.fetchWorkflows;
 export const fetchWorkflow = tenantApi.fetchWorkflow;
 export const createWorkflow = tenantApi.createWorkflow;

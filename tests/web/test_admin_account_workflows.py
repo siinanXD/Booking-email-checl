@@ -10,6 +10,8 @@ def test_admin_manages_tenant_workflows(
     auth_headers: dict[str, str],
     tenant_owner_auth_headers: dict[str, str],
 ) -> None:
+    me = client.get("/api/auth/me", headers=tenant_owner_auth_headers)
+    tenant_account_id = me.get_json()["account_id"]
     tenant_create = client.post(
         "/api/workflows",
         headers=tenant_owner_auth_headers,
@@ -21,15 +23,13 @@ def test_admin_manages_tenant_workflows(
             "sandbox_only": True,
         },
     )
-    assert tenant_create.status_code == 201
-    tenant_account_id = tenant_create.get_json()["account_id"]
+    assert tenant_create.status_code == 403
 
     admin_list = client.get(
         f"/api/admin/accounts/{tenant_account_id}/workflows",
         headers=auth_headers,
     )
     assert admin_list.status_code == 200
-    assert len(admin_list.get_json()["items"]) >= 1
 
     admin_create = client.post(
         f"/api/admin/accounts/{tenant_account_id}/workflows",
@@ -44,6 +44,11 @@ def test_admin_manages_tenant_workflows(
     )
     assert admin_create.status_code == 201
     workflow_id = admin_create.get_json()["id"]
+    admin_list_after = client.get(
+        f"/api/admin/accounts/{tenant_account_id}/workflows",
+        headers=auth_headers,
+    )
+    assert len(admin_list_after.get_json()["items"]) >= 1
 
     preview = client.post(
         f"/api/admin/accounts/{tenant_account_id}/workflows/{workflow_id}/preview",

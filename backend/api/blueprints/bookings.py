@@ -29,6 +29,7 @@ def list_bookings() -> tuple[Any, int]:
         platform=request.args.get("platform"),
         search=request.args.get("search"),
         booking_related=True,
+        workflow_slug=None,
         page=page,
         limit=limit,
     )

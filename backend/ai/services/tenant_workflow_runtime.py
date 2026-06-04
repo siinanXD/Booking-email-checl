@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from backend.ai.services.classification import LLMClient
+from backend.ai.services.gemini_client import GeminiClientProtocol
 from backend.ai.services.llm_errors import LLM_PIPELINE_ERRORS
 from backend.core.models.email import StoredEmail
 from backend.infrastructure.repositories.tenant_workflow_repository import (
@@ -98,10 +99,14 @@ class TenantWorkflowExecutor:
         *,
         classify_model: str,
         extract_model: str,
+        gemini: GeminiClientProtocol | None = None,
+        gemini_extract_model: str = "gemini-2.0-flash",
     ) -> None:
         self._llm = llm
         self._classify_model = classify_model
         self._extract_model = extract_model
+        self._gemini = gemini
+        self._gemini_extract_model = gemini_extract_model
 
     def classify_match(
         self,
@@ -132,6 +137,8 @@ class TenantWorkflowExecutor:
         workflow: TenantWorkflowRecord,
         email: StoredEmail,
     ) -> dict[str, Any]:
+        if workflow.llm_provider == "gemini":
+            return self._extract_with_gemini(workflow, email)
         if not workflow.extract_prompt.strip():
             return {"confidence": 0.0}
         prompt = format_extract_prompt(workflow, email.subject, email.body_text)
@@ -139,6 +146,30 @@ class TenantWorkflowExecutor:
             completion = self._llm.complete(
                 prompt,
                 self._extract_model,
+                temperature=0.0,
+            )
+            return parse_json_object(completion.text)
+        except LLM_PIPELINE_ERRORS:
+            return {"confidence": 0.0}
+
+    def _extract_with_gemini(
+        self,
+        workflow: TenantWorkflowRecord,
+        email: StoredEmail,
+    ) -> dict[str, Any]:
+        if self._gemini is None:
+            return {"confidence": 0.0, "error": "gemini_not_configured"}
+        prompt = build_gemini_extract_prompt(
+            workflow,
+            email.subject,
+            email.body_text,
+        )
+        if not prompt.strip():
+            return {"confidence": 0.0}
+        try:
+            completion = self._gemini.complete_text(
+                prompt,
+                self._gemini_extract_model,
                 temperature=0.0,
             )
             return parse_json_object(completion.text)
@@ -168,6 +199,19 @@ def format_extract_prompt(
         subject=subject,
         body=body,
     )
+
+
+def build_gemini_extract_prompt(
+    workflow: TenantWorkflowRecord,
+    subject: str,
+    body: str,
+) -> str:
+    sections: list[str] = []
+    if workflow.multimodal_prompt.strip():
+        sections.append(workflow.multimodal_prompt.strip())
+    if workflow.extract_prompt.strip() or subject or body:
+        sections.append(format_extract_prompt(workflow, subject, body))
+    return "\n\n".join(sections) if sections else ""
 
 
 def _format_prompt(

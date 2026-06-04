@@ -32,6 +32,7 @@ class QueryService:
         platform: str | None,
         search: str | None,
         booking_related: bool,
+        workflow_slug: str | None,
         page: int,
         limit: int,
     ) -> EmailListResponse:
@@ -44,6 +45,7 @@ class QueryService:
             platform=platform,
             search=search,
             booking_related=booking_related,
+            workflow_slug=workflow_slug,
             page=page,
             limit=limit,
         )

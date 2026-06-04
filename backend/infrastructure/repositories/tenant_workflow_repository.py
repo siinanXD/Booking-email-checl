@@ -7,9 +7,13 @@ from datetime import UTC, datetime
 from typing import Any, Literal
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from pymongo.collection import Collection
 
+from backend.core.models.workflow_media import (
+    MAX_ATTACHMENTS_PER_REQUEST,
+    WorkflowMediaAttachment,
+)
 from backend.infrastructure.repositories.mongo import Db
 
 WorkflowImportance = Literal["high", "medium", "low"]
@@ -30,6 +34,17 @@ class WorkflowTestEmail(BaseModel):
     subject: str
     body: str
     expected_fields: dict[str, Any] | None = None
+    attachments: list[WorkflowMediaAttachment] = Field(default_factory=list)
+
+    @field_validator("attachments")
+    @classmethod
+    def validate_attachments(
+        cls, value: list[WorkflowMediaAttachment]
+    ) -> list[WorkflowMediaAttachment]:
+        if len(value) > MAX_ATTACHMENTS_PER_REQUEST:
+            msg = f"At most {MAX_ATTACHMENTS_PER_REQUEST} attachments per test email"
+            raise ValueError(msg)
+        return value
 
 
 class WorkflowFewShotExample(BaseModel):

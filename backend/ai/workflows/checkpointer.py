@@ -38,3 +38,27 @@ def build_checkpointer(settings: Settings) -> Any:
     except Exception as exc:
         logger.warning("MongoDBSaver fehlgeschlagen, MemorySaver: %s", exc)
         return MemorySaver()
+
+
+def clear_thread_checkpoints(
+    checkpointer: Any,
+    thread_id: str,
+    *,
+    checkpoint_ns: str = "",
+) -> bool:
+    """Löscht LangGraph-State für thread_id (Schema-Mismatch)."""
+    collection = getattr(checkpointer, "checkpoint_collection", None)
+    writes = getattr(checkpointer, "writes_collection", None)
+    if collection is None or writes is None:
+        return False
+    query = {"thread_id": thread_id, "checkpoint_ns": checkpoint_ns}
+    cp_result = collection.delete_many(query)
+    writes_result = writes.delete_many(query)
+    deleted = int(cp_result.deleted_count) + int(writes_result.deleted_count)
+    if deleted:
+        logger.info(
+            "LangGraph checkpoints cleared for thread_id=%s (deleted=%s)",
+            thread_id,
+            deleted,
+        )
+    return deleted > 0

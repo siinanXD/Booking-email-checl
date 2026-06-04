@@ -20,7 +20,7 @@ import { PropertiesPage } from "@/features/properties/PropertiesPage";
 import { RegisterPage } from "@/features/auth/RegisterPage";
 import { ReviewQueuePage } from "@/features/review/ReviewQueuePage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
-import { WorkflowsPage } from "@/features/workflows/WorkflowsPage";
+import { WorkflowRubrikPage } from "@/features/workflows/WorkflowRubrikPage";
 import { PlatformAdminRoute } from "@/routes/PlatformAdminRoute";
 import { ProtectedRoute } from "@/routes/ProtectedRoute";
 import { TenantRoute } from "@/routes/TenantRoute";
@@ -62,7 +62,7 @@ export function App() {
               <Route path="properties" element={<PropertiesPage />} />
               <Route path="review" element={<ReviewQueuePage />} />
               <Route path="settings" element={<SettingsPage />} />
-              <Route path="workflows" element={<WorkflowsPage />} />
+              <Route path="rubrics/:slug" element={<WorkflowRubrikPage />} />
               <Route path="costs" element={<CostsPage />} />
             </Route>
           </Route>

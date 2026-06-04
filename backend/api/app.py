@@ -11,6 +11,7 @@ from typing import Any
 
 from flask import Flask, g, jsonify
 from flask_cors import CORS
+from pydantic import ValidationError
 
 from backend.api.auth.routes import auth_bp
 from backend.api.auth.token_blocklist import MongoBlocklistBackend, configure
@@ -93,6 +94,16 @@ def create_app(settings: Settings | None = None) -> Flask:
         """JSON 500."""
         logger.exception("Unhandled error: %s", err)
         return jsonify({"error": "Internal server error", "code": 500}), 500
+
+    @app.errorhandler(ValidationError)
+    def validation_error(err: ValidationError) -> tuple[Any, int]:
+        """Pydantic-Validierung → 422."""
+        messages = [
+            f"{'.'.join(str(part) for part in item.get('loc', ()))}: "
+            f"{item.get('msg', '')}"
+            for item in err.errors(include_context=False, include_url=False)
+        ]
+        return jsonify({"error": messages, "code": 422}), 422
 
     @app.errorhandler(Exception)
     def handle_exception(err: Exception) -> tuple[Any, int]:

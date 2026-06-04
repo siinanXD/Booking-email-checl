@@ -64,3 +64,17 @@ pytest tests/eval/test_offline_eval.py -v -s --no-cov
 
 Ergebnis (z. B. `field_accuracy`, `case_hit_rate`) hier oder im PR-Kommentar festhalten.
 **Mock=1.0** bedeutet nicht, dass Live=1.0 ist — Live misst Modellqualität.
+
+### Live-Baseline (2026-06-04, `gpt-4o-mini`, 10 Fälle)
+
+| Metrik | Wert |
+|--------|------|
+| Klassifikation `hit_rate` | 0.10 (1/10) |
+| Extraktion `field_accuracy` | 0.38 (9/24 Felder) |
+| Extraktion `case_hit_rate` | 0.22 (2/9 Fälle mit `expected_extraction`) |
+
+Lokal ausführen (lädt `.env`):
+
+```bash
+.\.venv\Scripts\python.exe -c "from pathlib import Path; from dotenv import load_dotenv; load_dotenv(Path('.env')); import os, subprocess, sys; os.environ['EVAL_LLM_MODE']='live'; subprocess.run([sys.executable,'-m','pytest','tests/eval/test_offline_eval.py','-v'], env=os.environ)"
+```

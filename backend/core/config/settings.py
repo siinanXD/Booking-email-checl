@@ -48,6 +48,11 @@ class Settings(BaseSettings):
         alias="OPENAI_MODEL_EXTRACT",
     )
     openai_model_draft: str = Field(default="gpt-4o-mini", alias="OPENAI_MODEL_DRAFT")
+    gemini_api_key: str = Field(default="", alias="GEMINI_API_KEY")
+    gemini_model_extract: str = Field(
+        default="gemini-2.0-flash",
+        alias="GEMINI_MODEL_EXTRACT",
+    )
     openai_model_triage: str = Field(
         default="gpt-4o-mini",
         alias="OPENAI_MODEL_TRIAGE",
