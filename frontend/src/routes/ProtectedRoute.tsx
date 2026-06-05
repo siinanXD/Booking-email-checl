@@ -12,10 +12,10 @@ export function ProtectedRoute() {
   const location = useLocation();
 
   useEffect(() => {
-    if (hydrated) {
+    if (hydrated && accessToken && !user) {
       void loadUser();
     }
-  }, [hydrated, loadUser]);
+  }, [hydrated, accessToken, user, loadUser]);
 
   if (!hydrated) {
     return (

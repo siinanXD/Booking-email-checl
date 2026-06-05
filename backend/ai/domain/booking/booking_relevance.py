@@ -63,6 +63,15 @@ _BOOKING_SIGNAL_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Gast-Anfrage ohne PMS-Betreff (z. B. „ich möchte buchen“)
+_RESERVATION_REQUEST_RE = re.compile(
+    r"(möchte\s+(gerne\s+)?(eine\s+)?buchung|würde\s+gerne\s+.*buchung|"
+    r"buchung\s+tätigen|zimmer\s+reservieren|reservierung\s+anfragen|"
+    r"would\s+like\s+to\s+(make\s+a\s+)?book|like\s+to\s+book|"
+    r"book\s+a\s+room|make\s+a\s+reservation|availability|verfügbarkeit)",
+    re.IGNORECASE,
+)
+
 _TRUSTED_BOOKING_DOMAINS = (
     "beds24.com",
     "beds24.de",
@@ -109,6 +118,31 @@ def has_text_booking_signals(email: EmailLike) -> bool:
     """Buchungs-Keywords in Betreff oder Body (ohne Extraktion)."""
     combined = f"{email.subject or ''}\n{email.body_text or ''}"
     return bool(_BOOKING_SIGNAL_RE.search(combined))
+
+
+def has_reservation_request_signals(email: EmailLike) -> bool:
+    """Freitext-Anfrage nach neuer Buchung / Reservierung."""
+    combined = f"{email.subject or ''}\n{email.body_text or ''}"
+    return bool(_RESERVATION_REQUEST_RE.search(combined))
+
+
+def has_extraction_booking_context(extraction: BookingExtraction | None) -> bool:
+    """Extraktion enthält nutzbare Buchungs-/Gastdaten (unabhängig von PMS)."""
+    if extraction is None:
+        return False
+    if extraction.booking_number and str(extraction.booking_number).strip():
+        return True
+    if extraction.property_name and str(extraction.property_name).strip():
+        return True
+    if extraction.guest_name and str(extraction.guest_name).strip():
+        low = str(extraction.guest_name).strip().lower()
+        if low not in ("gast", "guest", "unbekannt", "unknown"):
+            return True
+    if extraction.check_in or extraction.check_out:
+        return True
+    if extraction.email and "@" in str(extraction.email):
+        return True
+    return False
 
 
 def is_marketing_noise(email: EmailLike) -> bool:
@@ -185,6 +219,10 @@ def has_booking_signals(
     extraction: BookingExtraction | None,
 ) -> bool:
     """Betreff/Absender/Extraktion deuten auf Buchungskontext."""
+    if has_reservation_request_signals(email):
+        return True
+    if has_extraction_booking_context(extraction):
+        return True
     if is_plausible_booking_number(
         extraction.booking_number if extraction else None,
         email,
@@ -222,12 +260,14 @@ def effective_booking_intent(
     email: EmailLike,
     extraction: BookingExtraction | None,
 ) -> BookingIntent | None:
-    """Intent für Listen/Review: Extraktion, sonst Beds24-Betreff-Heuristik."""
+    """Intent für Listen/Review: Extraktion, LLM-Klassifikation, Beds24-Betreff."""
     if extraction and extraction.intent and extraction.intent != BookingIntent.OTHER:
         return extraction.intent
     inferred = infer_beds24_intent(email.subject or "")
     if inferred is not None:
         return inferred
+    if has_reservation_request_signals(email):
+        return BookingIntent.NEW_BOOKING
     if extraction and extraction.intent:
         return extraction.intent
     return None
@@ -245,9 +285,19 @@ def classify_booking_mail(
     if is_probable_booking_mail(email):
         return BookingMailVerdict(True, "beds24_or_pms_heuristic")
     if extraction is None or extraction.intent is None:
+        if has_reservation_request_signals(email):
+            return BookingMailVerdict(True, "reservation_request_heuristic")
         return BookingMailVerdict(False, "no_extraction")
     if extraction.intent not in _BOOKING_INTENTS:
         return BookingMailVerdict(False, f"intent_{extraction.intent.value}")
+    if extraction.intent == BookingIntent.NEW_BOOKING:
+        return BookingMailVerdict(True, "llm_new_booking")
+    if extraction.intent == BookingIntent.CHANGE:
+        if is_plausible_booking_number(
+            extraction.booking_number, email
+        ) or has_booking_signals(email, extraction):
+            return BookingMailVerdict(True, "llm_change")
+        return BookingMailVerdict(False, "change_no_proof")
     if extraction.intent == BookingIntent.GUEST_INQUIRY:
         if has_booking_signals(email, extraction):
             return BookingMailVerdict(True, "guest_inquiry_with_signals")

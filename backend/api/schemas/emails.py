@@ -51,3 +51,5 @@ class EmailDetail(BaseModel):
     draft_body: str = ""
     extraction: dict[str, Any] | None = None
     approved_body: str | None = None
+    mail_summary: str | None = None
+    mail_sentiment: str | None = None

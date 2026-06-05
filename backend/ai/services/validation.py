@@ -20,7 +20,6 @@ class ValidationService:
     """Pydantic + fachliche Regeln."""
 
     _REQUIRED_BY_INTENT: dict[BookingIntent, list[str]] = {
-        BookingIntent.NEW_BOOKING: ["check_in", "check_out"],
         BookingIntent.CANCELLATION: ["booking_number"],
         BookingIntent.CHANGE: ["booking_number"],
         BookingIntent.PAYMENT_ISSUE: ["booking_number"],

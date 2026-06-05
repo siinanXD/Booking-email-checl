@@ -1,3 +1,4 @@
+import { IntentBadge } from "@/shared/components/IntentBadge";
 import { Badge } from "@/shared/ui/Badge";
 import type { EmailListItem } from "@/lib/types/api";
 
@@ -27,7 +28,11 @@ export function EmailRow({
       <td className="px-4 py-3 text-sm font-medium">{item.booking_number ?? "—"}</td>
       <td className="px-4 py-3 text-sm">{item.platform ?? "—"}</td>
       <td className="px-4 py-3">
-        <Badge label={item.intent ?? item.processing_state} tone={tone} />
+        {item.intent ? (
+          <IntentBadge intent={item.intent} />
+        ) : (
+          <Badge label={item.processing_state} tone={tone} />
+        )}
       </td>
       <td className="max-w-xs truncate px-4 py-3 text-sm text-slate-600">
         {item.subject}

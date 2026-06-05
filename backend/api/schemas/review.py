@@ -19,6 +19,12 @@ class ReviewRejectRequest(BaseModel):
     reason: str = ""
 
 
+class ReviewCompleteRequest(BaseModel):
+    """Abschluss nach Freigabe."""
+
+    correlation_id: str
+
+
 class ReviewQueueItem(BaseModel):
     """Eintrag in der Review-Warteschlange."""
 

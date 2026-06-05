@@ -6,7 +6,7 @@ import {
   RefreshCw,
   MessageSquare,
   ClipboardCheck,
-  DollarSign,
+  CheckCircle2,
   Building2,
   Shield,
   Users,
@@ -22,22 +22,55 @@ import { fetchPendingAccounts } from "@/lib/api/admin";
 import { fetchWorkflowNav } from "@/lib/api/workflows";
 import { useAuthStore } from "@/features/auth/authStore";
 
+type NavCountKey =
+  | "nav_bookings"
+  | "nav_cancellations"
+  | "nav_changes"
+  | "nav_messages"
+  | "nav_completed";
+
 type SidebarLink = {
   to: string;
   label: string;
   icon: typeof LayoutDashboard;
   badge?: boolean;
+  navCountKey?: NavCountKey;
 };
 
 const tenantLinks: SidebarLink[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/bookings", label: "Buchungen", icon: CalendarCheck },
-  { to: "/cancellations", label: "Stornos", icon: XCircle },
-  { to: "/changes", label: "Änderungen", icon: RefreshCw },
-  { to: "/messages", label: "Nachrichten", icon: MessageSquare },
+  {
+    to: "/bookings",
+    label: "Buchungen",
+    icon: CalendarCheck,
+    navCountKey: "nav_bookings",
+  },
+  {
+    to: "/cancellations",
+    label: "Stornos",
+    icon: XCircle,
+    navCountKey: "nav_cancellations",
+  },
+  {
+    to: "/changes",
+    label: "Änderungen",
+    icon: RefreshCw,
+    navCountKey: "nav_changes",
+  },
+  {
+    to: "/messages",
+    label: "Nachrichten",
+    icon: MessageSquare,
+    navCountKey: "nav_messages",
+  },
   { to: "/properties", label: "Unterkünfte", icon: Building2 },
   { to: "/review", label: "Review", icon: ClipboardCheck, badge: true },
-  { to: "/costs", label: "API-Kosten", icon: DollarSign },
+  {
+    to: "/completed",
+    label: "Abgeschlossen",
+    icon: CheckCircle2,
+    navCountKey: "nav_completed",
+  },
 ];
 
 const adminLinks: SidebarLink[] = [
@@ -79,9 +112,9 @@ export function Sidebar() {
   const links = isPlatformAdmin
     ? adminLinks
     : [
-        ...tenantLinks.slice(0, 7),
+        ...tenantLinks.slice(0, 8),
         ...workflowRubrics,
-        ...tenantLinks.slice(7),
+        ...tenantLinks.slice(8),
       ];
 
   return (
@@ -95,33 +128,44 @@ export function Sidebar() {
         </p>
       </div>
       <nav className="flex-1 space-y-1 p-3">
-        {links.map(({ to, label, icon: Icon, badge }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={to === "/" || to === "/admin/overview"}
-            className={({ isActive }) =>
-              `flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
-                isActive
-                  ? "bg-indigo-600 text-white"
-                  : "text-slate-300 hover:bg-slate-800"
-              }`
-            }
-          >
-            <Icon size={18} />
-            <span className="flex-1">{label}</span>
-            {badge && !isPlatformAdmin && pending > 0 && (
-              <span className="animate-pulse rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
-                {pending}
-              </span>
-            )}
-            {badge && isPlatformAdmin && pendingApprovals > 0 && (
-              <span className="rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-white">
-                {pendingApprovals}
-              </span>
-            )}
-          </NavLink>
-        ))}
+        {links.map(({ to, label, icon: Icon, badge, navCountKey }) => {
+          const navCount =
+            navCountKey && stats
+              ? (stats[navCountKey] as number | undefined)
+              : undefined;
+          return (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === "/" || to === "/admin/overview"}
+              className={({ isActive }) =>
+                `flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition ${
+                  isActive
+                    ? "bg-indigo-600 text-white"
+                    : "text-slate-300 hover:bg-slate-800"
+                }`
+              }
+            >
+              <Icon size={18} />
+              <span className="flex-1">{label}</span>
+              {navCountKey && navCount != null && navCount > 0 && (
+                <span className="rounded-full bg-slate-700 px-2 py-0.5 text-xs text-slate-200">
+                  {navCount}
+                </span>
+              )}
+              {badge && !isPlatformAdmin && pending > 0 && (
+                <span className="animate-pulse rounded-full bg-red-500 px-2 py-0.5 text-xs font-bold text-white">
+                  {pending}
+                </span>
+              )}
+              {badge && isPlatformAdmin && pendingApprovals > 0 && (
+                <span className="rounded-full bg-amber-500 px-2 py-0.5 text-xs font-bold text-white">
+                  {pendingApprovals}
+                </span>
+              )}
+            </NavLink>
+          );
+        })}
       </nav>
     </aside>
   );

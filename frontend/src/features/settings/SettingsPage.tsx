@@ -14,6 +14,7 @@ import {
 } from "@/lib/api/settings";
 import { SettingsDangerZone } from "@/features/settings/SettingsDangerZone";
 import { SettingsWhatsAppCard } from "@/features/settings/SettingsWhatsAppCard";
+import { SettingsWhatsAppRecipientsCard } from "@/features/settings/SettingsWhatsAppRecipientsCard";
 import { Button } from "@/shared/ui/Button";
 import { Card } from "@/shared/ui/Card";
 import { Input } from "@/shared/ui/Input";
@@ -169,6 +170,8 @@ export function SettingsPage() {
           WhatsApp-Benachrichtigungen für mich aktiv
         </label>
       </Card>
+
+      <SettingsWhatsAppRecipientsCard />
 
       <SettingsWhatsAppCard
         data={data}

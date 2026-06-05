@@ -87,6 +87,8 @@ class ReviewRepository:
             update["approved_body"] = approved_body
         if reviewer_note is not None:
             update["reviewer_note"] = reviewer_note
+        if status == "approved":
+            update["grounding_flag"] = False
         query = with_account_filter({"_id": correlation_id}, account_id)
         self._col.update_one(query, {"$set": update})
         return self.get(correlation_id, account_id=account_id)
@@ -103,6 +105,22 @@ class ReviewRepository:
         if doc is None:
             return None
         return ReviewRecord.model_validate(doc)
+
+    def map_by_correlation_ids(
+        self,
+        correlation_ids: list[str],
+        *,
+        account_id: str | None = None,
+    ) -> dict[str, ReviewRecord]:
+        """Lädt Review-Datensätze in einem Query."""
+        if not correlation_ids:
+            return {}
+        unique_ids = list(dict.fromkeys(correlation_ids))
+        query = with_account_filter({"_id": {"$in": unique_ids}}, account_id)
+        return {
+            str(doc["_id"]): ReviewRecord.model_validate(doc)
+            for doc in self._col.find(query)
+        }
 
     def count_pending(self, *, account_id: str | None = None) -> int:
         """Anzahl ausstehender Reviews."""
@@ -142,9 +160,43 @@ class ReviewRepository:
         account_id: str | None = None,
     ) -> list[ReviewRecord]:
         """Ausstehende Reviews, neueste zuerst."""
-        query = with_account_filter({"review_status": "pending"}, account_id)
+        return self.list_by_status(("pending",), limit=limit, account_id=account_id)
+
+    def list_by_status(
+        self,
+        statuses: tuple[str, ...] | list[str],
+        *,
+        limit: int = 50,
+        account_id: str | None = None,
+        grounding_only: bool = False,
+    ) -> list[ReviewRecord]:
+        """Reviews mit Status in statuses, neueste zuerst."""
+        status_list = list(statuses)
+        match: dict[str, object] = {"review_status": {"$in": status_list}}
+        if grounding_only:
+            match["grounding_flag"] = True
+        query = with_account_filter(match, account_id)
         cursor = self._col.find(query).sort("updated_at", -1).limit(limit)
         return [ReviewRecord.model_validate(doc) for doc in cursor]
+
+    def count_pending_grounding(self, *, account_id: str | None = None) -> int:
+        """Ausstehende Reviews mit Grounding-Hinweis."""
+        query = with_account_filter(
+            {"review_status": "pending", "grounding_flag": True},
+            account_id,
+        )
+        return int(self._col.count_documents(query))
+
+    def count_open_grounding(self, *, account_id: str | None = None) -> int:
+        """Grounding offen: ausstehend oder freigegeben, noch nicht abgeschlossen."""
+        query = with_account_filter(
+            {
+                "grounding_flag": True,
+                "review_status": {"$in": ["pending", "approved"]},
+            },
+            account_id,
+        )
+        return int(self._col.count_documents(query))
 
     def save(
         self,

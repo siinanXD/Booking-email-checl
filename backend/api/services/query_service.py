@@ -35,6 +35,8 @@ class QueryService:
         workflow_slug: str | None,
         page: int,
         limit: int,
+        from_date: str | None = None,
+        to_date: str | None = None,
     ) -> EmailListResponse:
         return email_queries.list_emails(
             self._ctx,
@@ -48,6 +50,8 @@ class QueryService:
             workflow_slug=workflow_slug,
             page=page,
             limit=limit,
+            from_date=from_date,
+            to_date=to_date,
         )
 
     def get_email_detail(self, correlation_id: str) -> EmailDetail | None:
@@ -58,9 +62,32 @@ class QueryService:
         )
 
     def list_review_pending(self, *, limit: int = 50) -> list[ReviewQueueItem]:
-        return email_queries.list_review_pending(
+        from backend.api.services.review_queue_service import list_review_queue
+
+        return list_review_queue(
             self._ctx,
             self._account_id,
+            queue="pending",
+            limit=limit,
+        )
+
+    def list_review_released(self, *, limit: int = 50) -> list[ReviewQueueItem]:
+        from backend.api.services.review_queue_service import list_review_queue
+
+        return list_review_queue(
+            self._ctx,
+            self._account_id,
+            queue="released",
+            limit=limit,
+        )
+
+    def list_review_completed(self, *, limit: int = 50) -> list[ReviewQueueItem]:
+        from backend.api.services.review_queue_service import list_review_queue
+
+        return list_review_queue(
+            self._ctx,
+            self._account_id,
+            queue="completed",
             limit=limit,
         )
 

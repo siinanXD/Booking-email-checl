@@ -65,6 +65,126 @@ def test_list_pending_reviews(
     )
 
 
+def test_pending_grounding_filter(
+    client: Any,
+    auth_headers: dict[str, str],
+    tenant_account_id: str,
+    mock_db: object,
+    email_repo: Any,
+) -> None:
+    """GET /api/review/pending?grounding=1 filtert nach grounding_flag."""
+    reviews = ReviewRepository(mock_db)  # type: ignore[arg-type]
+    for cid, flagged in (("corr-g1", True), ("corr-g2", False)):
+        email_repo.upsert_by_message_id(
+            StoredEmail(
+                message_id=f"m-{cid}",
+                from_address="a@test.local",
+                subject="Test",
+                body_text="body",
+                received_at=datetime.now(UTC),
+                correlation_id=cid,
+                account_id=tenant_account_id,
+            )
+        )
+        reviews.upsert_pending(
+            correlation_id=cid,
+            message_id=f"m-{cid}",
+            draft_body="draft",
+            grounding_flag=flagged,
+            intent="new_booking",
+            account_id=tenant_account_id,
+        )
+    resp = client.get(
+        "/api/review/pending?grounding=1",
+        headers=auth_headers,
+    )
+    assert resp.status_code == 200
+    ids = {item["correlation_id"] for item in resp.get_json()["items"]}
+    assert "corr-g1" in ids
+    assert "corr-g2" not in ids
+
+
+def test_grounding_includes_approved_with_flag(
+    client: Any,
+    auth_headers: dict[str, str],
+    tenant_account_id: str,
+    mock_db: object,
+    email_repo: Any,
+) -> None:
+    """Freigegeben + grounding_flag erscheint im Grounding-Filter."""
+    cid = "corr-g-approved"
+    email_repo.upsert_by_message_id(
+        StoredEmail(
+            message_id="m-g-app",
+            from_address="guest@test.local",
+            subject="Buchung",
+            body_text="buchung",
+            received_at=datetime.now(UTC),
+            correlation_id=cid,
+            account_id=tenant_account_id,
+        )
+    )
+    reviews = ReviewRepository(mock_db)  # type: ignore[arg-type]
+    reviews.upsert_pending(
+        correlation_id=cid,
+        message_id="m-g-app",
+        draft_body="draft",
+        grounding_flag=True,
+        intent="new_booking",
+        account_id=tenant_account_id,
+    )
+    reviews.update_status(
+        cid,
+        "approved",
+        account_id=tenant_account_id,
+        approved_body="ok",
+    )
+    # Legacy: freigegeben, aber Grounding-Flag noch gesetzt (vor Flag-Reset-Fix)
+    reviews._col.update_one(
+        {"_id": cid},
+        {"$set": {"grounding_flag": True}},
+    )
+    resp = client.get("/api/review/pending?grounding=1", headers=auth_headers)
+    assert resp.status_code == 200
+    ids = {item["correlation_id"] for item in resp.get_json()["items"]}
+    assert cid in ids
+
+
+def test_pending_grounding_includes_ineligible_booking(
+    client: Any,
+    auth_headers: dict[str, str],
+    tenant_account_id: str,
+    mock_db: object,
+    email_repo: Any,
+) -> None:
+    """Grounding-Filter zeigt auch Mails, die sonst aus der Queue gefiltert wären."""
+    cid = "corr-g-inelig"
+    email_repo.upsert_by_message_id(
+        StoredEmail(
+            message_id="m-inelig",
+            from_address="newsletter@spam.local",
+            subject="Werbung",
+            body_text="unsubscribe",
+            received_at=datetime.now(UTC),
+            correlation_id=cid,
+            account_id=tenant_account_id,
+        )
+    )
+    reviews = ReviewRepository(mock_db)  # type: ignore[arg-type]
+    reviews.upsert_pending(
+        correlation_id=cid,
+        message_id="m-inelig",
+        draft_body="draft",
+        grounding_flag=True,
+        intent="new_booking",
+        account_id=tenant_account_id,
+    )
+    resp = client.get("/api/review/pending?grounding=1", headers=auth_headers)
+    assert resp.status_code == 200
+    ids = {item["correlation_id"] for item in resp.get_json()["items"]}
+    assert cid in ids
+
+
 def test_reject_review(
     app: object,
     client: Any,
@@ -101,3 +221,13 @@ def test_reject_review(
     email = ctx.email_repo.get_by_message_id("m-reject-api")
     assert email is not None
     assert email.processing_state == ProcessingState.REJECTED
+
+
+def test_list_released_and_completed_empty(
+    client: Any,
+    auth_headers: dict[str, str],
+) -> None:
+    for path in ("/api/review/released", "/api/review/completed"):
+        resp = client.get(path, headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.get_json()["total"] >= 0

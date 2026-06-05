@@ -9,10 +9,11 @@ from langfuse.decorators import langfuse_context, observe
 
 from backend.ai.domain.booking.extraction import BookingExtraction
 from backend.ai.services.classification import LLMClient
-from backend.ai.services.grounding import GroundingService
+from backend.ai.services.grounding import GroundingService, sanitize_draft_guest_names
 from backend.ai.services.llm_errors import LLM_PIPELINE_ERRORS, notify_llm_failure
 from backend.ai.services.prompt_loader import format_resolved_prompt
 from backend.ai.services.retrieval import RetrievalHits, RetrievalService
+from backend.ai.services.review_fallback import fallback_draft_body
 from backend.core.models.email import StoredEmail
 from backend.core.models.response import GeneratedResponse
 from backend.core.utils.pii import mask_pii
@@ -20,10 +21,6 @@ from backend.infrastructure.observability.alerts import AlertService
 from backend.infrastructure.observability.mail_cost import MailCostTracker
 from backend.infrastructure.repositories.platform_llm_config_repository import (
     PlatformLlmConfigRepository,
-)
-
-_FALLBACK_DRAFT_BODY = (
-    "[Automatischer Entwurf fehlgeschlagen. Bitte manuell antworten.]"
 )
 
 
@@ -119,11 +116,13 @@ class ResponseGenerationService:
             )
             draft = GeneratedResponse(
                 correlation_id=email.correlation_id,
-                body=_FALLBACK_DRAFT_BODY,
+                body=fallback_draft_body(email, extraction),
                 model=self._model,
                 grounding_ok=False,
             )
             return draft
+        if hits.guest and hits.guest.name:
+            draft.body = sanitize_draft_guest_names(draft.body, hits.guest.name)
         draft.grounding_ok = self._grounding.check(draft, hits)
         return draft
 

@@ -294,3 +294,18 @@ ODER Skill ODER AGENTS.md ODER Hook), niemals doppelt.
 3. Mongo-basiertes Retrieval (Metadatenfilter) + Human-Review-Node.
 4. Antwortgenerierung mit Grounding.
 5. Erst dann: Vektorsuche für Fallähnlichkeit, asynchrone Indexierung, Alerts.
+6. **Nach MVP (Roadmap):** Support-Tickets Mandant → Plattform-Admin inkl.
+   Admin-Übersicht und WhatsApp-Alert bei neuem Ticket — siehe `docs/ROADMAP.md`
+   Phase 6.
+7. **Nach MVP (Roadmap):** Mail-Erst-Import bei Registrierung nur ab Anker-Zeitpunkt
+   plus 50 zurückliegende Mails — siehe `docs/ROADMAP.md` Phase 7.
+8. **Nach MVP (Roadmap):** Admin-Observability — Gesamtkosten und Kosten pro Mandant
+   konsistent darstellen und per Tests absichern — siehe `docs/ROADMAP.md` Phase 8.
+9. **Nach MVP (Roadmap):** Review-Sidebar aufteilen — Review, Ground Zero (Grounding),
+   Abgeschlossen als getrennte Routen — siehe `docs/ROADMAP.md` Phase 9.
+10. **Nach MVP (Roadmap):** Abgeschlossen-Liste mit Mail-Detail und Arbeitsverlauf —
+   `docs/ROADMAP.md` Phase 10.
+11. **Nach MVP (Roadmap):** Unterkünfte mit Jahres-KPIs (Tage, Umsatz), KI-Übernahme,
+   Profil (Standort/Kontakt) — `docs/ROADMAP.md` Phase 11.
+12. **Nach MVP (Roadmap):** Vollständiges semantisches Chunking (Index-Fluss) und
+   Re-Ranking nach Vektorsuche (Antwort-Fluss) — `docs/ROADMAP.md` Phase 12.

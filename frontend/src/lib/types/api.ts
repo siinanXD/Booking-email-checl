@@ -94,11 +94,18 @@ export interface DashboardStats {
   cost_week_usd: number;
   avg_cost_per_mail_usd: number;
   grounding_failures_today: number;
+  /** Ausstehende Reviews mit Grounding-Hinweis (für Review-Filter). */
+  pending_grounding_review?: number;
   reviewed_today: number;
   last_sync_at?: string | null;
   last_email_received_at?: string | null;
   last_booking_detected_at?: string | null;
   mail_fetch_unread_only?: boolean;
+  nav_bookings?: number;
+  nav_cancellations?: number;
+  nav_changes?: number;
+  nav_messages?: number;
+  nav_completed?: number;
 }
 
 export interface EmailListItem {
@@ -128,6 +135,23 @@ export interface EmailDetail extends EmailListItem {
   draft_body: string;
   extraction: Record<string, unknown> | null;
   approved_body: string | null;
+  mail_summary?: string | null;
+  mail_sentiment?: string | null;
+}
+
+export interface WhatsAppPreviewMessage {
+  recipient_e164: string;
+  template_name: string;
+  template_language: string;
+  template_params: string[];
+  kind: string;
+}
+
+export interface WhatsAppPreviewResponse {
+  correlation_id: string;
+  enabled: boolean;
+  messages: WhatsAppPreviewMessage[];
+  note?: string | null;
 }
 
 export interface ReviewQueueItem {

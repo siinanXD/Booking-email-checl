@@ -4,10 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from backend.ai.domain.booking.booking_mail_counts import (
-    count_booking_mails,
-    latest_booking_received_at,
-)
+from backend.ai.domain.booking.booking_mail_counts import aggregate_booking_mail_stats
 from backend.ai.domain.booking.taxonomy import BookingIntent
 from backend.api.schemas.costs import CostSeriesPoint, CostsResponse
 from backend.api.schemas.dashboard import DashboardStats
@@ -44,16 +41,17 @@ def dashboard_stats(ctx: AppContext, account_id: str) -> DashboardStats:
     avg_cost = cost_week / mail_count_week if mail_count_week else 0.0
 
     grounding_today = count_grounding_since(ctx, account_id, today_iso)
-    _, booking_week, _ = count_booking_mails(
-        email_repo, ctx.extraction_repo, since_iso=week_iso, account_id=account_id
-    )
-    _, booking_total, _ = count_booking_mails(
-        email_repo, ctx.extraction_repo, account_id=account_id
-    )
-    _, _, intents_today = count_booking_mails(
+    pending_grounding = ctx.review_repo.count_open_grounding(account_id=account_id)
+    booking_stats = aggregate_booking_mail_stats(
         email_repo,
         ctx.extraction_repo,
-        since_iso=today_iso,
+        account_id=account_id,
+        today_iso=today_iso,
+        week_iso=week_iso,
+    )
+    nav_completed = ctx.review_repo.count_by_status_since(
+        ["completed"],
+        week_iso,
         account_id=account_id,
     )
     pending_booking = count_pending_booking_reviews(ctx, account_id)
@@ -63,13 +61,10 @@ def dashboard_stats(ctx: AppContext, account_id: str) -> DashboardStats:
         account_id=account_id,
     )
     last_email_received_at = email_repo.max_received_at(account_id=account_id)
-    last_booking_dt = latest_booking_received_at(
-        email_repo,
-        ctx.extraction_repo,
-        account_id=account_id,
-    )
     last_booking_detected_at = (
-        last_booking_dt.isoformat() if last_booking_dt is not None else None
+        booking_stats.latest_booking_received_at.isoformat()
+        if booking_stats.latest_booking_received_at is not None
+        else None
     )
     mail_conn = ctx.mail_connection_repo.get(account_id)
     last_sync_at = (
@@ -84,20 +79,35 @@ def dashboard_stats(ctx: AppContext, account_id: str) -> DashboardStats:
         pending_review=pending_booking,
         processed_today=processed_today,
         spam_discarded_today=spam_today,
-        new_bookings_today=intents_today.get(BookingIntent.NEW_BOOKING.value, 0),
-        cancellations_today=intents_today.get(BookingIntent.CANCELLATION.value, 0),
-        changes_today=intents_today.get(BookingIntent.CHANGE.value, 0),
-        booking_emails_total=booking_total,
-        booking_emails_week=booking_week,
+        new_bookings_today=booking_stats.intents_today.get(
+            BookingIntent.NEW_BOOKING.value, 0
+        ),
+        cancellations_today=booking_stats.intents_today.get(
+            BookingIntent.CANCELLATION.value, 0
+        ),
+        changes_today=booking_stats.intents_today.get(BookingIntent.CHANGE.value, 0),
+        booking_emails_total=booking_stats.booking_total,
+        booking_emails_week=booking_stats.booking_week,
         cost_today_usd=round(cost_today, 4),
         cost_week_usd=round(cost_week, 4),
         avg_cost_per_mail_usd=round(avg_cost, 4),
         grounding_failures_today=grounding_today,
+        pending_grounding_review=pending_grounding,
         reviewed_today=reviewed_today,
         last_sync_at=last_sync_at,
         last_email_received_at=last_email_received_at,
         last_booking_detected_at=last_booking_detected_at,
         mail_fetch_unread_only=ctx.settings.outlook_fetch_unread_only,
+        nav_bookings=booking_stats.intents_all.get(BookingIntent.NEW_BOOKING.value, 0),
+        nav_cancellations=booking_stats.intents_all.get(
+            BookingIntent.CANCELLATION.value, 0
+        ),
+        nav_changes=booking_stats.intents_all.get(BookingIntent.CHANGE.value, 0),
+        nav_messages=(
+            booking_stats.intents_all.get(BookingIntent.GUEST_INQUIRY.value, 0)
+            + booking_stats.intents_all.get(BookingIntent.COMPLAINT.value, 0)
+        ),
+        nav_completed=nav_completed,
     )
 
 
@@ -117,6 +127,7 @@ def demo_stats() -> DashboardStats:
         cost_week_usd=2.1,
         avg_cost_per_mail_usd=0.044,
         grounding_failures_today=0,
+        pending_grounding_review=0,
         reviewed_today=8,
         last_sync_at="2026-06-03T10:00:00+00:00",
         last_email_received_at="2026-06-03T09:45:00+00:00",
@@ -127,7 +138,7 @@ def demo_stats() -> DashboardStats:
 
 def costs(
     ctx: AppContext,
-    account_id: str,
+    account_id: str | None,
     *,
     from_date: str | None,
     to_date: str | None,
@@ -148,15 +159,20 @@ def costs(
 
 
 def count_grounding_since(ctx: AppContext, account_id: str, since_iso: str) -> int:
+    """Neue Grounding-Fälle heute (nur noch ausstehend — nach Freigabe Flag weg)."""
     col = ctx.review_repo._col
     query = with_account_filter(
-        {"grounding_flag": True, "updated_at": {"$gte": since_iso}},
+        {
+            "grounding_flag": True,
+            "review_status": "pending",
+            "updated_at": {"$gte": since_iso},
+        },
         account_id,
     )
     return int(col.count_documents(query))
 
 
 def count_pending_booking_reviews(ctx: AppContext, account_id: str) -> int:
-    from backend.api.services.email_queries import list_review_pending
+    from backend.api.services.review_queue_service import count_eligible_pending_reviews
 
-    return len(list_review_pending(ctx, account_id, limit=500))
+    return count_eligible_pending_reviews(ctx, account_id)

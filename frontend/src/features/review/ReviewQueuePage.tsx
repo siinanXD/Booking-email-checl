@@ -1,26 +1,58 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { fetchEmailDetail } from "@/lib/api/emails";
-import { approveReview, fetchReviewPending, rejectReview } from "@/lib/api/review";
-import { Badge } from "@/shared/ui/Badge";
+import {
+  approveReview,
+  completeReview,
+  fetchReviewQueue,
+  rejectReview,
+  type ReviewQueueTab,
+} from "@/lib/api/review";
+import { ReviewWhatsAppCard } from "@/features/review/ReviewWhatsAppCard";
+import { EmailDetailPanel } from "@/shared/components/EmailDetailPanel";
+import { IntentCategoryFilter } from "@/shared/components/IntentCategoryFilter";
+import { IntentBadge } from "@/shared/components/IntentBadge";
 import { Button } from "@/shared/ui/Button";
 import { Card } from "@/shared/ui/Card";
 import { Input } from "@/shared/ui/Input";
 import type { ReviewQueueItem } from "@/lib/types/api";
 
+const TABS: { id: ReviewQueueTab; label: string }[] = [
+  { id: "pending", label: "Ausstehend" },
+  { id: "released", label: "Freigegeben" },
+  { id: "completed", label: "Abgeschlossen" },
+];
+
 export function ReviewQueuePage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const groundingFilter = searchParams.get("grounding") === "1";
+  const [tab, setTab] = useState<ReviewQueueTab>("pending");
+  const [intentFilter, setIntentFilter] = useState("");
+
+  useEffect(() => {
+    if (groundingFilter) {
+      setTab("pending");
+    }
+  }, [groundingFilter]);
   const [selected, setSelected] = useState<ReviewQueueItem | null>(null);
   const [draftEdit, setDraftEdit] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   const queryClient = useQueryClient();
 
   const { data: queue, isLoading } = useQuery({
-    queryKey: ["review-queue"],
-    queryFn: () => fetchReviewPending(50),
+    queryKey: ["review-queue", tab, intentFilter, groundingFilter],
+    queryFn: () =>
+      fetchReviewQueue(
+        tab,
+        50,
+        intentFilter || undefined,
+        groundingFilter
+      ),
     refetchInterval: 30_000,
   });
 
-  const { data: detail } = useQuery({
+  const { data: detail, isLoading: detailLoading } = useQuery({
     queryKey: ["email-detail", selected?.correlation_id],
     queryFn: () => fetchEmailDetail(selected!.correlation_id),
     enabled: Boolean(selected?.correlation_id),
@@ -37,6 +69,14 @@ export function ReviewQueuePage() {
     onSuccess: () => {
       setSelected(null);
       setDraftEdit("");
+      invalidate();
+    },
+  });
+
+  const completeMut = useMutation({
+    mutationFn: () => completeReview(selected!.correlation_id),
+    onSuccess: () => {
+      setSelected(null);
       invalidate();
     },
   });
@@ -61,10 +101,46 @@ export function ReviewQueuePage() {
       <div>
         <h2 className="text-xl font-semibold text-slate-800">Review-Warteschlange</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Der LLM-Entwurf ist die E-Mail-Antwort an den Gast. Nach Freigabe wird
-          er gespeichert und WhatsApp-Benachrichtigungen versendet (Host +
-          Putzfrau bei neuer Buchung).
+          Entwurf prüfen, freigeben und optional abschließen. Kein Auto-Versand per
+          E-Mail.
         </p>
+      </div>
+      {groundingFilter && (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <span>
+            Filter: Mails mit Grounding-Hinweis (ausstehend und ggf. bereits
+            freigegeben). Nach Freigabe lernt die KI aus dem Fall.
+          </span>
+          <button
+            type="button"
+            className="text-indigo-700 underline"
+            onClick={() => setSearchParams({})}
+          >
+            Filter entfernen
+          </button>
+        </div>
+      )}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex rounded-lg border border-slate-200 p-1">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className={`rounded-md px-3 py-1 text-sm ${
+                tab === t.id
+                  ? "bg-indigo-600 text-white"
+                  : "text-slate-600 hover:bg-slate-50"
+              }`}
+              onClick={() => {
+                setTab(t.id);
+                setSelected(null);
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <IntentCategoryFilter value={intentFilter} onChange={setIntentFilter} />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="max-h-[70vh] overflow-y-auto p-0">
@@ -72,9 +148,9 @@ export function ReviewQueuePage() {
             <p className="p-4 text-slate-500">Lade…</p>
           ) : (queue?.items.length ?? 0) === 0 ? (
             <p className="p-4 text-slate-500">
-              Keine ausstehenden Entwürfe. Pipeline-Lauf oder{" "}
-              <code className="text-xs">scripts/backfill_review_drafts.py</code>{" "}
-              ausführen.
+              {groundingFilter
+                ? "Keine ausstehenden Mails mit Grounding-Hinweis. Entweder bereits freigegeben oder noch nicht durch die Pipeline (Postfach synchronisieren)."
+                : "Keine Einträge in diesem Tab."}
             </p>
           ) : (
             <ul>
@@ -92,9 +168,12 @@ export function ReviewQueuePage() {
                     <p className="text-sm font-medium">{item.subject}</p>
                     <p className="text-xs text-slate-500">{item.from_address}</p>
                     <div className="mt-1 flex gap-2">
-                      <Badge label={item.intent ?? "—"} tone="pending" />
+                      <IntentBadge intent={item.intent} />
                       {item.grounding_flag && (
-                        <Badge label="Grounding" tone="rejected" />
+                        <span className="text-xs text-amber-600">Grounding</span>
+                      )}
+                      {item.review_status === "approved" && (
+                        <span className="text-xs text-green-700">Freigegeben</span>
                       )}
                     </div>
                   </button>
@@ -104,65 +183,67 @@ export function ReviewQueuePage() {
           )}
         </Card>
 
-        <Card>
-          {!selected ? (
-            <p className="text-slate-500">Eintrag aus der Liste wählen</p>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-medium">{selected.subject}</h3>
-                <p className="text-sm text-slate-500">{selected.from_address}</p>
+        <div className="space-y-4">
+          <Card>
+            {!selected ? (
+              <p className="text-slate-500">Eintrag aus der Liste wählen</p>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <h3 className="font-medium">{selected.subject}</h3>
+                  <p className="text-sm text-slate-500">{selected.from_address}</p>
+                </div>
+                <EmailDetailPanel detail={detail} isLoading={detailLoading} />
+                {tab === "pending" && (
+                  <>
+                    <div>
+                      <p className="mb-1 text-xs font-medium uppercase text-slate-500">
+                        E-Mail-Antwort an Gast (bearbeitbar)
+                      </p>
+                      <textarea
+                        className="h-40 w-full rounded-lg border border-slate-300 p-3 text-sm"
+                        value={draftEdit}
+                        onChange={(e) => setDraftEdit(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        onClick={() => approveMut.mutate()}
+                        disabled={approveMut.isPending || !draftEdit.trim()}
+                      >
+                        Freigeben
+                      </Button>
+                    </div>
+                    <div className="border-t pt-4">
+                      <Input
+                        placeholder="Ablehnungsgrund (optional)"
+                        value={rejectReason}
+                        onChange={(e) => setRejectReason(e.target.value)}
+                      />
+                      <Button
+                        variant="danger"
+                        className="mt-2"
+                        onClick={() => rejectMut.mutate()}
+                        disabled={rejectMut.isPending}
+                      >
+                        Ablehnen
+                      </Button>
+                    </div>
+                  </>
+                )}
+                {tab === "released" && (
+                  <Button
+                    onClick={() => completeMut.mutate()}
+                    disabled={completeMut.isPending}
+                  >
+                    Als abgeschlossen markieren
+                  </Button>
+                )}
               </div>
-              <div>
-                <p className="mb-1 text-xs font-medium uppercase text-slate-500">
-                  Original
-                </p>
-                <pre className="max-h-32 overflow-auto whitespace-pre-wrap rounded bg-slate-50 p-3 text-xs">
-                  {detail?.body_text || "Lade Original…"}
-                </pre>
-              </div>
-              <div>
-                <p className="mb-1 text-xs font-medium uppercase text-slate-500">
-                  E-Mail-Antwort an Gast (bearbeitbar)
-                </p>
-                <textarea
-                  className="h-48 w-full rounded-lg border border-slate-300 p-3 text-sm"
-                  value={draftEdit}
-                  onChange={(e) => setDraftEdit(e.target.value)}
-                />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  onClick={() => approveMut.mutate()}
-                  disabled={approveMut.isPending || !draftEdit.trim()}
-                >
-                  Freigeben (Entwurf speichern + WhatsApp)
-                </Button>
-              </div>
-              <div className="border-t pt-4">
-                <p className="mb-2 text-sm text-slate-600">Ablehnen</p>
-                <Input
-                  placeholder="Grund (optional)"
-                  value={rejectReason}
-                  onChange={(e) => setRejectReason(e.target.value)}
-                />
-                <Button
-                  variant="danger"
-                  className="mt-2"
-                  onClick={() => rejectMut.mutate()}
-                  disabled={rejectMut.isPending}
-                >
-                  Ablehnen
-                </Button>
-              </div>
-              {(approveMut.isError || rejectMut.isError) && (
-                <p className="text-sm text-red-600">
-                  Aktion fehlgeschlagen. Bitte erneut versuchen.
-                </p>
-              )}
-            </div>
-          )}
-        </Card>
+            )}
+          </Card>
+          <ReviewWhatsAppCard correlationId={selected?.correlation_id ?? null} />
+        </div>
       </div>
     </div>
   );

@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import {
   AlertTriangle,
   CalendarCheck,
@@ -8,13 +7,10 @@ import {
   RefreshCw,
   XCircle,
 } from "lucide-react";
-import { fetchCosts } from "@/lib/api/costs";
 import { fetchDashboardStats } from "@/lib/api/dashboard";
 import { fetchMailConnection, syncMailConnection } from "@/lib/api/mail";
-import { CostChart } from "@/shared/components/CostChart";
 import { StatCard } from "@/shared/components/StatCard";
 import { Button } from "@/shared/ui/Button";
-import { Card } from "@/shared/ui/Card";
 
 function formatTimestamp(value: string | null | undefined): string {
   if (!value) return "—";
@@ -27,18 +23,6 @@ function formatTimestamp(value: string | null | undefined): string {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
-
-function buildCostHint(stats: {
-  cost_today_usd: number;
-  cost_week_usd: number;
-  avg_cost_per_mail_usd: number;
-}): string {
-  const parts: string[] = [`Ø 7-Tage: $${stats.avg_cost_per_mail_usd.toFixed(4)}/Mail`];
-  if (stats.cost_today_usd === 0 && stats.cost_week_usd > 0) {
-    parts.unshift(`Heute $0 · diese Woche $${stats.cost_week_usd.toFixed(4)}`);
-  }
-  return parts.join(" · ");
 }
 
 export function DashboardPage() {
@@ -61,7 +45,7 @@ export function DashboardPage() {
   });
 
   const syncMut = useMutation({
-    mutationFn: syncMailConnection,
+    mutationFn: () => syncMailConnection(),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
       void queryClient.invalidateQueries({ queryKey: ["emails"] });
@@ -70,18 +54,8 @@ export function DashboardPage() {
     },
   });
 
-  const weekAgo = new Date();
-  weekAgo.setDate(weekAgo.getDate() - 7);
-
-  const { data: costs } = useQuery({
-    queryKey: ["costs-week"],
-    queryFn: () =>
-      fetchCosts(weekAgo.toISOString().slice(0, 10), undefined, "day"),
-  });
-
-  if (isLoading || !stats) {
-    return <p className="text-slate-500">Lade Dashboard…</p>;
-  }
+  const loading = isLoading || !stats;
+  const dash = "—";
 
   const syncErrors = [
     ...(syncMut.data?.item_errors ?? []),
@@ -95,20 +69,24 @@ export function DashboardPage() {
         <div>
           <h2 className="text-xl font-semibold text-slate-800">Übersicht</h2>
           <p className="mt-1 text-xs text-slate-500">
-            Letzte Dashboard-Aktualisierung: {formatTimestamp(new Date(dataUpdatedAt).toISOString())}
+            Letzte Dashboard-Aktualisierung:{" "}
+            {loading
+              ? dash
+              : formatTimestamp(new Date(dataUpdatedAt).toISOString())}
             {" · "}
-            Postfach-Sync: {formatTimestamp(stats.last_sync_at)}
+            Postfach-Sync: {formatTimestamp(stats?.last_sync_at)}
             {" · "}
-            Letzte Mail: {formatTimestamp(stats.last_email_received_at)}
+            Letzte Mail: {formatTimestamp(stats?.last_email_received_at)}
             {" · "}
-            Letzte Buchungs-Mail: {formatTimestamp(stats.last_booking_detected_at)}
+            Letzte Buchungs-Mail:{" "}
+            {formatTimestamp(stats?.last_booking_detected_at)}
           </p>
           {mailConnection?.last_error && (
             <p className="mt-1 text-xs text-amber-700">
               Postfach-Hinweis: {mailConnection.last_error}
             </p>
           )}
-          {stats.mail_fetch_unread_only && (
+          {stats?.mail_fetch_unread_only && (
             <p className="mt-1 text-xs text-amber-700">
               Nur ungelesene Mails werden abgerufen (OUTLOOK_FETCH_UNREAD_ONLY) —
               gelesene Mails erscheinen nicht im Sync.
@@ -147,7 +125,7 @@ export function DashboardPage() {
               )}
               {syncMut.data.error_count > 0 && (
                 <p className="text-slate-500">
-                  Keine Kosten gebucht für fehlgeschlagene Verarbeitungen.
+                  Einige Mails konnten nicht vollständig verarbeitet werden.
                 </p>
               )}
               {syncErrors.length > 0 && (
@@ -176,60 +154,92 @@ export function DashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Buchungs-Mails erkannt"
-          value={stats.booking_emails_week}
-          hint={`${stats.booking_emails_total} gesamt · ${stats.total_emails_week} E-Mails (7 T.) · ${stats.total_emails_today} eingegangen heute`}
+          value={loading ? dash : stats!.booking_emails_week}
+          hint={
+            loading
+              ? "Statistiken werden geladen…"
+              : `${stats!.booking_emails_total} gesamt · ${stats!.total_emails_week} E-Mails (7 T.) · ${stats!.total_emails_today} eingegangen heute`
+          }
           icon={<Mail size={22} />}
         />
         <StatCard
           title="Geprüft heute"
-          value={stats.reviewed_today}
+          value={loading ? dash : stats!.reviewed_today}
           hint="freigegeben oder abgelehnt"
         />
         <StatCard
           title="Review ausstehend"
-          value={stats.pending_review}
-          highlight={stats.pending_review > 0}
+          value={loading ? dash : stats!.pending_review}
+          highlight={!loading && stats!.pending_review > 0}
           icon={<AlertTriangle size={22} />}
         />
         <StatCard
           title="Neue Buchungen"
-          value={stats.new_bookings_today}
+          value={loading ? dash : stats!.new_bookings_today}
           icon={<CalendarCheck size={22} />}
         />
         <StatCard
           title="Stornos / Änderungen"
-          value={`${stats.cancellations_today} / ${stats.changes_today}`}
+          value={
+            loading
+              ? dash
+              : `${stats!.cancellations_today} / ${stats!.changes_today}`
+          }
           icon={<XCircle size={22} />}
         />
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Freigegeben heute" value={stats.processed_today} />
-        <StatCard title="Spam verworfen" value={stats.spam_discarded_today} />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
-          title="Kosten heute"
-          value={`$${stats.cost_today_usd.toFixed(4)}`}
-          hint={buildCostHint(stats)}
+          title="Freigegeben heute"
+          value={loading ? dash : stats!.processed_today}
         />
         <StatCard
-          title="Grounding-Fehler"
-          value={stats.grounding_failures_today}
+          title="Spam verworfen"
+          value={loading ? dash : stats!.spam_discarded_today}
+        />
+        <StatCard
+          title="Grounding offen"
+          value={
+            loading
+              ? dash
+              : (stats!.pending_grounding_review ?? 0) > 0
+                ? stats!.pending_grounding_review!
+                : stats!.grounding_failures_today
+          }
+          hint={
+            loading
+              ? undefined
+              : (stats!.pending_grounding_review ?? 0) > 0
+                ? `${stats!.pending_grounding_review} zum Prüfen · Klicken`
+                : stats!.grounding_failures_today > 0
+                  ? `${stats!.grounding_failures_today} heute erkannt`
+                  : "Keine offenen Prüfhinweise"
+          }
           icon={<AlertTriangle size={22} />}
+          highlight={
+            !loading &&
+            ((stats!.pending_grounding_review ?? 0) > 0 ||
+              stats!.grounding_failures_today > 0)
+          }
+          to={
+            !loading &&
+            ((stats!.pending_grounding_review ?? 0) > 0 ||
+              stats!.grounding_failures_today > 0)
+              ? "/review?grounding=1"
+              : undefined
+          }
         />
       </div>
-      <Card>
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-medium text-slate-800">
-            API-Kosten (7 Tage)
-            {costs && costs.total_usd > 0
-              ? ` · Summe $${costs.total_usd.toFixed(4)}`
-              : ""}
-          </h3>
-          <Link to="/costs" className="text-sm text-indigo-600 hover:underline">
-            Details →
-          </Link>
-        </div>
-        <CostChart series={costs?.series ?? []} />
-      </Card>
+      {!loading &&
+        stats!.total_emails_week > 0 &&
+        stats!.booking_emails_total === 0 && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Es sind E-Mails eingegangen, aber keine als Buchungs-Mail erkannt. Die KI
+          wertet Betreff und Inhalt aus (auch informelle Anfragen wie „ich möchte
+          buchen“). Nach dem Sync müssen neue Mails die Pipeline durchlaufen — bei nur
+          Duplikaten erneut mit „Postfach synchronisieren“ und ggf. ?reprocess=1.
+        </p>
+      )}
     </div>
   );
 }

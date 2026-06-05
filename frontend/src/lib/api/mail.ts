@@ -30,8 +30,16 @@ export async function testMailConnection(): Promise<MailTestResponse> {
   return data;
 }
 
-export async function syncMailConnection(): Promise<MailSyncResponse> {
-  const { data } = await apiClient.post<MailSyncResponse>("/api/mail/sync");
+export async function syncMailConnection(
+  options?: { reprocess?: boolean },
+): Promise<MailSyncResponse> {
+  const params =
+    options?.reprocess === false ? undefined : { reprocess: "1" as const };
+  const { data } = await apiClient.post<MailSyncResponse>(
+    "/api/mail/sync",
+    null,
+    { params }
+  );
   return data;
 }
 

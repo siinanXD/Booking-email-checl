@@ -18,6 +18,15 @@ def test_costs_empty(client: Any, auth_headers: dict[str, str]) -> None:
     assert isinstance(data["series"], list)
 
 
+def test_costs_forbidden_for_tenant(
+    client: Any,
+    tenant_owner_auth_headers: dict[str, str],
+) -> None:
+    """Mandanten sehen keine Tenant-Kosten-API mehr."""
+    resp = client.get("/api/costs/", headers=tenant_owner_auth_headers)
+    assert resp.status_code == 403
+
+
 def test_costs_with_metric(
     client: Any,
     auth_headers: dict[str, str],

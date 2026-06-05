@@ -11,13 +11,13 @@ import { AdminOverviewPage } from "@/features/admin/AdminOverviewPage";
 import { BookingsPage } from "@/features/emails/BookingsPage";
 import { CancellationsPage } from "@/features/emails/CancellationsPage";
 import { ChangesPage } from "@/features/emails/ChangesPage";
-import { CostsPage } from "@/features/dashboard/CostsPage";
 import { DashboardPage } from "@/features/dashboard/DashboardPage";
 import { LoginPage } from "@/features/auth/LoginPage";
 import { MessagesPage } from "@/features/emails/MessagesPage";
 import { OnboardingPage } from "@/features/onboarding/OnboardingPage";
 import { PropertiesPage } from "@/features/properties/PropertiesPage";
 import { RegisterPage } from "@/features/auth/RegisterPage";
+import { CompletedPage } from "@/features/completed/CompletedPage";
 import { ReviewQueuePage } from "@/features/review/ReviewQueuePage";
 import { SettingsPage } from "@/features/settings/SettingsPage";
 import { WorkflowRubrikPage } from "@/features/workflows/WorkflowRubrikPage";
@@ -61,9 +61,9 @@ export function App() {
               <Route path="messages" element={<MessagesPage />} />
               <Route path="properties" element={<PropertiesPage />} />
               <Route path="review" element={<ReviewQueuePage />} />
+              <Route path="completed" element={<CompletedPage />} />
               <Route path="settings" element={<SettingsPage />} />
               <Route path="rubrics/:slug" element={<WorkflowRubrikPage />} />
-              <Route path="costs" element={<CostsPage />} />
             </Route>
           </Route>
         </Route>

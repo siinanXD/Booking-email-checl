@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from backend.ai.services.grounding import GroundingService
+from backend.ai.services.grounding import GroundingService, sanitize_draft_guest_names
 from backend.ai.services.retrieval import RetrievalHits
 from backend.core.models.entities import Guest, Reservation
 from backend.core.models.response import GeneratedResponse
@@ -98,3 +98,10 @@ def test_grounding_pass_all_facts_from_hits() -> None:
     assert result.ok is True
     assert result.failed_fields == []
     assert result.confidence == 1.0
+
+
+def test_sanitize_replaces_false_positive_guest_name() -> None:
+    body = "Sehr geehrter John Smith, vielen Dank."
+    out = sanitize_draft_guest_names(body, "Anna Müller")
+    assert "John Smith" not in out
+    assert "Anna Müller" in out

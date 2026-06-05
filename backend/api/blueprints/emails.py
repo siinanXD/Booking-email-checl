@@ -39,6 +39,8 @@ def list_emails() -> tuple[Any, int]:
         workflow_slug=workflow_slug,
         page=page,
         limit=limit,
+        from_date=request.args.get("from_date"),
+        to_date=request.args.get("to_date"),
     )
     return jsonify(result.model_dump()), 200
 

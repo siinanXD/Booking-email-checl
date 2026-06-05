@@ -6,6 +6,8 @@ from datetime import UTC, datetime
 
 from backend.ai.domain.booking.booking_relevance import (
     classify_booking_mail,
+    effective_booking_intent,
+    has_reservation_request_signals,
     has_text_booking_signals,
     is_booking_relevant,
     is_marketing_noise,
@@ -90,3 +92,36 @@ def test_cancellation_with_booking_number_relevant() -> None:
         booking_number="AB200",
     )
     assert is_booking_relevant(email, ext)
+
+
+def test_informal_booking_request_with_llm_intent() -> None:
+    email = StoredEmail(
+        message_id="m-informal",
+        from_address="max@example.com",
+        subject="Anfrage",
+        body_text="Name: Max Mustermann\nich würde gerne diese Buchung tätigen",
+        received_at=datetime.now(UTC),
+        correlation_id="c-informal",
+    )
+    assert has_reservation_request_signals(email)
+    ext = BookingExtraction(
+        intent=BookingIntent.NEW_BOOKING, guest_name="Max Mustermann"
+    )
+    verdict = classify_booking_mail(email, ext)
+    assert verdict.is_booking
+    assert verdict.reason == "llm_new_booking"
+    assert effective_booking_intent(email, ext) == BookingIntent.NEW_BOOKING
+
+
+def test_reservation_request_without_extraction() -> None:
+    email = StoredEmail(
+        message_id="m-no-ext",
+        from_address="guest@gmail.com",
+        subject="Zimmer",
+        body_text="I would like to book a room for next week",
+        received_at=datetime.now(UTC),
+        correlation_id="c-no-ext",
+    )
+    verdict = classify_booking_mail(email, None)
+    assert verdict.is_booking
+    assert verdict.reason == "reservation_request_heuristic"

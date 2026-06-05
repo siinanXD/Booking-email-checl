@@ -128,6 +128,19 @@ def _allowed_dates(hits: RetrievalHits) -> set[str]:
     return allowed
 
 
+def sanitize_draft_guest_names(body: str, known_guest: str | None) -> str:
+    """Entfernt offensichtliche False-Positive-Gastnamen aus dem Entwurf."""
+    if not known_guest or not known_guest.strip():
+        return body
+    result = body
+    for name in _GUEST_NAME.findall(body):
+        if name in _NAME_FALSE_POSITIVES:
+            continue
+        if not _name_grounded(name, known_guest):
+            result = result.replace(name, known_guest.strip())
+    return result
+
+
 def _dates_in_text(body: str) -> list[str]:
     dates = list(_DATE_ISO.findall(body))
     for de_date in _DATE_DE.findall(body):

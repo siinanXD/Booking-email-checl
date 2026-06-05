@@ -30,6 +30,17 @@ def test_validate_dates_invalid() -> None:
     assert result.valid is False
 
 
+def test_validate_new_booking_without_dates_ok() -> None:
+    """Informelle Buchungsanfrage ohne feste Daten ist gültig."""
+    ext = BookingExtraction(
+        intent=BookingIntent.NEW_BOOKING,
+        guest_name="Max Mustermann",
+        email="max@example.com",
+    )
+    result = ValidationService().validate(ext)
+    assert result.valid is True
+
+
 def test_validate_cancellation_requires_booking_number() -> None:
     """Verify validate cancellation requires booking number."""
     ext = BookingExtraction(intent=BookingIntent.CANCELLATION)
