@@ -1,6 +1,56 @@
 # CHANGELOG
 
 
+## v0.12.0 (2026-06-05)
+
+### Bug Fixes
+
+- **booking**: Mongomock-safe count query + PMS subject overrides LLM other
+  ([`534ff47`](https://github.com/siinanXD/Booking-email-checl/commit/534ff474ce36a77eae72a36e7648ebfbd2b1e17e))
+
+Behebt die zwei zuvor fehlschlagenden Tests:
+
+1. $substrCP-Projektion ist in mongomock nicht implementiert -> Zaehl-Queries brachen unter Tests
+  ab. _load_emails_for_count faengt NotImplementedError (nur mongomock; echtes Atlas wirft
+  OperationFailure) und laedt ohne Server-Truncation, kuerzt body_text-Prefix in Python.
+  Atlas-Optimierung bleibt fuer Produktion erhalten.
+
+2. classify_booking_mail verwarf Beds24-Mails mit LLM intent=other sofort, obwohl ein eindeutiger
+  PMS-Betreff (Buchung:, Stornierung:, ...) ein staerkeres Signal ist. Jetzt ueberstimmt
+  infer_beds24_intent die Fehlklassifikation -> Mail erscheint korrekt als new_booking.
+
+Volle Suite jetzt gruen: 276 passed, 0 failed (3 deselected = integration).
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+
+- **test**: Use explicit Settings in review learning test for CI
+  ([`154453f`](https://github.com/siinanXD/Booking-email-checl/commit/154453fe270c501a7f9ebbb18467066413b201d5))
+
+Settings() requires env vars that exist locally via .env but not in GitHub Actions.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+### Features
+
+- **whatsapp**: Per-employee cleaning alerts in five languages
+  ([`031a956`](https://github.com/siinanXD/Booking-email-checl/commit/031a956712bc386e042dcb76f2a6c924f48ca93c))
+
+Add per-employee locale for cleaning task WhatsApp templates (de/en/pl/it/es), localized review
+  previews, and flag-based locale picker in the property UI.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+### Refactoring
+
+- Remove dead code and move test mocks to ai/testing
+  ([`c1fd93d`](https://github.com/siinanXD/Booking-email-checl/commit/c1fd93d73847cb23fe96a1053418223c77f0eb32))
+
+Drop unused repositories, models, and top-level stubs; relocate LLM and WhatsApp mocks for clearer
+  production boundaries.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+
 ## v0.11.0 (2026-06-05)
 
 ### Bug Fixes
