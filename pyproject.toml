@@ -122,7 +122,7 @@ disable_error_code = ["no-untyped-def", "type-arg"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
-addopts = ["-m", "not live_eval and not live_graph"]
+addopts = ["-m", "not live_eval and not live_graph and not integration"]
 markers = [
     "integration: requires live MongoDB (MONGODB_URI)",
     "live_eval: requires OPENAI_API_KEY and EVAL_LLM_MODE=live",

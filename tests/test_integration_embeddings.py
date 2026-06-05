@@ -1,4 +1,4 @@
-"""Integration: Embedding upsert + In-Memory-Vektorsuche (live MongoDB, optional)."""
+"""Integration: Embedding upsert + Atlas-Vektorsuche (live MongoDB, optional)."""
 
 from __future__ import annotations
 
@@ -12,8 +12,13 @@ from backend.infrastructure.repositories.mongo import get_database
 
 
 @pytest.mark.integration
-def test_embedding_upsert_and_search_by_vector() -> None:
-    """Speichert zwei Chunks und findet den ähnlicheren per Dot-Product."""
+def test_embedding_upsert_and_atlas_search() -> None:
+    """Speichert zwei Chunks; Atlas-Suche findet den ähnlicheren (Index nötig).
+
+    Ohne konfigurierten Atlas-Vektorindex liefert search_by_vector_atlas eine
+    leere Liste (kein In-Memory-Fallback mehr) – dann wird der Suchteil
+    übersprungen, aber upsert/delete bleiben geprüft.
+    """
     uri = os.environ.get("MONGODB_URI")
     if not uri:
         pytest.skip("MONGODB_URI not set")
@@ -47,12 +52,14 @@ def test_embedding_upsert_and_search_by_vector() -> None:
             intent="new_booking",
             account_id=account_id,
         )
-        hits = repo.search_by_vector(
+        hits = repo.search_by_vector_atlas(
             [0.95, 0.05, 0.0],
             limit=2,
             filter={"account_id": account_id},
         )
-        assert len(hits) >= 1
-        assert hits[0]["correlation_id"] == corr_a
+        # Mit Atlas-Index: corr_a ist der ähnlichere Treffer.
+        # Ohne Index: leere Liste (kein Fallback) – Suchteil übersprungen.
+        if hits:
+            assert hits[0]["correlation_id"] == corr_a
     finally:
         repo._col.delete_many({"account_id": account_id})

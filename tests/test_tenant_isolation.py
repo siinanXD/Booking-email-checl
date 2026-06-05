@@ -77,34 +77,46 @@ def test_entity_resolution_respects_account(entity_repo) -> None:
     assert conf == 0.0
 
 
-def test_embedding_search_scoped_by_account(mock_db) -> None:
-    """Vektorsuche liefert nur Ergebnisse des eigenen Mandanten."""
+def test_embedding_search_atlas_filter_includes_account(mock_db) -> None:
+    """Atlas $vectorSearch erhält den account_id-Filter (Tenant-Isolation)."""
+    from unittest.mock import patch
+
     repo = EmbeddingRepository(mock_db)
-    repo.upsert_chunk("c-a", "corr-a", "hello", [1.0, 0.0], account_id="acc-a")
-    repo.upsert_chunk("c-b", "corr-b", "hello", [1.0, 0.0], account_id="acc-b")
-    results = repo.search_by_vector(
-        [1.0, 0.0],
-        limit=5,
-        filter={"account_id": "acc-a"},
-    )
-    assert len(results) == 1
+    captured: dict[str, object] = {}
+
+    def _fake_aggregate(pipeline: list[dict[str, object]]) -> list[dict[str, object]]:
+        captured["pipeline"] = pipeline
+        return [{"_id": "c-a"}]
+
+    with patch.object(repo._col, "aggregate", side_effect=_fake_aggregate):
+        results = repo.search_by_vector_atlas(
+            [1.0, 0.0],
+            limit=5,
+            filter={"account_id": "acc-a"},
+        )
     assert results[0]["_id"] == "c-a"
+    stage = captured["pipeline"][0]["$vectorSearch"]  # type: ignore[index]
+    assert stage["filter"] == {"account_id": "acc-a"}
 
 
 def test_similarity_search_passes_account_filter(mock_db) -> None:
-    """SimilaritySearchService filtert nach account_id."""
+    """SimilaritySearchService reicht account_id an Atlas durch (use_atlas=True)."""
+    from unittest.mock import patch
 
     class MockEmbed:
         def embed(self, text: str) -> list[float]:
             return [1.0, 0.0]
 
     repo = EmbeddingRepository(mock_db)
-    repo.upsert_chunk("s-a", "c1", "hello", [1.0, 0.0], account_id="acc-a")
-    repo.upsert_chunk("s-b", "c2", "hello", [1.0, 0.0], account_id="acc-b")
-    svc = SimilaritySearchService(repo, MockEmbed())
-    results = svc.find_similar_cases("hello", limit=5, account_id="acc-a")
-    assert len(results) == 1
+    with patch.object(
+        repo, "search_by_vector_atlas", return_value=[{"_id": "s-a"}]
+    ) as atlas_mock:
+        svc = SimilaritySearchService(repo, MockEmbed(), use_atlas=True)
+        results = svc.find_similar_cases("hello", limit=5, account_id="acc-a")
     assert results[0]["_id"] == "s-a"
+    # account_id muss im Filter an Atlas weitergereicht werden
+    _, kwargs = atlas_mock.call_args
+    assert kwargs["filter"] == {"account_id": "acc-a"}
 
 
 def test_indexing_writes_chunks_with_account(mock_db) -> None:
