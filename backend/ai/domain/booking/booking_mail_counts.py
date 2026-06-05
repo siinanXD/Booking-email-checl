@@ -17,7 +17,7 @@ from backend.infrastructure.repositories.extraction_repository import (
 
 # Für Klassifikation reicht ein Prefix; spart Atlas-Transfer bei großen Mails.
 _BODY_PREFIX_CHARS = 4000
-_BOOKING_COUNT_PROJECTION: dict[str, object] = {
+_BOOKING_COUNT_FIELDS: dict[str, object] = {
     "_id": 1,
     "correlation_id": 1,
     "message_id": 1,
@@ -28,7 +28,16 @@ _BOOKING_COUNT_PROJECTION: dict[str, object] = {
     "account_id": 1,
     "processing_state": 1,
     "triage_outcome": 1,
+}
+# Atlas: body_text serverseitig auf Prefix kürzen ($substrCP).
+_BOOKING_COUNT_PROJECTION: dict[str, object] = {
+    **_BOOKING_COUNT_FIELDS,
     "body_text": {"$substrCP": ["$body_text", 0, _BODY_PREFIX_CHARS]},
+}
+# Fallback ohne Server-Truncation (mongomock kennt $substrCP nicht).
+_BOOKING_COUNT_PROJECTION_FULL: dict[str, object] = {
+    **_BOOKING_COUNT_FIELDS,
+    "body_text": 1,
 }
 
 
@@ -36,12 +45,31 @@ def _load_emails_for_count(
     emails: EmailRepository,
     match: dict[str, object],
 ) -> list[StoredEmail]:
-    """Lädt Mails mit schlanker Projektion für Zähl-Queries."""
-    pipeline: list[dict[str, object]] = []
-    if match:
-        pipeline.append({"$match": match})
-    pipeline.append({"$project": _BOOKING_COUNT_PROJECTION})
-    return [StoredEmail.from_mongo(doc) for doc in emails._col.aggregate(pipeline)]
+    """Lädt Mails mit schlanker Projektion für Zähl-Queries.
+
+    Nutzt serverseitige `$substrCP`-Kürzung (spart Atlas-Transfer). Wirft die
+    Engine `NotImplementedError` (nur mongomock in Tests — echtes Atlas wirft
+    `OperationFailure`), wird ohne Kürzung geladen und der Prefix in Python
+    geschnitten.
+    """
+    match_stage: list[dict[str, object]] = [{"$match": match}] if match else []
+    try:
+        docs = list(
+            emails._col.aggregate(
+                [*match_stage, {"$project": _BOOKING_COUNT_PROJECTION}]
+            )
+        )
+    except NotImplementedError:
+        docs = list(
+            emails._col.aggregate(
+                [*match_stage, {"$project": _BOOKING_COUNT_PROJECTION_FULL}]
+            )
+        )
+        for doc in docs:
+            body = doc.get("body_text")
+            if isinstance(body, str):
+                doc["body_text"] = body[:_BODY_PREFIX_CHARS]
+    return [StoredEmail.from_mongo(doc) for doc in docs]
 
 
 @dataclass
