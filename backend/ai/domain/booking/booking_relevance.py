@@ -284,6 +284,11 @@ def classify_booking_mail(
         return BookingMailVerdict(False, "marketing_noise")
     if extraction is not None and extraction.intent is not None:
         if extraction.intent not in _BOOKING_INTENTS:
+            # LLM sagt z. B. "other" – aber ein eindeutiger PMS-/Beds24-Betreff
+            # ("Buchung:", "Stornierung:", …) ist ein stärkeres Signal als die
+            # LLM-Fehlklassifikation. Dann trotzdem als Buchung behandeln.
+            if infer_beds24_intent(email.subject or "") is not None:
+                return BookingMailVerdict(True, "pms_subject_overrides_other")
             return BookingMailVerdict(False, f"intent_{extraction.intent.value}")
         if extraction.intent == BookingIntent.NEW_BOOKING:
             return BookingMailVerdict(True, "llm_new_booking")

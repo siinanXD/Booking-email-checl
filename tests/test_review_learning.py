@@ -26,8 +26,19 @@ from backend.infrastructure.repositories.tenant_learned_examples_repository impo
 )
 
 
+def _settings(**overrides: object) -> Settings:
+    base: dict[str, object] = {
+        "OPENAI_API_KEY": "test",
+        "MONGODB_URI": "mongodb://localhost:27017",
+        "LANGFUSE_PUBLIC_KEY": "pk-test",
+        "LANGFUSE_SECRET_KEY": "sk-test",
+    }
+    base.update(overrides)
+    return Settings.model_validate(base)
+
+
 def _ctx(mock_db: object) -> AppContext:
-    settings = Settings()
+    settings = _settings()
     return AppContext(
         settings=settings,
         db=mock_db,  # type: ignore[arg-type]
