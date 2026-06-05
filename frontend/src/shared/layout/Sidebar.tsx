@@ -44,45 +44,15 @@ type SidebarLink = {
 
 const tenantLinks: SidebarLink[] = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  {
-    to: "/bookings",
-    label: "Buchungen",
-    icon: CalendarCheck,
-    navCountKey: "nav_bookings",
-  },
-  {
-    to: "/cancellations",
-    label: "Stornos",
-    icon: XCircle,
-    navCountKey: "nav_cancellations",
-  },
-  {
-    to: "/changes",
-    label: "Änderungen",
-    icon: RefreshCw,
-    navCountKey: "nav_changes",
-  },
-  {
-    to: "/messages",
-    label: "Nachrichten",
-    icon: MessageSquare,
-    navCountKey: "nav_messages",
-  },
+  { to: "/bookings", label: "Buchungen", icon: CalendarCheck, navCountKey: "nav_bookings" },
+  { to: "/cancellations", label: "Stornos", icon: XCircle, navCountKey: "nav_cancellations" },
+  { to: "/changes", label: "Änderungen", icon: RefreshCw, navCountKey: "nav_changes" },
+  { to: "/messages", label: "Nachrichten", icon: MessageSquare, navCountKey: "nav_messages" },
   { to: "/properties", label: "Unterkünfte", icon: Building2 },
   { to: "/support", label: "Support", icon: LifeBuoy },
   { to: "/review", label: "Review", icon: ClipboardCheck, badge: true },
-  {
-    to: "/ground-zero",
-    label: "Ground Zero",
-    icon: AlertTriangle,
-    navCountKey: "nav_ground_zero",
-  },
-  {
-    to: "/completed",
-    label: "Abgeschlossen",
-    icon: CheckCircle2,
-    navCountKey: "nav_completed",
-  },
+  { to: "/ground-zero", label: "Ground Zero", icon: AlertTriangle, navCountKey: "nav_ground_zero" },
+  { to: "/completed", label: "Abgeschlossen", icon: CheckCircle2, navCountKey: "nav_completed" },
 ];
 
 const adminLinks: SidebarLink[] = [
@@ -124,80 +94,76 @@ export function Sidebar() {
   }));
   const links = isPlatformAdmin
     ? adminLinks
-    : [
-        ...tenantLinks.slice(0, 8),
-        ...workflowRubrics,
-        ...tenantLinks.slice(8),
-      ];
+    : [...tenantLinks.slice(0, 8), ...workflowRubrics, ...tenantLinks.slice(8)];
 
   return (
-    <aside
-      className="flex w-56 flex-col overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #0b1120 0%, #111827 100%)" }}
-    >
-      {/* Logo / Brand */}
-      <div className="flex items-center gap-2.5 border-b border-white/[0.07] px-4 py-4">
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/20">
-          <Zap size={14} className="text-indigo-400" />
+    <aside className="flex w-56 flex-col" style={{ background: "#0c1222" }}>
+      {/* Logo */}
+      <div className="flex items-center gap-3 px-4 py-5">
+        <div
+          className="flex h-8 w-8 items-center justify-center rounded-lg"
+          style={{ background: "linear-gradient(135deg, #6366f1, #818cf8)" }}
+        >
+          <Zap size={16} className="text-white" />
         </div>
         <div>
-          <p className="text-[11px] font-medium uppercase tracking-widest text-slate-500">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
             AI Mail
           </p>
-          <p className="text-sm font-semibold leading-tight text-white">
+          <p className="text-sm font-bold text-white leading-tight">
             {isPlatformAdmin ? "Plattform" : "Platform"}
           </p>
         </div>
       </div>
 
+      {/* Divider */}
+      <div className="mx-3 mb-2 h-px bg-white/[0.06]" />
+
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-2 py-3">
+      <nav className="flex-1 overflow-y-auto px-2 py-2">
         <div className="space-y-0.5">
           {links.map(({ to, label, icon: Icon, badge, navCountKey }) => {
-            const navCount =
-              navCountKey && stats
-                ? (stats[navCountKey] as number | undefined)
-                : undefined;
+            const navCount = navCountKey && stats ? (stats[navCountKey] as number | undefined) : undefined;
             return (
               <NavLink
                 key={to}
                 to={to}
                 end={to === "/" || to === "/admin/overview"}
                 className={({ isActive }) =>
-                  `group flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150 ${
+                  `group relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150 ${
                     isActive
-                      ? "bg-indigo-600/90 text-white shadow-sm"
-                      : "text-slate-400 hover:bg-white/[0.06] hover:text-slate-200"
+                      ? "bg-indigo-600 text-white"
+                      : "text-slate-400 hover:bg-white/[0.07] hover:text-white"
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
+                    {/* Active left bar */}
+                    {isActive && (
+                      <span className="absolute -left-2 top-1.5 bottom-1.5 w-1 rounded-r-full bg-indigo-300" />
+                    )}
                     <Icon
                       size={16}
-                      className={`flex-shrink-0 transition-colors ${
-                        isActive ? "text-white" : "text-slate-500 group-hover:text-slate-300"
-                      }`}
+                      className={`flex-shrink-0 ${isActive ? "text-indigo-200" : "text-slate-500 group-hover:text-slate-300"}`}
                     />
                     <span className="flex-1 truncate">{label}</span>
                     {navCountKey && navCount != null && navCount > 0 && (
                       <span
-                        className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${
-                          isActive
-                            ? "bg-white/20 text-white"
-                            : "bg-slate-700 text-slate-300"
+                        className={`min-w-[20px] rounded-full px-1.5 py-0.5 text-center text-[10px] font-bold tabular-nums ${
+                          isActive ? "bg-indigo-500 text-indigo-100" : "bg-slate-700/80 text-slate-300"
                         }`}
                       >
                         {navCount}
                       </span>
                     )}
                     {badge && !isPlatformAdmin && pending > 0 && (
-                      <span className="animate-pulse-soft rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                      <span className="min-w-[20px] animate-pulse rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold text-white">
                         {pending}
                       </span>
                     )}
                     {badge && isPlatformAdmin && pendingApprovals > 0 && (
-                      <span className="rounded-full bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                      <span className="min-w-[20px] rounded-full bg-amber-500 px-1.5 py-0.5 text-center text-[10px] font-bold text-white">
                         {pendingApprovals}
                       </span>
                     )}
@@ -209,13 +175,12 @@ export function Sidebar() {
         </div>
       </nav>
 
-      {/* Footer */}
-      <div className="border-t border-white/[0.07] px-3 py-3">
+      {/* Bottom */}
+      <div className="mx-3 my-2 h-px bg-white/[0.06]" />
+      <div className="px-3 pb-3 pt-1">
         <div className="flex items-center gap-2 rounded-lg px-2 py-1.5">
-          <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-indigo-500/20 text-[10px] font-bold text-indigo-400">
-            AI
-          </div>
-          <span className="truncate text-[11px] text-slate-500">v1.0 · AI Mail</span>
+          <div className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+          <span className="text-[11px] text-slate-500">System aktiv</span>
         </div>
       </div>
     </aside>
