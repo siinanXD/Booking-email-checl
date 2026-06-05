@@ -1,6 +1,25 @@
 # CHANGELOG
 
 
+## v0.13.0 (2026-06-05)
+
+### Features
+
+- **ocr**: Paddleocr als Gemini-Fallback für Workflow-Vorschläge aus Bildern
+  ([`a0ab755`](https://github.com/siinanXD/Booking-email-checl/commit/a0ab755c28e790e4aff7a02154ffc2329adabd30))
+
+- ocr_service.py: optionaler PaddleOCR-Wrapper (graceful import, kein Crash ohne Dep) -
+  tenant_workflow_suggest_ocr.py: Bild → OCR-Text → OpenAI-Suggest-Pfad - suggest_workflow:
+  bevorzugt Gemini, fällt auf PaddleOCR zurück wenn verfügbar - GeminiStatusResponse: neues Feld
+  ocr_available für Frontend-Feedback - WorkflowEditorAssistCard: zeigt OCR-Info statt Fehler wenn
+  PaddleOCR installiert - pyproject.toml: optionale [ocr]-Gruppe + scripts-mypy-Override erweitert -
+  fix(mypy): type-ignore-Codes in scripts/setup_atlas_vector_index.py korrigiert - Weitere offene
+  Items: CLAUDE.md, rate_limit, EmailDetailSideCard, Security-Tests, Load-Tests, E2E-Tests, diverse
+  Frontend- und Backend-Verbesserungen
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+
 ## v0.12.0 (2026-06-05)
 
 ### Bug Fixes
