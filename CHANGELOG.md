@@ -1,6 +1,46 @@
 # CHANGELOG
 
 
+## v0.10.0 (2026-06-05)
+
+### Bug Fixes
+
+- **frontend**: Remove invalid Button size prop in AdminTicketsPage
+  ([`88d221d`](https://github.com/siinanXD/Booking-email-checl/commit/88d221d8b3be9ccbd34586cbdd303fff9253854a))
+
+ButtonProps has no size field; use className for compact admin ticket actions.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+- **types**: Resolve mypy errors in entity_sync and reindex script
+  ([`06c7065`](https://github.com/siinanXD/Booking-email-checl/commit/06c7065d85bbaeda490368cb8231fd1e9d78e870))
+
+Use Db/BookingExtraction types in ensure_property_from_extraction and narrow Mongo document fields
+  to str before reindexing.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+### Features
+
+- **tenant**: Properties, review workflow, and dashboard performance
+  ([`5853767`](https://github.com/siinanXD/Booking-email-checl/commit/58537675b0a304f5ea211ff2d8aeba937400bced))
+
+Batch Mongo aggregation replaces N+1 queries that made dashboard stats take minutes. Add properties
+  API, review queue services, WhatsApp notifications, mail summaries, completed queue, date filters,
+  and related tenant UI and test coverage.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+- **tenant**: Wave-1 planned features — support tickets, properties, ingest
+  ([`8aaa627`](https://github.com/siinanXD/Booking-email-checl/commit/8aaa62713fdc21ebe7e3fbfcee879225a74df6f8))
+
+Add support ticket flow with admin WhatsApp alerts, property profiles with year stats, initial mail
+  ingest window, semantic chunking groundwork, and dashboard/email UX improvements including Ground
+  Zero review mode.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+
 ## v0.9.0 (2026-06-04)
 
 ### Chores
