@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Self
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Immer Projekt-`.env`, nicht abhaengig vom aktuellen Terminal-Verzeichnis
@@ -119,8 +120,8 @@ class Settings(BaseSettings):
         alias="FRONTEND_BUILD_DIR",
     )
     web_demo_data: bool = Field(default=False, alias="WEB_DEMO_DATA")
-    web_use_memory_checkpointer: bool = Field(
-        default=False,
+    web_use_memory_checkpointer: bool | None = Field(
+        default=None,
         alias="WEB_USE_MEMORY_CHECKPOINTER",
     )
 
@@ -152,11 +153,38 @@ class Settings(BaseSettings):
         default="",
         alias="WHATSAPP_TEST_RECIPIENT",
     )
+    whatsapp_auto_on_detect: bool = Field(
+        default=False,
+        alias="WHATSAPP_AUTO_ON_DETECT",
+    )
+    whatsapp_template_support_ticket: str = Field(
+        default="platform_support_ticket_de",
+        alias="WHATSAPP_TEMPLATE_SUPPORT_TICKET",
+    )
+    platform_admin_whatsapp_e164: str = Field(
+        default="",
+        alias="PLATFORM_ADMIN_WHATSAPP_E164",
+    )
+    mail_ingest_initial_lookback: int = Field(
+        default=50,
+        alias="MAIL_INGEST_INITIAL_LOOKBACK",
+    )
+    mail_ingest_initial_fetch_cap: int = Field(
+        default=120,
+        alias="MAIL_INGEST_INITIAL_FETCH_CAP",
+    )
     ingest_account_id: str | None = Field(default=None, alias="INGEST_ACCOUNT_ID")
     mail_poll_interval_seconds: int = Field(
         default=300, alias="MAIL_POLL_INTERVAL_SECONDS"
     )
     mail_poll_run_once: bool = Field(default=False, alias="MAIL_POLL_RUN_ONCE")
+
+    @model_validator(mode="after")
+    def apply_dev_defaults(self) -> Self:
+        """Dev: Memory-Checkpointer wenn Env-Var nicht gesetzt."""
+        if self.web_use_memory_checkpointer is None:
+            self.web_use_memory_checkpointer = self.app_env == "development"
+        return self
 
     @field_validator("mongodb_uri")
     @classmethod

@@ -4,9 +4,17 @@ from __future__ import annotations
 
 from backend.api.schemas.costs import CostsResponse
 from backend.api.schemas.dashboard import DashboardStats
-from backend.api.schemas.emails import EmailDetail, EmailListResponse
+from backend.api.schemas.emails import (
+    EmailActivityResponse,
+    EmailDetail,
+    EmailListResponse,
+)
 from backend.api.schemas.review import ReviewQueueItem
-from backend.api.services import dashboard_queries, email_queries
+from backend.api.services import (
+    dashboard_queries,
+    email_activity_queries,
+    email_queries,
+)
 from backend.core.config.factory import AppContext
 
 
@@ -35,6 +43,8 @@ class QueryService:
         workflow_slug: str | None,
         page: int,
         limit: int,
+        from_date: str | None = None,
+        to_date: str | None = None,
     ) -> EmailListResponse:
         return email_queries.list_emails(
             self._ctx,
@@ -48,6 +58,8 @@ class QueryService:
             workflow_slug=workflow_slug,
             page=page,
             limit=limit,
+            from_date=from_date,
+            to_date=to_date,
         )
 
     def get_email_detail(self, correlation_id: str) -> EmailDetail | None:
@@ -57,10 +69,40 @@ class QueryService:
             correlation_id,
         )
 
-    def list_review_pending(self, *, limit: int = 50) -> list[ReviewQueueItem]:
-        return email_queries.list_review_pending(
+    def get_email_activity(self, correlation_id: str) -> EmailActivityResponse | None:
+        return email_activity_queries.get_email_activity(
             self._ctx,
             self._account_id,
+            correlation_id,
+        )
+
+    def list_review_pending(self, *, limit: int = 50) -> list[ReviewQueueItem]:
+        from backend.api.services.review_queue_service import list_review_queue
+
+        return list_review_queue(
+            self._ctx,
+            self._account_id,
+            queue="pending",
+            limit=limit,
+        )
+
+    def list_review_released(self, *, limit: int = 50) -> list[ReviewQueueItem]:
+        from backend.api.services.review_queue_service import list_review_queue
+
+        return list_review_queue(
+            self._ctx,
+            self._account_id,
+            queue="released",
+            limit=limit,
+        )
+
+    def list_review_completed(self, *, limit: int = 50) -> list[ReviewQueueItem]:
+        from backend.api.services.review_queue_service import list_review_queue
+
+        return list_review_queue(
+            self._ctx,
+            self._account_id,
+            queue="completed",
             limit=limit,
         )
 

@@ -48,6 +48,17 @@ Neue Eval-Fälle: nur `tests/eval/cases.json` ergänzen (`expected_extraction`).
 | Admin LLM-Config + Preview-Fehler | `tests/web/test_admin_llm_config.py` |
 | Prompt-Historie | `tests/web/test_admin_llm_config.py` (prompt-history) |
 
+## Re-Ranking & semantisches Chunking
+
+Geplant: `docs/ROADMAP.md` Phase 12.
+
+| Check | Erwartung |
+|-------|-----------|
+| Chunking | Token-Limit, Overlap, Kontext-Prefix in `chunks` |
+| Index | `semantic_chunk()` ersetzt `chunk_text(max_chunks=3)` |
+| Re-Rank | `similar_cases` mit `rerank_score`; Fallback wenn `RERANK_ENABLED=false` |
+| Re-Index | `scripts/reindex_semantic_chunks.py` für Bestandsdaten |
+
 ## MVP-Schritt 5 (Index · Vektorsuche)
 
 | Check | Tests / Config |
@@ -56,6 +67,50 @@ Neue Eval-Fälle: nur `tests/eval/cases.json` ergänzen (`expected_extraction`).
 | Similarity (Memory vs Atlas) | `tests/test_similarity_search.py` |
 | Atlas optional | `SIMILARITY_USE_ATLAS` in `.env.example`; Index `embedding_vector_index` in `AGENTS.md` |
 | Similarity in Retrieval | `tests/test_retrieval.py` (similar_cases) |
+
+## Abgeschlossen (Detail & Verlauf)
+
+Geplant: `docs/ROADMAP.md` Phase 10.
+
+| Check | Erwartung |
+|-------|-----------|
+| Klick | Eintrag öffnet Detail mit `booking_number` |
+| Arbeitsverlauf | Timeline API liefert ≥ Mail + Review-Schritte |
+
+## Unterkünfte (Stats & Profil)
+
+Geplant: `docs/ROADMAP.md` Phase 11.
+
+| Check | Erwartung |
+|-------|-----------|
+| KPIs | Gebuchte Tage + Umsatz pro Jahr pro Unterkunft |
+| KI-Vorschlag | „Anlegen“ erzeugt Property + verschwindet aus Vorschlägen |
+| Profil | Standort/Kontakt speichern und laden |
+
+## Review-Navigation (Ground Zero)
+
+Geplant: `docs/ROADMAP.md` Phase 9.
+
+| Check | Erwartung |
+|-------|-----------|
+| Sidebar | Einträge Review, Ground Zero, Abgeschlossen |
+| `/review` | Nur Ausstehend + Freigegeben |
+| `/ground-zero` | `grounding_flag` + Status pending/approved |
+| `/completed` | Nur `completed` |
+| Redirect | `/review?grounding=1` → `/ground-zero` |
+
+## Admin-Kosten (Observability)
+
+Geplant / zu verifizieren: `docs/ROADMAP.md` Phase 8.
+
+| Check | Erwartung |
+|-------|-----------|
+| Gesamtkosten | `GET /api/admin/metrics/costs` → `total_usd` = DB-Summe im Zeitraum |
+| Pro Mandant | `by_account` summiert + unassigned = `total_usd` |
+| UI-Konsistenz | Overview-StatCard = Observability-StatCard (30 Tage) |
+| Account-Detail | `costs_30d_usd` = Zeile in `by_account` |
+
+Tests (geplant): Summen-Abgleich in `tests/web/test_admin_overview.py`.
 
 ## Mandanten-Workflows
 

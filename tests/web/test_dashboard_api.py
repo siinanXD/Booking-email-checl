@@ -19,6 +19,7 @@ def test_dashboard_stats_empty(client: Any, auth_headers: dict[str, str]) -> Non
     assert resp.status_code == 200
     data = resp.get_json()
     assert data["pending_review"] == 0
+    assert data["nav_ground_zero"] == 0
     assert data["total_emails_today"] == 0
     assert data["reviewed_today"] == 0
     assert data["last_sync_at"] is None
@@ -54,3 +55,7 @@ def test_dashboard_stats_with_mail(
     assert resp.status_code == 200
     data = resp.get_json()
     assert data["total_emails_today"] >= 1
+    assert data["booking_emails_total"] >= 1
+    assert data["booking_emails_week"] >= 1
+    assert data["nav_bookings"] >= 1
+    assert data["new_bookings_today"] >= 1

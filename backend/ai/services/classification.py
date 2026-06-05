@@ -17,6 +17,9 @@ from backend.infrastructure.observability.mail_cost import MailCostTracker
 from backend.infrastructure.repositories.platform_llm_config_repository import (
     PlatformLlmConfigRepository,
 )
+from backend.infrastructure.repositories.tenant_learned_examples_repository import (
+    TenantLearnedExamplesRepository,
+)
 
 
 class LLMClient(Protocol):
@@ -45,6 +48,7 @@ class ClassificationService:
         alerts: AlertService | None = None,
         mail_cost: MailCostTracker | None = None,
         llm_config_repo: PlatformLlmConfigRepository | None = None,
+        learned_examples_repo: TenantLearnedExamplesRepository | None = None,
     ) -> None:
         """Initialize the instance with its dependencies."""
         self._llm = llm
@@ -53,6 +57,7 @@ class ClassificationService:
         self._alerts = alerts
         self._mail_cost = mail_cost
         self._llm_config_repo = llm_config_repo
+        self._learned_examples_repo = learned_examples_repo
 
     def classify(self, email: StoredEmail) -> BookingIntent:
         """Klassifiziert eine gespeicherte Mail."""
@@ -80,10 +85,17 @@ class ClassificationService:
             if self._llm_config_repo is not None
             else None
         )
+        extra_examples: list[dict[str, object]] = []
+        if self._learned_examples_repo is not None and email.account_id:
+            extra_examples = self._learned_examples_repo.list_recent(
+                email.account_id,
+                limit=5,
+            )
         prompt = format_resolved_prompt_with_few_shots(
             "booking/classify.md",
             "booking/examples/classify_examples.json",
             config.classify_prompt_override if config else None,
+            extra_examples=extra_examples or None,
             subject=email.subject,
             from_address=email.from_address,
             body=email.body_text,

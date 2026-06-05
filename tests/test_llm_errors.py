@@ -78,5 +78,6 @@ def test_generate_draft_fallback_on_llm_failure(
         retrieval,
         GroundingService(),
     ).generate_draft(email, BookingExtraction())
-    assert "fehlgeschlagen" in draft.body.lower()
+    assert "guten tag" in draft.body.lower()
+    assert "bitte prüfen" in draft.body.lower()
     assert draft.grounding_ok is False

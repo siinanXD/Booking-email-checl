@@ -36,13 +36,15 @@ def format_resolved_prompt_with_few_shots(
     few_shot_path: str,
     override: str | None,
     few_shot_style: str = "classify",
+    *,
+    extra_examples: list[dict[str, object]] | None = None,
     **kwargs: str,
 ) -> str:
     """Prompt inkl. Few-Shot-Block mit optionalem Override."""
-    few_shots = format_few_shots(
-        load_few_shot_examples(few_shot_path),
-        style=few_shot_style,
-    )
+    examples = load_few_shot_examples(few_shot_path)
+    if extra_examples:
+        examples = [*examples, *extra_examples]
+    few_shots = format_few_shots(examples, style=few_shot_style)
     base = format_resolved_prompt(relative_path, override, **kwargs)
     return f"{few_shots}\n\n{base}"
 
@@ -59,8 +61,11 @@ def format_few_shots(examples: list[dict[str, object]], style: str = "classify")
     lines: list[str] = []
     for ex in examples:
         if style == "classify":
+            body = str(ex.get("body") or "").strip()
+            body_part = f" Inhalt={body[:300]}" if body else ""
             lines.append(
-                f"Beispiel: Betreff={ex.get('subject')} -> intent={ex.get('intent')}"
+                f"Beispiel: Betreff={ex.get('subject')}{body_part} "
+                f"-> intent={ex.get('intent')}"
             )
         else:
             payload = ex.get("output", ex)

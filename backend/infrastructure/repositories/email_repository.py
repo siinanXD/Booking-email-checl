@@ -21,6 +21,18 @@ class EmailRepository:
     def __init__(self, db: Db) -> None:
         """Initialize the instance with its dependencies."""
         self._col: Collection[dict[str, Any]] = db[self.COLLECTION]
+        self._col.create_index(
+            [("account_id", 1), ("received_at", -1)],
+            name="idx_email_account_received",
+        )
+        self._col.create_index(
+            [("account_id", 1), ("updated_at", -1)],
+            name="idx_email_account_updated",
+        )
+        self._col.create_index(
+            [("account_id", 1), ("correlation_id", 1)],
+            name="idx_email_account_correlation",
+        )
 
     def upsert_by_message_id(self, email: StoredEmail) -> StoredEmail:
         """Idempotentes Speichern nach Message-ID."""
@@ -126,11 +138,20 @@ class EmailRepository:
         booking_related: bool = False,
         page: int = 1,
         limit: int = 20,
+        received_since: str | None = None,
+        received_until: str | None = None,
     ) -> tuple[list[StoredEmail], int]:
         """Paginierte Liste mit optionalen Filtern."""
         base_match: dict[str, Any] = {}
         if account_id:
             base_match["account_id"] = account_id
+        if received_since or received_until:
+            received_filter: dict[str, Any] = {}
+            if received_since:
+                received_filter["$gte"] = received_since
+            if received_until:
+                received_filter["$lte"] = received_until
+            base_match["received_at"] = received_filter
         if booking_related:
             noise = mongo_noise_exclusion()
             if noise:

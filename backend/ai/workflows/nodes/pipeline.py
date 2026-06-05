@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from backend.ai.domain.booking.extraction import BookingExtraction
+from backend.ai.domain.booking.extraction_enrichment import enrich_extraction
 from backend.ai.domain.booking.taxonomy import BookingIntent
 from backend.ai.domain.booking.triage import TriageOutcome, TriageResult
 from backend.ai.services.classification import ClassificationService
@@ -175,7 +176,30 @@ class WorkflowNodes(PipelineReviewMixin):
                 )
                 return {"extraction": extraction, "custom_extraction": custom}
         intent = state.get("intent")
-        extraction = self._extraction.extract(email, intent=intent)
+        known_props: list[str] = []
+        if email.account_id:
+            from backend.features.booking.property_catalog import known_property_names
+
+            known_props = known_property_names(
+                self._email_repo._col.database,
+                email.account_id,
+            )
+        extraction = enrich_extraction(
+            email,
+            self._extraction.extract(email, intent=intent),
+            known_property_names=known_props or None,
+        )
+        if email.account_id:
+            from backend.features.booking.entity_sync import (
+                ensure_property_from_extraction,
+            )
+
+            ensure_property_from_extraction(
+                self._email_repo._col.database,
+                email.account_id,
+                email,
+                extraction,
+            )
         self._extraction_repo.save(
             email.correlation_id,
             email.message_id,
@@ -222,6 +246,12 @@ class WorkflowNodes(PipelineReviewMixin):
                 self._indexing.schedule_index(
                     email.correlation_id,
                     email.body_text,
+                    extraction,
+                    account_id=email.account_id,
+                )
+            if self._notification_service is not None:
+                self._notification_service.dispatch_on_detect_if_enabled(
+                    email.correlation_id,
                     extraction,
                     account_id=email.account_id,
                 )

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
 import { Card } from "@/shared/ui/Card";
 
 export function StatCard({
@@ -7,16 +8,20 @@ export function StatCard({
   hint,
   icon,
   highlight,
+  to,
 }: {
   title: string;
   value: string | number;
   hint?: string;
   icon?: ReactNode;
   highlight?: boolean;
+  to?: string;
 }) {
-  return (
+  const inner = (
     <Card
-      className={highlight ? "ring-2 ring-amber-400 ring-offset-1" : ""}
+      className={`${highlight ? "ring-2 ring-amber-400 ring-offset-1" : ""} ${
+        to ? "cursor-pointer transition hover:ring-2 hover:ring-amber-300" : ""
+      }`}
     >
       <div className="flex items-start justify-between gap-2">
         <div>
@@ -28,4 +33,12 @@ export function StatCard({
       </div>
     </Card>
   );
+  if (to) {
+    return (
+      <Link to={to} className="block no-underline text-inherit">
+        {inner}
+      </Link>
+    );
+  }
+  return inner;
 }

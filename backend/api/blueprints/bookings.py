@@ -32,5 +32,7 @@ def list_bookings() -> tuple[Any, int]:
         workflow_slug=None,
         page=page,
         limit=limit,
+        from_date=request.args.get("from_date"),
+        to_date=request.args.get("to_date"),
     )
     return jsonify(result.model_dump()), 200

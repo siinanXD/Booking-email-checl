@@ -39,8 +39,22 @@ def list_emails() -> tuple[Any, int]:
         workflow_slug=workflow_slug,
         page=page,
         limit=limit,
+        from_date=request.args.get("from_date"),
+        to_date=request.args.get("to_date"),
     )
     return jsonify(result.model_dump()), 200
+
+
+@emails_bp.get("/<correlation_id>/activity")
+@require_auth
+@require_account
+def email_activity(correlation_id: str) -> tuple[Any, int]:
+    """Arbeitsverlauf zu einer E-Mail."""
+    svc = tenant_query_service()
+    activity = svc.get_email_activity(correlation_id)
+    if activity is None:
+        return jsonify({"error": "Email not found", "code": 404}), 404
+    return jsonify(activity.model_dump()), 200
 
 
 @emails_bp.get("/<correlation_id>")

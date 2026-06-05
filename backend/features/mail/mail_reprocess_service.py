@@ -25,6 +25,7 @@ _STUCK_STATES = frozenset(
         ProcessingState.CLASSIFIED.value,
         ProcessingState.RETRIEVED.value,
         ProcessingState.DRAFTED.value,
+        ProcessingState.DISCARDED.value,
     }
 )
 
@@ -77,6 +78,11 @@ class MailReprocessService:
                 email.correlation_id,
                 account_id=account_id,
             )
+            if email.processing_state == ProcessingState.DISCARDED:
+                triage = (email.triage_outcome or "").strip()
+                if triage and triage != "not_booking_mail":
+                    result.skipped += 1
+                    continue
             if not classify_booking_mail(email, ext).is_booking:
                 result.skipped += 1
                 continue

@@ -53,12 +53,18 @@ from backend.infrastructure.repositories.mail_connection_repository import (
 from backend.infrastructure.repositories.mail_metrics_repository import (
     MailMetricsRepository,
 )
+from backend.infrastructure.repositories.mail_summary_repository import (
+    MailSummaryRepository,
+)
 from backend.infrastructure.repositories.mongo import Db, get_database
 from backend.infrastructure.repositories.notification_repository import (
     NotificationRepository,
 )
 from backend.infrastructure.repositories.outlook_oauth_flow_repository import (
     OutlookOAuthFlowRepository,
+)
+from backend.infrastructure.repositories.platform_admin_config_repository import (
+    PlatformAdminConfigRepository,
 )
 from backend.infrastructure.repositories.platform_llm_config_repository import (
     PlatformLlmConfigRepository,
@@ -75,6 +81,12 @@ from backend.infrastructure.repositories.property_recipient_repository import (
 from backend.infrastructure.repositories.review_repository import ReviewRepository
 from backend.infrastructure.repositories.revoked_token_repository import (
     RevokedTokenRepository,
+)
+from backend.infrastructure.repositories.support_ticket_repository import (
+    SupportTicketRepository,
+)
+from backend.infrastructure.repositories.tenant_learned_examples_repository import (
+    TenantLearnedExamplesRepository,
 )
 from backend.infrastructure.repositories.tenant_workflow_repository import (
     TenantWorkflowRepository,
@@ -106,6 +118,11 @@ class AppContext:
     platform_llm_prompt_history_repo: PlatformLlmPromptHistoryRepository
     tenant_workflow_repo: TenantWorkflowRepository
     admin_audit_log_repo: AdminAuditLogRepository
+    mail_summary_repo: MailSummaryRepository
+    tenant_learned_examples_repo: TenantLearnedExamplesRepository
+    support_ticket_repo: SupportTicketRepository
+    platform_admin_config_repo: PlatformAdminConfigRepository
+    indexing_service: IndexingService | None = None
     gemini_client: GeminiClientProtocol | None = None
 
 
@@ -133,6 +150,10 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
     platform_llm_prompt_history_repo = PlatformLlmPromptHistoryRepository(db)
     tenant_workflow_repo = TenantWorkflowRepository(db)
     admin_audit_log_repo = AdminAuditLogRepository(db)
+    mail_summary_repo = MailSummaryRepository(db)
+    tenant_learned_examples_repo = TenantLearnedExamplesRepository(db)
+    support_ticket_repo = SupportTicketRepository(db)
+    platform_admin_config_repo = PlatformAdminConfigRepository(db)
     notification_service = NotificationService(
         cfg,
         notification_repo,
@@ -187,6 +208,7 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
         mail_cost=mail_cost,
     )
     ingestion = IngestionService(email_repo, triage)
+    indexing = IndexingService(embedding_repo, embed_client, chunk_repo, alerts=alerts)
     classification = ClassificationService(
         llm,
         cfg.openai_model_classify,
@@ -194,6 +216,7 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
         alerts=alerts,
         mail_cost=mail_cost,
         llm_config_repo=platform_llm_config_repo,
+        learned_examples_repo=tenant_learned_examples_repo,
     )
     extraction = ExtractionService(
         llm,
@@ -228,8 +251,6 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
         mail_cost=mail_cost,
         llm_config_repo=platform_llm_config_repo,
     )
-    indexing = IndexingService(embedding_repo, embed_client, chunk_repo, alerts=alerts)
-
     gemini_client = build_gemini_client(cfg)
     workflow_router = WorkflowRouter(tenant_workflow_repo)
     tenant_workflow_executor = TenantWorkflowExecutor(
@@ -285,5 +306,10 @@ def build_app_context(settings: Settings | None = None) -> AppContext:
         platform_llm_prompt_history_repo=platform_llm_prompt_history_repo,
         tenant_workflow_repo=tenant_workflow_repo,
         admin_audit_log_repo=admin_audit_log_repo,
+        mail_summary_repo=mail_summary_repo,
+        tenant_learned_examples_repo=tenant_learned_examples_repo,
+        support_ticket_repo=support_ticket_repo,
+        platform_admin_config_repo=platform_admin_config_repo,
+        indexing_service=indexing,
         gemini_client=gemini_client,
     )

@@ -13,10 +13,9 @@ from _bootstrap import require_project_venv, safe_print
 
 require_project_venv()
 
-from backend.ai.domain.booking.booking_relevance import (
-    effective_booking_intent,
-    is_booking_relevant,
-)
+from backend.ai.domain.booking.booking_relevance import effective_booking_intent
+from backend.ai.domain.booking.review_eligibility import is_review_queue_eligible
+from backend.api.services.review_list_support import workflow_id_for
 from backend.core.models.email import ProcessingState
 
 
@@ -54,7 +53,17 @@ def main() -> int:
             email.correlation_id,
             account_id=email.account_id,
         )
-        if not is_booking_relevant(email, ext):
+        wf_id = workflow_id_for(
+            ctx.extraction_repo,
+            email.correlation_id,
+            account_id=email.account_id or "",
+        )
+        eligible, _reason = is_review_queue_eligible(
+            email,
+            ext,
+            workflow_id=wf_id,
+        )
+        if not eligible:
             skipped += 1
             continue
         if effective_booking_intent(email, ext) is None:

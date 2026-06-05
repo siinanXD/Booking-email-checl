@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any
 
@@ -10,6 +11,14 @@ from pymongo.collection import Collection
 from backend.ai.domain.booking.extraction import BookingExtraction
 from backend.infrastructure.repositories.mongo import Db
 from backend.infrastructure.repositories.tenant_scope import with_account_filter
+
+
+@dataclass(frozen=True)
+class ExtractionSnapshot:
+    """Extraktion inkl. Metadaten aus einem Mongo-Dokument."""
+
+    extraction: BookingExtraction
+    workflow_id: str | None = None
 
 
 class ExtractionRepository:
@@ -65,6 +74,66 @@ class ExtractionRepository:
         if doc is None or "extraction" not in doc:
             return None
         return BookingExtraction.model_validate(doc["extraction"])
+
+    def map_by_correlation_ids(
+        self,
+        correlation_ids: list[str],
+        *,
+        account_id: str | None = None,
+    ) -> dict[str, BookingExtraction]:
+        """Lädt Extraktionen in einem Query."""
+        return {
+            cid: snap.extraction
+            for cid, snap in self.map_snapshots_by_correlation_ids(
+                correlation_ids,
+                account_id=account_id,
+            ).items()
+        }
+
+    def map_snapshots_by_correlation_ids(
+        self,
+        correlation_ids: list[str],
+        *,
+        account_id: str | None = None,
+    ) -> dict[str, ExtractionSnapshot]:
+        """Lädt Extraktionen inkl. workflow_id in einem Query."""
+        if not correlation_ids:
+            return {}
+        unique_ids = list(dict.fromkeys(correlation_ids))
+        query = with_account_filter({"_id": {"$in": unique_ids}}, account_id)
+        result: dict[str, ExtractionSnapshot] = {}
+        for doc in self._col.find(query):
+            doc_account = doc.get("account_id")
+            if account_id and doc_account not in (None, account_id):
+                continue
+            if "extraction" not in doc:
+                continue
+            cid = str(doc["_id"])
+            wf = doc.get("workflow_id")
+            workflow_id = str(wf) if wf else None
+            result[cid] = ExtractionSnapshot(
+                extraction=BookingExtraction.model_validate(doc["extraction"]),
+                workflow_id=workflow_id,
+            )
+        return result
+
+    def get_workflow_id(
+        self,
+        correlation_id: str,
+        *,
+        account_id: str | None = None,
+    ) -> str | None:
+        """Tenant-Workflow-ID falls gesetzt."""
+        query = with_account_filter({"_id": correlation_id}, account_id)
+        doc = self._col.find_one(query, {"workflow_id": 1})
+        if doc is None and account_id:
+            doc = self._col.find_one({"_id": correlation_id}, {"workflow_id": 1})
+            if doc and doc.get("account_id") not in (None, account_id):
+                return None
+        if doc is None:
+            return None
+        wf = doc.get("workflow_id")
+        return str(wf) if wf else None
 
     def get_custom_fields(
         self,
