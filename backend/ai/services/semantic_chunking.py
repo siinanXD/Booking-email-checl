@@ -83,13 +83,78 @@ class _TextSegment:
     token_count: int
 
 
+def _emit_with_hard_split(
+    text: str,
+    start: int,
+    *,
+    embedding_model: str,
+    max_segment_tokens: int,
+    overlap_tokens: int,
+    out: list[_TextSegment],
+) -> None:
+    """Fügt ein Segment hinzu; übergroße Texte werden hart an Wortgrenzen geteilt.
+
+    Garantiert (bis auf ein einzelnes überlanges Wort), dass kein Segment das
+    Token-Limit überschreitet. Verhindert, dass `_pack_body_chunks` ein einzelnes
+    riesiges Segment sieht (das sonst keinen Fortschritt erlauben würde).
+    """
+    tokens = count_tokens(text, embedding_model=embedding_model)
+    if tokens <= max_segment_tokens:
+        out.append(_TextSegment(text, start, start + len(text), tokens))
+        return
+
+    # Übergroßen Text in Fenster teilen, die höchstens so groß wie das gewünschte
+    # Overlap sind – so können mehrere Sub-Segmente in einen Chunk passen und der
+    # Overlap am Übergang trifft ungefähr overlap_tokens (statt grob zu überschießen).
+    if overlap_tokens > 0:
+        target_tokens = max(1, min(max_segment_tokens, overlap_tokens))
+    else:
+        target_tokens = max(MIN_CHUNK_TOKENS, max_segment_tokens // 2)
+    current: list[str] = []
+    seg_start = start
+    for word in text.split():
+        candidate = " ".join([*current, word])
+        if current and (
+            count_tokens(candidate, embedding_model=embedding_model) > target_tokens
+        ):
+            seg_text = " ".join(current)
+            out.append(
+                _TextSegment(
+                    seg_text,
+                    seg_start,
+                    seg_start + len(seg_text),
+                    count_tokens(seg_text, embedding_model=embedding_model),
+                )
+            )
+            seg_start += len(seg_text) + 1  # +1 für das trennende Leerzeichen
+            current = [word]
+        else:
+            current.append(word)
+    if current:
+        seg_text = " ".join(current)
+        out.append(
+            _TextSegment(
+                seg_text,
+                seg_start,
+                seg_start + len(seg_text),
+                count_tokens(seg_text, embedding_model=embedding_model),
+            )
+        )
+
+
 def _split_segments(
     body: str,
     *,
     embedding_model: str,
     max_segment_tokens: int,
+    overlap_tokens: int,
 ) -> list[_TextSegment]:
-    """Teilt an Absatz- und Satzgrenzen; große Absätze werden weiter gesplittet."""
+    """Teilt an Absatz-, Satz- und (bei Bedarf) Wortgrenzen.
+
+    Kein Segment überschreitet `max_segment_tokens` (außer ein einzelnes
+    überlanges Wort) – das ist Voraussetzung dafür, dass `_pack_body_chunks`
+    immer Fortschritt macht und nicht in eine Endlosschleife läuft.
+    """
     if not body.strip():
         return []
 
@@ -123,16 +188,14 @@ def _split_segments(
             s_start = body.find(sentence, sentence_from)
             if s_start < 0:
                 s_start = sentence_from
-            s_end = s_start + len(sentence)
-            sentence_from = s_end
-            s_tokens = count_tokens(sentence, embedding_model=embedding_model)
-            segments.append(
-                _TextSegment(
-                    text=sentence,
-                    char_start=s_start,
-                    char_end=s_end,
-                    token_count=s_tokens,
-                )
+            sentence_from = s_start + len(sentence)
+            _emit_with_hard_split(
+                sentence,
+                s_start,
+                embedding_model=embedding_model,
+                max_segment_tokens=max_segment_tokens,
+                overlap_tokens=overlap_tokens,
+                out=segments,
             )
     return segments
 
@@ -163,6 +226,7 @@ def _pack_body_chunks(
     packed: list[tuple[str, int, int, int]] = []
     idx = 0
     while idx < len(segments):
+        chunk_start_idx = idx
         chunk_segments: list[_TextSegment] = []
         used_tokens = 0
         while idx < len(segments):
@@ -182,13 +246,16 @@ def _pack_body_chunks(
         if idx >= len(segments):
             break
 
+        # Overlap: einige Tail-Segmente in den nächsten Chunk übernehmen –
+        # aber NIEMALS vor (chunk_start_idx + 1) zurück. Der Index muss
+        # garantiert vorankommen, sonst Endlosschleife + RAM-Explosion bei
+        # einem Segment, das größer als max_body_tokens ist.
+        min_next_idx = chunk_start_idx + 1
         overlap_used = 0
         back_idx = idx
-        while back_idx > 0 and overlap_used < overlap_tokens:
+        while back_idx > min_next_idx and overlap_used < overlap_tokens:
             back_idx -= 1
             overlap_used += segments[back_idx].token_count
-        if back_idx == idx:
-            back_idx = max(0, idx - 1)
         idx = back_idx
 
     merged: list[tuple[str, int, int]] = [
@@ -232,6 +299,7 @@ def semantic_chunk(
         normalized,
         embedding_model=embedding_model,
         max_segment_tokens=max_body_tokens,
+        overlap_tokens=overlap_tokens,
     )
     if not segments:
         return []

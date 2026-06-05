@@ -77,32 +77,20 @@ class EmbeddingRepository:
         result = self._col.delete_many(query)
         return int(result.deleted_count)
 
-    def search_by_vector(
-        self,
-        query_embedding: list[float],
-        limit: int = 5,
-        filter: dict[str, Any] | None = None,
-    ) -> list[dict[str, Any]]:
-        """Einfache Ähnlichkeitssuche (Dot-Product auf kleinen MVP-Daten)."""
-        query = filter or {}
-        docs = list(self._col.find(query))
-        scored: list[tuple[float, dict[str, Any]]] = []
-        for doc in docs:
-            emb = doc.get("embedding") or []
-            if not emb:
-                continue
-            score = _dot(query_embedding, emb)
-            scored.append((score, doc))
-        scored.sort(key=lambda x: x[0], reverse=True)
-        return [d for _, d in scored[:limit]]
-
     def search_by_vector_atlas(
         self,
         query_embedding: list[float],
         limit: int = 5,
         filter: dict[str, Any] | None = None,
     ) -> list[dict[str, Any]]:
-        """Nutzt Atlas $vectorSearch Aggregation Pipeline."""
+        """Nutzt Atlas $vectorSearch.
+
+        Bewusst KEIN In-Memory-Fallback: Wenn der Atlas-Vektorindex nicht
+        verfügbar ist (DB offline, Index fehlt), wird eine Warnung geloggt und
+        eine leere Liste zurückgegeben. Die ganze Collection in den RAM zu laden
+        und lokal Dot-Products zu rechnen wäre ein Speicher-Risiko und ist daher
+        deaktiviert. Fallähnlichkeit ist nicht-blockierend (SPEC).
+        """
         try:
             vector_search: dict[str, Any] = {
                 "index": VECTOR_INDEX_NAME,
@@ -117,18 +105,9 @@ class EmbeddingRepository:
             return list(self._col.aggregate(pipeline))
         except OperationFailure:
             logger.warning(
-                "atlas_vector_search_unavailable: falling back to in-memory "
-                "dot-product (correlation_id=%s, index=%s)",
-                filter.get("correlation_id") if filter else "n/a",
+                "vektordatenbank_offline: Atlas Vector Search nicht verfügbar "
+                "(index=%s) – Ähnlichkeitssuche wird übersprungen, keine "
+                "lokale Fallback-Berechnung.",
                 VECTOR_INDEX_NAME,
             )
-            return self.search_by_vector(
-                query_embedding,
-                limit=limit,
-                filter=filter,
-            )
-
-
-def _dot(a: list[float], b: list[float]) -> float:
-    n = min(len(a), len(b))
-    return sum(a[i] * b[i] for i in range(n))
+            return []
