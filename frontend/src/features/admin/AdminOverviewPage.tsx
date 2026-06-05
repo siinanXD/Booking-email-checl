@@ -29,6 +29,12 @@ export function AdminOverviewPage() {
     refetchInterval: 60_000,
   });
 
+  const activeTenantCostSum =
+    data?.tenants.reduce((sum, t) => sum + t.costs_30d_usd, 0) ?? 0;
+  const costGap =
+    data != null ? Math.abs(data.total_cost_usd_30d - activeTenantCostSum) : 0;
+  const hasCostGap = costGap > 0.0001;
+
   if (isLoading) {
     return <p className="text-sm text-slate-500">Lade Plattform-Übersicht…</p>;
   }
@@ -48,6 +54,19 @@ export function AdminOverviewPage() {
         description="Hier siehst du auf einen Blick, wie viele Mandanten registriert sind, wer die Plattform aktiv nutzt und welche LLM-Kosten in den letzten 30 Tagen entstanden sind. Die Aktivitäts-Ampel basiert auf Mail-Sync, empfangenen Mails, Reviews oder API-Nutzung."
         impact="Du änderst hier nichts direkt — nutze die Tabelle für Details pro Mandant oder wechsle zu Diagnose/Observability, wenn du Verbindungen testen oder Kosten vertiefen willst."
       />
+
+      {hasCostGap && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <strong>Hinweis:</strong> Gesamtkosten ({formatUsd(data.total_cost_usd_30d)})
+          weichen von der Summe aktiver Mandanten ({formatUsd(activeTenantCostSum)}) ab —
+          Differenz {formatUsd(costGap)}. Mögliche Ursache: Kosten von Mandanten mit Status
+          „pending/rejected" oder Metriken ohne Mandantenzuordnung. Details unter{" "}
+          <a href="/admin/observability" className="underline">
+            Observability
+          </a>
+          .
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard

@@ -27,6 +27,7 @@ from backend.features.platform.effective_settings import (
     merge_platform_settings,
     platform_from_env,
 )
+from backend.infrastructure.observability.langfuse_wipe import LangfuseWipeService
 from backend.infrastructure.repositories.platform_settings_repository import (
     PlatformSettingsRecord,
 )
@@ -223,5 +224,15 @@ def wipe_all_data() -> tuple[Any, int]:
             ),
             400,
         )
-    counts = DataWipeService(g.ctx.db).wipe_account(_account_id())
+    s = g.settings
+    langfuse_wipe: LangfuseWipeService | None = None
+    if s.langfuse_secret_key and s.langfuse_public_key:
+        langfuse_wipe = LangfuseWipeService(
+            public_key=s.langfuse_public_key,
+            secret_key=s.langfuse_secret_key,
+            host=s.langfuse_host or None,
+        )
+    counts = DataWipeService(g.ctx.db, langfuse_wipe=langfuse_wipe).wipe_account(
+        _account_id()
+    )
     return jsonify(WipeDataResponse(deleted=counts).model_dump()), 200

@@ -182,6 +182,69 @@ def test_admin_costs_total_matches_sum_by_account(
     assert data["total_usd"] >= 0.30
 
 
+def test_admin_overview_cost_consistent_with_metrics_endpoint(
+    client: Any,
+    auth_headers: dict[str, str],
+    app: Any,
+) -> None:
+    """Overview total_cost_usd_30d stimmt mit metrics/costs total_usd überein."""
+    tenant = _approve_tenant(client, auth_headers, "consistent-cost@test.local")
+    now = datetime.now(UTC)
+    _seed_metric(
+        app,
+        account_id=tenant,
+        correlation_id="consistent-1",
+        cost_usd=0.15,
+        processed_at=now,
+    )
+    _seed_metric(
+        app,
+        account_id=tenant,
+        correlation_id="consistent-2",
+        cost_usd=0.08,
+        processed_at=now - timedelta(days=5),
+    )
+
+    overview = client.get("/api/admin/overview", headers=auth_headers).get_json()
+    metrics = client.get(
+        "/api/admin/metrics/costs?days=30", headers=auth_headers
+    ).get_json()
+
+    # Beide Endpunkte müssen dieselbe Gesamtsumme zeigen
+    assert overview["total_cost_usd_30d"] == metrics["total_usd"]
+
+
+def test_admin_account_detail_cost_matches_by_account_row(
+    client: Any,
+    auth_headers: dict[str, str],
+    app: Any,
+) -> None:
+    """Account-Detail costs_30d_usd == by_account-Zeile im Metrics-Endpoint."""
+    tenant = _approve_tenant(client, auth_headers, "detail-cost@test.local")
+    now = datetime.now(UTC)
+    _seed_metric(
+        app,
+        account_id=tenant,
+        correlation_id="detail-cost-1",
+        cost_usd=0.22,
+        processed_at=now,
+    )
+
+    metrics = client.get(
+        "/api/admin/metrics/costs?days=30", headers=auth_headers
+    ).get_json()
+    by_account_row = next(
+        (r for r in metrics["by_account"] if r["account_id"] == tenant), None
+    )
+    assert by_account_row is not None, "Mandant fehlt in by_account"
+
+    detail = client.get(
+        f"/api/admin/accounts/{tenant}/detail", headers=auth_headers
+    ).get_json()
+
+    assert detail["costs_30d_usd"] == by_account_row["cost_usd"]
+
+
 def test_admin_costs_unassigned_bucket(
     client: Any,
     auth_headers: dict[str, str],
