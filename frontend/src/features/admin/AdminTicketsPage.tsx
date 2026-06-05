@@ -123,7 +123,11 @@ export function AdminTicketsPage() {
             onChange={(e) => setWaTemplate(e.target.value)}
           />
         </div>
-        <Button size="sm" onClick={() => configMut.mutate()} disabled={configMut.isPending}>
+        <Button
+          className="px-3 py-1.5 text-xs"
+          onClick={() => configMut.mutate()}
+          disabled={configMut.isPending}
+        >
           Einstellungen speichern
         </Button>
       </Card>
@@ -233,7 +237,7 @@ export function AdminTicketsPage() {
                 {(["in_progress", "resolved", "closed"] as const).map((s) => (
                   <Button
                     key={s}
-                    size="sm"
+                    className="px-3 py-1.5 text-xs"
                     variant="secondary"
                     onClick={() =>
                       patchMut.mutate({
@@ -247,7 +251,7 @@ export function AdminTicketsPage() {
                   </Button>
                 ))}
                 <Button
-                  size="sm"
+                  className="px-3 py-1.5 text-xs"
                   variant="secondary"
                   onClick={() => retryMut.mutate(selected.ticket_id)}
                   disabled={retryMut.isPending}
