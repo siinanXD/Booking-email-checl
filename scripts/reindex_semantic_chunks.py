@@ -15,6 +15,9 @@ from _bootstrap import require_project_venv, safe_print
 
 require_project_venv()
 
+from backend.ai.domain.booking.extraction import BookingExtraction
+from backend.core.config.factory import AppContext
+
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -39,16 +42,15 @@ def _parse_args() -> argparse.Namespace:
 
 
 async def _reindex_one(
-    ctx: object,
+    ctx: AppContext,
     correlation_id: str,
     account_id: str | None,
     body: str,
-    extraction: object | None,
+    extraction: BookingExtraction | None,
 ) -> None:
-    indexing = getattr(ctx, "indexing_service", None)
-    if indexing is None:
+    if ctx.indexing_service is None:
         return
-    await indexing._index_async(
+    await ctx.indexing_service._index_async(
         correlation_id,
         body,
         extraction,
@@ -86,8 +88,13 @@ def main() -> int:
     for doc in cursor:
         if args.limit and processed >= args.limit:
             break
-        correlation_id = doc.get("correlation_id") or doc.get("_id")
-        account_id = doc.get("account_id")
+        raw_cid = doc.get("correlation_id") or doc.get("_id")
+        if not isinstance(raw_cid, str) or not raw_cid:
+            skipped += 1
+            continue
+        correlation_id = raw_cid
+        account_raw = doc.get("account_id")
+        account_id: str | None = account_raw if isinstance(account_raw, str) else None
         body = (doc.get("body_text") or "").strip()
         if not body:
             skipped += 1
