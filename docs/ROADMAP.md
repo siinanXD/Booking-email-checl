@@ -418,10 +418,10 @@ Erfassung: `MailCostTracker.finalize()` → `MailMetricsRepository.record()`.
 
 Bestehend: `tests/web/test_admin_overview.py::test_admin_metrics_costs_cross_tenant` (nur ≥ Schwelle, kein Summen-Abgleich).
 
-- [ ] `test_admin_costs_total_matches_sum_by_account` — zwei Mandanten mit 0.10 + 0.20 → `total_usd == 0.30`, `by_account` vollständig
-- [ ] `test_admin_costs_unassigned_bucket` — Metrik ohne `account_id` → `unassigned_cost_usd` + Summenformel
-- [ ] `test_admin_overview_cost_consistent_with_metrics_endpoint`
-- [ ] `test_admin_account_detail_cost_matches_by_account_row`
+- [x] `test_admin_costs_total_matches_sum_by_account` — zwei Mandanten mit 0.10 + 0.20 → `total_usd == 0.30`, `by_account` vollständig
+- [x] `test_admin_costs_unassigned_bucket` — Metrik ohne `account_id` → `unassigned_cost_usd` + Summenformel
+- [x] `test_admin_overview_cost_consistent_with_metrics_endpoint`
+- [x] `test_admin_account_detail_cost_matches_by_account_row`
 - [ ] Optional Frontend: Snapshot/Integration für `formatUsd` und leere Zustände
 
 ---
@@ -429,7 +429,7 @@ Bestehend: `tests/web/test_admin_overview.py::test_admin_metrics_costs_cross_ten
 ### 8.6 UI-Verbesserungen (nach Verifikation)
 
 - [ ] Observability: Fußzeile „Summe Mandanten: $X · Nicht zugeordnet: $Y · Gesamt: $Z“
-- [ ] Overview: Hinweis wenn Gesamt ≠ Summe aktiver Mandanten-Balken
+- [x] Overview: Hinweis wenn Gesamt ≠ Summe aktiver Mandanten-Balken
 - [ ] Einheitliche Labels: **„Kosten pro Mandant“** (nicht „pro User“, solange kein `user_id`)
 - [ ] Optional: Zeitraum-Umschalter 7 / 30 / 90 Tage (API unterstützt `days` bereits)
 - [ ] Mandanten-Detail: Mini-Verlauf oder Link „In Observability anzeigen“
