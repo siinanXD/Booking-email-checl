@@ -6,6 +6,7 @@ import {
   Mail,
   RefreshCw,
   XCircle,
+  Info,
 } from "lucide-react";
 import { fetchDashboardStats } from "@/lib/api/dashboard";
 import { fetchMailConnection, syncMailConnection } from "@/lib/api/mail";
@@ -65,38 +66,43 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* Header */}
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-slate-800">Übersicht</h2>
-          <p className="mt-1 text-xs text-slate-500">
-            Letzte Dashboard-Aktualisierung:{" "}
-            {loading
-              ? dash
-              : formatTimestamp(new Date(dataUpdatedAt).toISOString())}
-            {" · "}
-            Postfach-Sync: {formatTimestamp(stats?.last_sync_at)}
-            {" · "}
-            Letzte Mail: {formatTimestamp(stats?.last_email_received_at)}
-            {" · "}
-            Letzte Buchungs-Mail:{" "}
-            {formatTimestamp(stats?.last_booking_detected_at)}
-          </p>
-          {mailConnection?.last_error && (
-            <p className="mt-1 text-xs text-amber-700">
-              Postfach-Hinweis: {mailConnection.last_error}
-            </p>
-          )}
-          {stats?.mail_fetch_unread_only && (
-            <p className="mt-1 text-xs text-amber-700">
-              Nur ungelesene Mails werden abgerufen (OUTLOOK_FETCH_UNREAD_ONLY) —
-              gelesene Mails erscheinen nicht im Sync.
-            </p>
-          )}
+          <h2 className="text-xl font-bold text-slate-900">Übersicht</h2>
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
+            <span>
+              Aktualisiert:{" "}
+              <span className="text-slate-600">
+                {loading ? dash : formatTimestamp(new Date(dataUpdatedAt).toISOString())}
+              </span>
+            </span>
+            <span className="text-slate-200">·</span>
+            <span>
+              Postfach-Sync:{" "}
+              <span className="text-slate-600">{formatTimestamp(stats?.last_sync_at)}</span>
+            </span>
+            <span className="text-slate-200">·</span>
+            <span>
+              Letzte Mail:{" "}
+              <span className="text-slate-600">
+                {formatTimestamp(stats?.last_email_received_at)}
+              </span>
+            </span>
+            <span className="text-slate-200">·</span>
+            <span>
+              Letzte Buchungs-Mail:{" "}
+              <span className="text-slate-600">
+                {formatTimestamp(stats?.last_booking_detected_at)}
+              </span>
+            </span>
+          </div>
         </div>
-        <div className="flex flex-col items-end gap-1">
+
+        {/* Sync button */}
+        <div className="flex flex-col items-end gap-2">
           <Button
             variant="secondary"
-            className="inline-flex items-center gap-2"
             onClick={() => {
               setShowSyncErrors(false);
               syncMut.mutate();
@@ -104,43 +110,42 @@ export function DashboardPage() {
             disabled={syncMut.isPending}
           >
             <RefreshCw
-              size={16}
+              size={15}
               className={syncMut.isPending ? "animate-spin" : ""}
             />
             Postfach synchronisieren
           </Button>
+
           {syncMut.data && (
-            <div className="max-w-md text-right text-xs">
+            <div className="max-w-xs text-right">
               <p
-                className={
-                  syncMut.data.success ? "text-green-700" : "text-amber-700"
-                }
+                className={`text-xs font-medium ${
+                  syncMut.data.success ? "text-emerald-700" : "text-amber-700"
+                }`}
               >
                 {syncMut.data.message}
               </p>
               {syncMut.data.duplicates > 0 && syncMut.data.processed === 0 && (
-                <p className="text-slate-500">
+                <p className="text-xs text-slate-500">
                   Mails bereits bekannt — nur neue Mails werden verarbeitet.
-                </p>
-              )}
-              {syncMut.data.error_count > 0 && (
-                <p className="text-slate-500">
-                  Einige Mails konnten nicht vollständig verarbeitet werden.
                 </p>
               )}
               {syncErrors.length > 0 && (
                 <button
                   type="button"
-                  className="mt-1 text-indigo-600 underline"
+                  className="mt-1 text-xs text-indigo-600 hover:text-indigo-500 underline"
                   onClick={() => setShowSyncErrors((open) => !open)}
                 >
-                  {showSyncErrors ? "Fehler ausblenden" : "Fehlerdetails anzeigen"}
+                  {showSyncErrors ? "Fehler ausblenden" : "Fehlerdetails"}
                 </button>
               )}
               {showSyncErrors && visibleSyncErrors.length > 0 && (
-                <ul className="mt-1 list-inside list-disc text-left text-red-700">
+                <ul className="mt-1.5 space-y-0.5 text-left text-xs text-red-600">
                   {visibleSyncErrors.map((err) => (
-                    <li key={err}>{err}</li>
+                    <li key={err} className="flex items-start gap-1">
+                      <span className="mt-0.5">·</span>
+                      <span>{err}</span>
+                    </li>
                   ))}
                 </ul>
               )}
@@ -151,6 +156,28 @@ export function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* Notices */}
+      {mailConnection?.last_error && (
+        <div className="flex items-start gap-2.5 rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-3">
+          <AlertTriangle size={15} className="mt-0.5 flex-shrink-0 text-amber-600" />
+          <p className="text-sm text-amber-800">
+            <span className="font-medium">Postfach-Hinweis:</span>{" "}
+            {mailConnection.last_error}
+          </p>
+        </div>
+      )}
+      {stats?.mail_fetch_unread_only && (
+        <div className="flex items-start gap-2.5 rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-3">
+          <Info size={15} className="mt-0.5 flex-shrink-0 text-amber-600" />
+          <p className="text-sm text-amber-800">
+            Nur ungelesene Mails werden abgerufen (OUTLOOK_FETCH_UNREAD_ONLY) —
+            gelesene Mails erscheinen nicht im Sync.
+          </p>
+        </div>
+      )}
+
+      {/* Primary stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Buchungs-Mails erkannt"
@@ -158,9 +185,9 @@ export function DashboardPage() {
           hint={
             loading
               ? "Statistiken werden geladen…"
-              : `${stats!.booking_emails_total} gesamt · ${stats!.total_emails_week} E-Mails (7 T.) · ${stats!.total_emails_today} eingegangen heute`
+              : `${stats!.booking_emails_total} gesamt · ${stats!.total_emails_week} E-Mails (7 T.) · ${stats!.total_emails_today} heute`
           }
-          icon={<Mail size={22} />}
+          icon={<Mail size={20} />}
         />
         <StatCard
           title="Geprüft heute"
@@ -171,12 +198,12 @@ export function DashboardPage() {
           title="Review ausstehend"
           value={loading ? dash : stats!.pending_review}
           highlight={!loading && stats!.pending_review > 0}
-          icon={<AlertTriangle size={22} />}
+          icon={<AlertTriangle size={20} />}
         />
         <StatCard
           title="Neue Buchungen"
           value={loading ? dash : stats!.new_bookings_today}
-          icon={<CalendarCheck size={22} />}
+          icon={<CalendarCheck size={20} />}
         />
         <StatCard
           title="Stornos / Änderungen"
@@ -185,9 +212,11 @@ export function DashboardPage() {
               ? dash
               : `${stats!.cancellations_today} / ${stats!.changes_today}`
           }
-          icon={<XCircle size={22} />}
+          icon={<XCircle size={20} />}
         />
       </div>
+
+      {/* Secondary stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard
           title="Freigegeben heute"
@@ -210,12 +239,12 @@ export function DashboardPage() {
             loading
               ? undefined
               : (stats!.pending_grounding_review ?? 0) > 0
-                ? `${stats!.pending_grounding_review} zum Prüfen · Klicken`
+                ? `${stats!.pending_grounding_review} zum Prüfen`
                 : stats!.grounding_failures_today > 0
                   ? `${stats!.grounding_failures_today} heute erkannt`
                   : "Keine offenen Prüfhinweise"
           }
-          icon={<AlertTriangle size={22} />}
+          icon={<AlertTriangle size={20} />}
           highlight={
             !loading &&
             ((stats!.pending_grounding_review ?? 0) > 0 ||
@@ -230,16 +259,21 @@ export function DashboardPage() {
           }
         />
       </div>
+
+      {/* Info banner */}
       {!loading &&
         stats!.total_emails_week > 0 &&
         stats!.booking_emails_total === 0 && (
-        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-          Es sind E-Mails eingegangen, aber keine als Buchungs-Mail erkannt. Die KI
-          wertet Betreff und Inhalt aus (auch informelle Anfragen wie „ich möchte
-          buchen“). Nach dem Sync müssen neue Mails die Pipeline durchlaufen — bei nur
-          Duplikaten erneut mit „Postfach synchronisieren“ und ggf. ?reprocess=1.
-        </p>
-      )}
+          <div className="flex items-start gap-3 rounded-xl border border-blue-200/80 bg-blue-50 px-4 py-4">
+            <Info size={16} className="mt-0.5 flex-shrink-0 text-blue-600" />
+            <p className="text-sm text-blue-900">
+              Es sind E-Mails eingegangen, aber keine als Buchungs-Mail erkannt. Die KI
+              wertet Betreff und Inhalt aus (auch informelle Anfragen wie „ich möchte
+              buchen"). Nach dem Sync müssen neue Mails die Pipeline durchlaufen — bei
+              nur Duplikaten erneut mit „Postfach synchronisieren" und ggf. ?reprocess=1.
+            </p>
+          </div>
+        )}
     </div>
   );
 }

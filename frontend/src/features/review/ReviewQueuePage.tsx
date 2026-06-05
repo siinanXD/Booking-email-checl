@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
+import { CheckCircle2, XCircle, Inbox, ChevronRight } from "lucide-react";
 import { fetchEmailDetail } from "@/lib/api/emails";
 import {
   approveReview,
@@ -14,7 +15,6 @@ import { EmailDetailPanel } from "@/shared/components/EmailDetailPanel";
 import { IntentCategoryFilter } from "@/shared/components/IntentCategoryFilter";
 import { IntentBadge } from "@/shared/components/IntentBadge";
 import { Button } from "@/shared/ui/Button";
-import { Card } from "@/shared/ui/Card";
 import { Input } from "@/shared/ui/Input";
 import type { ReviewQueueItem } from "@/lib/types/api";
 
@@ -22,6 +22,20 @@ const TABS: { id: ReviewQueueTab; label: string }[] = [
   { id: "pending", label: "Ausstehend" },
   { id: "released", label: "Freigegeben" },
 ];
+
+function QueueSkeleton() {
+  return (
+    <div className="space-y-0.5 p-2">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="rounded-lg p-3 animate-pulse">
+          <div className="h-3.5 w-3/4 rounded bg-slate-100" />
+          <div className="mt-2 h-3 w-1/2 rounded bg-slate-100" />
+          <div className="mt-2 h-5 w-20 rounded-full bg-slate-100" />
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export function ReviewQueuePage() {
   const [searchParams] = useSearchParams();
@@ -35,8 +49,7 @@ export function ReviewQueuePage() {
 
   const { data: queue, isLoading } = useQuery({
     queryKey: ["review-queue", tab, intentFilter],
-    queryFn: () =>
-      fetchReviewQueue(tab, 50, intentFilter || undefined),
+    queryFn: () => fetchReviewQueue(tab, 50, intentFilter || undefined),
     refetchInterval: 30_000,
   });
 
@@ -52,30 +65,18 @@ export function ReviewQueuePage() {
   };
 
   const approveMut = useMutation({
-    mutationFn: () =>
-      approveReview(selected!.correlation_id, draftEdit || undefined),
-    onSuccess: () => {
-      setSelected(null);
-      setDraftEdit("");
-      invalidate();
-    },
+    mutationFn: () => approveReview(selected!.correlation_id, draftEdit || undefined),
+    onSuccess: () => { setSelected(null); setDraftEdit(""); invalidate(); },
   });
 
   const completeMut = useMutation({
     mutationFn: () => completeReview(selected!.correlation_id),
-    onSuccess: () => {
-      setSelected(null);
-      invalidate();
-    },
+    onSuccess: () => { setSelected(null); invalidate(); },
   });
 
   const rejectMut = useMutation({
     mutationFn: () => rejectReview(selected!.correlation_id, rejectReason),
-    onSuccess: () => {
-      setSelected(null);
-      setRejectReason("");
-      invalidate();
-    },
+    onSuccess: () => { setSelected(null); setRejectReason(""); invalidate(); },
   });
 
   function selectItem(item: ReviewQueueItem) {
@@ -89,29 +90,27 @@ export function ReviewQueuePage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-semibold text-slate-800">Review-Warteschlange</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Entwurf prüfen, freigeben und optional abschließen. Kein Auto-Versand per
-          E-Mail.
+        <h2 className="text-xl font-bold text-slate-900">Review-Warteschlange</h2>
+        <p className="mt-0.5 text-sm text-slate-500">
+          Entwurf prüfen, freigeben und optional abschließen.
         </p>
       </div>
+
+      {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
-        <div className="flex rounded-lg border border-slate-200 p-1">
+        <div className="flex rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
           {TABS.map((t) => (
             <button
               key={t.id}
               type="button"
-              className={`rounded-md px-3 py-1 text-sm ${
+              className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-all duration-150 ${
                 tab === t.id
-                  ? "bg-indigo-600 text-white"
-                  : "text-slate-600 hover:bg-slate-50"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-800"
               }`}
-              onClick={() => {
-                setTab(t.id);
-                setSelected(null);
-              }}
+              onClick={() => { setTab(t.id); setSelected(null); }}
             >
               {t.label}
             </button>
@@ -119,62 +118,105 @@ export function ReviewQueuePage() {
         </div>
         <IntentCategoryFilter value={intentFilter} onChange={setIntentFilter} />
       </div>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="max-h-[70vh] overflow-y-auto p-0">
-          {isLoading ? (
-            <p className="p-4 text-slate-500">Lade…</p>
-          ) : (queue?.items.length ?? 0) === 0 ? (
-            <p className="p-4 text-slate-500">Keine Einträge in diesem Tab.</p>
-          ) : (
-            <ul>
-              {queue!.items.map((item) => (
-                <li key={item.correlation_id}>
-                  <button
-                    type="button"
-                    className={`w-full border-b border-slate-100 px-4 py-3 text-left hover:bg-slate-50 ${
-                      selected?.correlation_id === item.correlation_id
-                        ? "bg-indigo-50"
-                        : ""
-                    }`}
-                    onClick={() => selectItem(item)}
-                  >
-                    <p className="text-sm font-medium">{item.subject}</p>
-                    <p className="text-xs text-slate-500">{item.from_address}</p>
-                    <div className="mt-1 flex gap-2">
-                      <IntentBadge intent={item.intent} />
-                      {item.grounding_flag && (
-                        <span className="text-xs text-amber-600">Grounding</span>
-                      )}
-                      {item.review_status === "approved" && (
-                        <span className="text-xs text-green-700">Freigegeben</span>
-                      )}
-                    </div>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
 
-        <div className="space-y-4">
-          <Card>
-            {!selected ? (
-              <p className="text-slate-500">Eintrag aus der Liste wählen</p>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-medium">{selected.subject}</h3>
-                  <p className="text-sm text-slate-500">{selected.from_address}</p>
+      {/* Split layout */}
+      <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr]">
+        {/* Queue list */}
+        <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-card">
+          <div className="border-b border-slate-100 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              {queue?.items.length ?? 0} Einträge
+            </p>
+          </div>
+          <div className="max-h-[65vh] overflow-y-auto">
+            {isLoading ? (
+              <QueueSkeleton />
+            ) : (queue?.items.length ?? 0) === 0 ? (
+              <div className="flex flex-col items-center gap-3 py-14 text-center">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                  <Inbox size={20} />
                 </div>
+                <p className="text-sm text-slate-500">Keine Einträge in diesem Tab.</p>
+              </div>
+            ) : (
+              <ul className="divide-y divide-slate-100">
+                {queue!.items.map((item) => (
+                  <li key={item.correlation_id}>
+                    <button
+                      type="button"
+                      className={`group w-full px-4 py-3.5 text-left transition-colors ${
+                        selected?.correlation_id === item.correlation_id
+                          ? "bg-indigo-50"
+                          : "hover:bg-slate-50"
+                      }`}
+                      onClick={() => selectItem(item)}
+                    >
+                      <div className="flex items-start gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm font-semibold text-slate-900">
+                            {item.subject}
+                          </p>
+                          <p className="mt-0.5 truncate text-xs text-slate-500">
+                            {item.from_address}
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            <IntentBadge intent={item.intent} />
+                            {item.grounding_flag && (
+                              <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 ring-1 ring-amber-200/80">
+                                Grounding
+                              </span>
+                            )}
+                            {item.review_status === "approved" && (
+                              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-emerald-200/80">
+                                Freigegeben
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <ChevronRight
+                          size={15}
+                          className={`mt-0.5 flex-shrink-0 transition-colors ${
+                            selected?.correlation_id === item.correlation_id
+                              ? "text-indigo-500"
+                              : "text-slate-300 group-hover:text-slate-400"
+                          }`}
+                        />
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        {/* Detail panel */}
+        <div className="space-y-4">
+          <div className="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-card">
+            {!selected ? (
+              <div className="flex flex-col items-center gap-3 py-16 text-center">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                  <ChevronRight size={20} />
+                </div>
+                <p className="text-sm text-slate-500">Eintrag aus der Liste wählen</p>
+              </div>
+            ) : (
+              <div className="space-y-4 p-5">
+                <div className="border-b border-slate-100 pb-4">
+                  <h3 className="font-semibold text-slate-900">{selected.subject}</h3>
+                  <p className="mt-0.5 text-sm text-slate-500">{selected.from_address}</p>
+                </div>
+
                 <EmailDetailPanel detail={detail} isLoading={detailLoading} />
+
                 {tab === "pending" && (
                   <>
-                    <div>
-                      <p className="mb-1 text-xs font-medium uppercase text-slate-500">
+                    <div className="rounded-xl border border-slate-200 bg-slate-50 p-1">
+                      <p className="mb-2 px-2 pt-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                         E-Mail-Antwort an Gast (bearbeitbar)
                       </p>
                       <textarea
-                        className="h-40 w-full rounded-lg border border-slate-300 p-3 text-sm"
+                        className="h-40 w-full resize-none rounded-lg border border-transparent bg-white px-3 py-2 text-sm text-slate-800 shadow-sm outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100"
                         value={draftEdit}
                         onChange={(e) => setDraftEdit(e.target.value)}
                       />
@@ -184,10 +226,12 @@ export function ReviewQueuePage() {
                         onClick={() => approveMut.mutate()}
                         disabled={approveMut.isPending || !draftEdit.trim()}
                       >
-                        Freigeben
+                        <CheckCircle2 size={15} />
+                        {approveMut.isPending ? "Freigeben…" : "Freigeben"}
                       </Button>
                     </div>
-                    <div className="border-t pt-4">
+                    <div className="rounded-xl border border-red-100 bg-red-50/50 p-4 space-y-3">
+                      <p className="text-xs font-semibold text-red-700">Ablehnen</p>
                       <Input
                         placeholder="Ablehnungsgrund (optional)"
                         value={rejectReason}
@@ -195,26 +239,29 @@ export function ReviewQueuePage() {
                       />
                       <Button
                         variant="danger"
-                        className="mt-2"
+                        size="sm"
                         onClick={() => rejectMut.mutate()}
                         disabled={rejectMut.isPending}
                       >
-                        Ablehnen
+                        <XCircle size={14} />
+                        {rejectMut.isPending ? "Ablehnen…" : "Ablehnen"}
                       </Button>
                     </div>
                   </>
                 )}
+
                 {tab === "released" && (
                   <Button
                     onClick={() => completeMut.mutate()}
                     disabled={completeMut.isPending}
                   >
-                    Als abgeschlossen markieren
+                    <CheckCircle2 size={15} />
+                    {completeMut.isPending ? "Wird markiert…" : "Als abgeschlossen markieren"}
                   </Button>
                 )}
               </div>
             )}
-          </Card>
+          </div>
           <ReviewWhatsAppCard correlationId={selected?.correlation_id ?? null} />
         </div>
       </div>
