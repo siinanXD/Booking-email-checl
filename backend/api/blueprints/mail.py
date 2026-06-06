@@ -270,24 +270,6 @@ def get_outlook_authorize_url() -> tuple[Any, int]:
     )
 
 
-@mail_bp.get("/outlook/oauth-config")
-def get_outlook_oauth_config() -> tuple[Any, int]:
-    """Dev-Hilfe: zeigt die vom laufenden Backend genutzte OAuth-Konfiguration."""
-    if g.settings.app_env != "development":
-        return jsonify({"error": "Not found", "code": 404}), 404
-    return (
-        jsonify(
-            {
-                "redirect_uri": g.settings.outlook_oauth_redirect_uri,
-                "azure_client_id": g.settings.azure_client_id,
-                "flask_port": g.settings.flask_port,
-                "env_redirect_raw": g.settings.outlook_oauth_redirect_uri_env,
-            }
-        ),
-        200,
-    )
-
-
 @mail_bp.get("/outlook/callback")
 def outlook_oauth_callback() -> Any:
     """Microsoft OAuth Callback – tauscht Code, leitet ins Frontend weiter."""

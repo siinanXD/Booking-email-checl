@@ -15,7 +15,7 @@ _ISPDB_URL = "https://autoconfig.thunderbird.net/v1.1/{domain}"
 _TIMEOUT_SECONDS = 4
 
 
-def autodiscover_imap_config(domain: str) -> dict | None:
+def autodiscover_imap_config(domain: str) -> dict[str, object] | None:
     """Gibt IMAP-Konfiguration für eine Domain zurück oder None.
 
     Reihenfolge:
