@@ -3,34 +3,50 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --sidebar-width: 14rem;
+    --topbar-height: 3.5rem;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
   html {
-    -webkit-text-size-adjust: 100%;
-    text-size-adjust: 100%;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   body {
     margin: 0;
     min-height: 100vh;
-    min-height: 100dvh;
+    background-color: #f1f5f9;
+    color: #0f172a;
   }
 
-  :focus:not(:focus-visible) {
-    outline: none;
+  /* Custom scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+  aside ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
+  aside ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.22); }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.18s ease-out both;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 
-  :focus-visible {
-    outline: 2px solid #4f46e5;
-    outline-offset: 2px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-      scroll-behavior: auto !important;
-    }
+  /* Subtle dot-grid background for main content */
+  .bg-dot-grid {
+    background-image: radial-gradient(circle, #cbd5e1 1px, transparent 1px);
+    background-size: 24px 24px;
   }
 }

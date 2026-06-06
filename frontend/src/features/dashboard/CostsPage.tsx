@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { TrendingUp, Mail, DollarSign } from "lucide-react";
 import { fetchCosts } from "@/lib/api/costs";
 import { CostChart } from "@/shared/components/CostChart";
 import { StatCard } from "@/shared/components/StatCard";
@@ -16,29 +17,47 @@ export function CostsPage() {
 
   const totalMails =
     data?.series.reduce((sum, p) => sum + p.mail_count, 0) ?? 0;
+  const avgPerDay =
+    (data?.total_usd ?? 0) / Math.max(data?.series.length ?? 1, 1);
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-slate-800">API-Kosten</h2>
+      <div>
+        <h2 className="text-xl font-bold text-slate-900">API-Kosten</h2>
+        <p className="mt-0.5 text-sm text-slate-500">LLM-Nutzung der letzten 30 Tage</p>
+      </div>
+
       {isLoading ? (
-        <p className="text-slate-500">Lade…</p>
+        <div className="flex items-center gap-2 py-10 text-slate-500">
+          <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-indigo-500" />
+          <span className="text-sm">Lade…</span>
+        </div>
       ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-3">
             <StatCard
               title="Gesamt (30 Tage)"
               value={`$${(data?.total_usd ?? 0).toFixed(4)}`}
+              icon={<DollarSign size={20} />}
             />
-            <StatCard title="Mails mit Metriken" value={totalMails} />
+            <StatCard
+              title="Mails mit Metriken"
+              value={totalMails}
+              icon={<Mail size={20} />}
+            />
             <StatCard
               title="Ø pro Tag"
-              value={`$${(
-                (data?.total_usd ?? 0) / Math.max(data?.series.length ?? 1, 1)
-              ).toFixed(4)}`}
+              value={`$${avgPerDay.toFixed(4)}`}
+              icon={<TrendingUp size={20} />}
             />
           </div>
           <Card>
-            <h3 className="mb-4 font-medium text-slate-800">Verlauf</h3>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-800">Kostenverlauf</h3>
+              <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-500">
+                30 Tage
+              </span>
+            </div>
             <CostChart
               series={data?.series ?? []}
               emptyHint={

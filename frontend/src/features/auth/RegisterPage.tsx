@@ -1,7 +1,7 @@
 import { FormEvent, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
+import { User, Mail, Phone, Lock, Building2, CheckCircle2, AlertCircle, Zap } from "lucide-react";
 import { Button } from "@/shared/ui/Button";
-import { Card } from "@/shared/ui/Card";
 import { Input } from "@/shared/ui/Input";
 import { useAuthStore } from "@/features/auth/authStore";
 
@@ -54,158 +54,231 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
-      <Card className="w-full max-w-lg">
-        <h1 className="text-xl font-semibold text-slate-900">Konto anlegen</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Nach der Registrierung prüfen wir dein Konto manuell.
-        </p>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 p-4">
+      {/* Background decoration */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -right-40 -top-40 h-96 w-96 rounded-full bg-indigo-600/10 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-violet-600/10 blur-3xl" />
+      </div>
 
-        {success ? (
-          <div className="mt-6 space-y-4">
-            <p className="rounded-lg bg-green-50 p-4 text-sm text-green-800">
-              {success}
-            </p>
-            <Link to="/login">
-              <Button className="w-full">Zur Anmeldung</Button>
-            </Link>
+      <div className="relative w-full max-w-lg animate-fade-in">
+        {/* Brand header */}
+        <div className="mb-8 text-center">
+          <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/20 ring-1 ring-indigo-500/30">
+            <Zap size={22} className="text-indigo-400" />
           </div>
-        ) : (
-          <form className="mt-6 space-y-4" onSubmit={handleSubmit} autoComplete="off">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">
-                  Vorname
-                </label>
-                <Input
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  required
-                />
+          <h1 className="text-2xl font-bold tracking-tight text-white">
+            Konto anlegen
+          </h1>
+          <p className="mt-1.5 text-sm text-slate-400">
+            Nach der Registrierung prüfen wir dein Konto manuell.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-8 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-sm">
+          {success ? (
+            <div className="space-y-5 text-center">
+              <div className="flex justify-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/20 ring-1 ring-emerald-500/30">
+                  <CheckCircle2 size={26} className="text-emerald-400" />
+                </div>
               </div>
               <div>
-                <label className="mb-1 block text-sm text-slate-600">
-                  Nachname
-                </label>
-                <Input
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  required
-                />
+                <p className="font-semibold text-white">Registrierung erfolgreich!</p>
+                <p className="mt-1 text-sm text-slate-400">{success}</p>
               </div>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm text-slate-600">
-                E-Mail
-              </label>
-              <Input
-                id="register-email"
-                name="platform-register-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="off"
-                placeholder="ihre@email.de"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm text-slate-600">
-                Telefon
-              </label>
-              <Input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+49..."
-                required
-              />
-            </div>
-
-            <div>
-              <span className="mb-2 block text-sm text-slate-600">
-                Nutzungsart
-              </span>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    name="accountType"
-                    checked={accountType === "private"}
-                    onChange={() => setAccountType("private")}
-                  />
-                  Privat
-                </label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    name="accountType"
-                    checked={accountType === "business"}
-                    onChange={() => setAccountType("business")}
-                  />
-                  Gewerblich
-                </label>
-              </div>
-            </div>
-
-            {accountType === "business" && (
-              <div>
-                <label className="mb-1 block text-sm text-slate-600">
-                  Firmenname
-                </label>
-                <Input
-                  value={companyName}
-                  onChange={(e) => setCompanyName(e.target.value)}
-                  required
-                />
-              </div>
-            )}
-
-            <div>
-              <label className="mb-1 block text-sm text-slate-600">
-                Passwort
-              </label>
-              <Input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={8}
-                autoComplete="new-password"
-              />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-sm text-slate-600">
-                Passwort bestätigen
-              </label>
-              <Input
-                type="password"
-                value={passwordConfirm}
-                onChange={(e) => setPasswordConfirm(e.target.value)}
-                required
-                minLength={8}
-                autoComplete="new-password"
-              />
-            </div>
-
-            {error && <p className="text-sm text-red-600">{error}</p>}
-
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Wird gesendet…" : "Registrieren"}
-            </Button>
-
-            <p className="text-center text-sm text-slate-500">
-              Bereits ein Konto?{" "}
-              <Link to="/login" className="text-indigo-600 hover:underline">
-                Anmelden
+              <Link to="/login">
+                <Button className="w-full py-2.5">Zur Anmeldung</Button>
               </Link>
-            </p>
-          </form>
-        )}
-      </Card>
+            </div>
+          ) : (
+            <form className="space-y-4" onSubmit={handleSubmit} autoComplete="off">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-slate-300">
+                    Vorname
+                  </label>
+                  <div className="relative">
+                    <User size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <Input
+                      className="pl-9 border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:border-indigo-500/50 focus:ring-indigo-500/20"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required
+                      placeholder="Max"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-slate-300">
+                    Nachname
+                  </label>
+                  <div className="relative">
+                    <User size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <Input
+                      className="pl-9 border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:border-indigo-500/50 focus:ring-indigo-500/20"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required
+                      placeholder="Mustermann"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-slate-300">
+                  E-Mail-Adresse
+                </label>
+                <div className="relative">
+                  <Mail size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <Input
+                    id="register-email"
+                    name="platform-register-email"
+                    type="email"
+                    className="pl-9 border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:border-indigo-500/50 focus:ring-indigo-500/20"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    autoComplete="off"
+                    placeholder="ihre@email.de"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-medium text-slate-300">
+                  Telefon
+                </label>
+                <div className="relative">
+                  <Phone size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                  <Input
+                    type="tel"
+                    className="pl-9 border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:border-indigo-500/50 focus:ring-indigo-500/20"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+49 170 1234567"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Account type */}
+              <div className="space-y-2">
+                <span className="block text-xs font-medium text-slate-300">Nutzungsart</span>
+                <div className="grid grid-cols-2 gap-2">
+                  {(["private", "business"] as const).map((type) => (
+                    <label
+                      key={type}
+                      className={`flex cursor-pointer items-center gap-2.5 rounded-lg border p-3 transition-all ${
+                        accountType === type
+                          ? "border-indigo-500/50 bg-indigo-500/10 text-white"
+                          : "border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:text-slate-300"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="accountType"
+                        className="accent-indigo-500"
+                        checked={accountType === type}
+                        onChange={() => setAccountType(type)}
+                      />
+                      <span className="text-sm font-medium">
+                        {type === "private" ? "Privat" : "Gewerblich"}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {accountType === "business" && (
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-slate-300">
+                    Firmenname
+                  </label>
+                  <div className="relative">
+                    <Building2 size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <Input
+                      className="pl-9 border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:border-indigo-500/50 focus:ring-indigo-500/20"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      required
+                      placeholder="Musterfirma GmbH"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-slate-300">
+                    Passwort
+                  </label>
+                  <div className="relative">
+                    <Lock size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <Input
+                      type="password"
+                      className="pl-9 border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:border-indigo-500/50 focus:ring-indigo-500/20"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={8}
+                      autoComplete="new-password"
+                      placeholder="Min. 8 Zeichen"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-slate-300">
+                    Passwort bestätigen
+                  </label>
+                  <div className="relative">
+                    <Lock size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                    <Input
+                      type="password"
+                      className="pl-9 border-white/10 bg-white/5 text-white placeholder:text-slate-600 focus:border-indigo-500/50 focus:ring-indigo-500/20"
+                      value={passwordConfirm}
+                      onChange={(e) => setPasswordConfirm(e.target.value)}
+                      required
+                      minLength={8}
+                      autoComplete="new-password"
+                      placeholder="Wiederholen"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {error && (
+                <div className="flex items-start gap-2 rounded-lg border border-red-500/20 bg-red-500/10 p-3">
+                  <AlertCircle size={14} className="mt-0.5 flex-shrink-0 text-red-400" />
+                  <p className="text-xs text-red-300">{error}</p>
+                </div>
+              )}
+
+              <Button type="submit" className="mt-1 w-full py-2.5" disabled={loading}>
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    Wird gesendet…
+                  </span>
+                ) : (
+                  "Registrieren"
+                )}
+              </Button>
+
+              <p className="text-center text-xs text-slate-500">
+                Bereits ein Konto?{" "}
+                <Link
+                  to="/login"
+                  className="font-medium text-indigo-400 transition-colors hover:text-indigo-300"
+                >
+                  Anmelden
+                </Link>
+              </p>
+            </form>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

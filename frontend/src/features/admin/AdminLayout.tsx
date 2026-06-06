@@ -1,48 +1,57 @@
 import { NavLink, Outlet } from "react-router-dom";
+import { Shield } from "lucide-react";
 
 const adminTabs = [
-  { to: "/admin/overview", label: "Übersicht", end: false },
-  { to: "/admin/accounts", label: "Mandanten", end: false },
-  { to: "/admin/diagnostics", label: "Diagnose", end: false },
-  { to: "/admin/observability", label: "Observability", end: false },
-  { to: "/admin/tickets", label: "Tickets", end: false },
-  { to: "/admin/llm-config", label: "LLM-Konfiguration", end: false },
-  { to: "/admin/workflows", label: "Workflows", end: false },
+  { to: "/admin/overview", label: "Übersicht" },
+  { to: "/admin/accounts", label: "Mandanten" },
+  { to: "/admin/diagnostics", label: "Diagnose" },
+  { to: "/admin/observability", label: "Observability" },
+  { to: "/admin/tickets", label: "Tickets" },
+  { to: "/admin/llm-config", label: "LLM-Konfiguration" },
+  { to: "/admin/workflows", label: "Workflows" },
 ];
 
 export function AdminLayout() {
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-xs uppercase tracking-wide text-indigo-600">
-          Plattform-Administration
-        </p>
-        <h1 className="text-2xl font-semibold text-slate-900">Admin-Konsole</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Mandanten überwachen und konfigurieren — ohne eigenes Postfach.
-        </p>
+      {/* Header */}
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+          <Shield size={18} />
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-indigo-500">
+            Plattform-Administration
+          </p>
+          <h1 className="text-xl font-bold text-slate-900">Admin-Konsole</h1>
+          <p className="mt-0.5 text-sm text-slate-500">
+            Mandanten überwachen und konfigurieren — ohne eigenes Postfach.
+          </p>
+        </div>
       </div>
-      <nav
-        className="-mx-1 flex gap-2 overflow-x-auto border-b border-slate-200 pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        aria-label="Admin-Bereiche"
-      >
-        {adminTabs.map(({ to, label, end }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) =>
-              `shrink-0 rounded-lg px-3 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 ${
-                isActive
-                  ? "bg-indigo-600 text-white"
-                  : "text-slate-600 hover:bg-slate-100"
-              }`
-            }
-          >
-            {label}
-          </NavLink>
-        ))}
-      </nav>
+
+      {/* Tab navigation */}
+      <div className="border-b border-slate-200">
+        <nav className="-mb-px flex flex-wrap gap-0">
+          {adminTabs.map(({ to, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={false}
+              className={({ isActive }) =>
+                `relative px-4 py-2.5 text-sm font-medium transition-colors duration-150 ${
+                  isActive
+                    ? "text-indigo-600 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:rounded-t after:bg-indigo-600"
+                    : "text-slate-500 hover:text-slate-800"
+                }`
+              }
+            >
+              {label}
+            </NavLink>
+          ))}
+        </nav>
+      </div>
+
       <Outlet />
     </div>
   );

@@ -14,6 +14,7 @@ from backend.api.schemas.mail import (
     MailSyncResponse,
     MailTestResponse,
 )
+from backend.features.mail.autodiscover import autodiscover_imap_config
 from backend.features.mail.mail_connection_service import MailConnectionService
 from backend.features.mail.mail_poll_service import (
     AccountPollSummary,
@@ -215,6 +216,25 @@ def test_connection() -> tuple[Any, int]:
         ),
         status,
     )
+
+
+@mail_bp.get("/autodiscover")
+@require_auth
+def autodiscover() -> tuple[Any, int]:
+    """Erkennt IMAP-Server-Einstellungen anhand der E-Mail-Domain.
+
+    Prüft zuerst lokale Voreinstellungen, fällt dann auf die
+    Mozilla ISPDB zurück. Nur die Domain (kein Passwort, kein Benutzername)
+    wird an externe Dienste weitergegeben.
+    """
+    domain = request.args.get("domain", "").strip().lower()
+    if not domain or "." not in domain:
+        return jsonify({"error": "Gültige Domain erforderlich."}), 400
+
+    result = autodiscover_imap_config(domain)
+    if result is None:
+        return jsonify({"preset_id": "custom", "source": "unknown"}), 404
+    return jsonify(result), 200
 
 
 @mail_bp.get("/outlook/authorize-url")

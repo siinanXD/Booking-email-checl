@@ -1,8 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, Navigate } from "react-router-dom";
+import { Mail, Lock, Zap, AlertCircle } from "lucide-react";
 import { Button } from "@/shared/ui/Button";
-import { Card } from "@/shared/ui/Card";
-import { Input } from "@/shared/ui/Input";
 import { useAuthStore } from "@/features/auth/authStore";
 import { useAuthHydrated } from "@/features/auth/useAuthHydrated";
 import { isAxiosError } from "axios";
@@ -24,8 +23,11 @@ export function LoginPage() {
 
   if (!hydrated) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 text-slate-500">
-        Lade…
+      <div className="flex min-h-screen items-center justify-center bg-slate-950">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-400 border-t-transparent" />
+          <p className="text-sm text-slate-500">Lade…</p>
+        </div>
       </div>
     );
   }
@@ -47,7 +49,7 @@ export function LoginPage() {
       if (isAxiosError(err)) {
         if (!err.response) {
           setError(
-            "Server nicht erreichbar. Backend starten (Flask :5000 oder Docker :8000) und Seite neu laden."
+            "Server nicht erreichbar. Backend starten und Seite neu laden."
           );
         } else if (err.response.data?.error) {
           setError(String(err.response.data.error));
@@ -63,52 +65,117 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
-      <Card className="w-full max-w-md">
-        <h1 className="text-xl font-semibold text-slate-900">AI Mail Platform</h1>
-        <p className="mt-1 text-sm text-slate-500">Bitte anmelden</p>
-        <form className="mt-6 space-y-4" onSubmit={handleSubmit} autoComplete="off">
-          <div>
-            <label className="mb-1 block text-sm text-slate-600" htmlFor="login-email">
-              E-Mail
-            </label>
-            <Input
-              id="login-email"
-              name="platform-login-email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="off"
-              placeholder="ihre@email.de"
-            />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 p-4">
+      {/* Background decoration */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -left-40 -top-40 h-96 w-96 rounded-full bg-indigo-600/10 blur-3xl" />
+        <div className="absolute -bottom-40 -right-40 h-96 w-96 rounded-full bg-violet-600/10 blur-3xl" />
+        <div className="absolute left-1/2 top-1/2 h-64 w-64 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-500/5 blur-3xl" />
+      </div>
+
+      <div className="relative w-full max-w-sm animate-fade-in">
+        {/* Brand header */}
+        <div className="mb-8 text-center">
+          <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-500/20 ring-1 ring-indigo-500/30">
+            <Zap size={22} className="text-indigo-400" />
           </div>
-          <div>
-            <label className="mb-1 block text-sm text-slate-600" htmlFor="login-password">
-              Passwort
-            </label>
-            <Input
-              id="login-password"
-              name="platform-login-password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="new-password"
-            />
-          </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? "Wird angemeldet…" : "Anmelden"}
-          </Button>
-          <p className="text-center text-sm text-slate-500">
-            Noch kein Konto?{" "}
-            <Link to="/register" className="text-indigo-600 hover:underline">
-              Registrieren
-            </Link>
+          <h1 className="text-2xl font-bold tracking-tight text-white">
+            AI Mail Platform
+          </h1>
+          <p className="mt-1.5 text-sm text-slate-400">
+            Melde dich mit deinem Konto an
           </p>
-        </form>
-      </Card>
+        </div>
+
+        {/* Card */}
+        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.04] p-8 shadow-[0_8px_32px_rgba(0,0,0,0.4)] backdrop-blur-sm">
+          <form className="space-y-4" onSubmit={handleSubmit} autoComplete="off">
+            <div className="space-y-1.5">
+              <label
+                className="block text-xs font-medium text-slate-300"
+                htmlFor="login-email"
+              >
+                E-Mail-Adresse
+              </label>
+              <div className="relative">
+                <Mail
+                  size={15}
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+                />
+                <input
+                  id="login-email"
+                  name="platform-login-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="off"
+                  placeholder="ihre@email.de"
+                  className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pl-9 pr-3 text-sm text-white placeholder:text-slate-600 transition-all focus:border-indigo-500/50 focus:bg-white/8 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label
+                className="block text-xs font-medium text-slate-300"
+                htmlFor="login-password"
+              >
+                Passwort
+              </label>
+              <div className="relative">
+                <Lock
+                  size={15}
+                  className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+                />
+                <input
+                  id="login-password"
+                  name="platform-login-password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  placeholder="••••••••"
+                  className="w-full rounded-lg border border-white/10 bg-white/5 py-2.5 pl-9 pr-3 text-sm text-white placeholder:text-slate-600 transition-all focus:border-indigo-500/50 focus:bg-white/8 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                />
+              </div>
+            </div>
+
+            {error && (
+              <div className="flex items-start gap-2 rounded-lg border border-red-500/20 bg-red-500/10 p-3">
+                <AlertCircle size={14} className="mt-0.5 flex-shrink-0 text-red-400" />
+                <p className="text-xs text-red-300">{error}</p>
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              className="mt-2 w-full py-2.5"
+              disabled={loading}
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Wird angemeldet…
+                </span>
+              ) : (
+                "Anmelden"
+              )}
+            </Button>
+
+            <p className="text-center text-xs text-slate-500">
+              Noch kein Konto?{" "}
+              <Link
+                to="/register"
+                className="font-medium text-indigo-400 transition-colors hover:text-indigo-300"
+              >
+                Registrieren
+              </Link>
+            </p>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,107 +1,82 @@
-import type { EmailDetail, EmailListItem } from "@/lib/types/api";
+import type { EmailDetail } from "@/lib/types/api";
 import { IntentBadge } from "@/shared/components/IntentBadge";
+import { Hash, MessageSquare, FileText } from "lucide-react";
 
 type Props = {
-  detail: EmailDetail | EmailListItem | undefined;
+  detail: EmailDetail | undefined;
   isLoading?: boolean;
-  /** Voller Mailtext mit großem Scrollbereich (Listen-Navigation). */
-  showFullBody?: boolean;
 };
 
-function formatReceivedAt(value: string | null | undefined): string | null {
-  if (!value) {
-    return null;
-  }
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return date.toLocaleString("de-DE");
+function DetailSkeleton() {
+  return (
+    <div className="space-y-3 animate-pulse">
+      <div className="flex gap-2">
+        <div className="h-5 w-20 rounded-full bg-slate-100" />
+        <div className="h-5 w-16 rounded-full bg-slate-100" />
+      </div>
+      <div className="h-14 w-full rounded-lg bg-slate-100" />
+      <div className="h-32 w-full rounded-lg bg-slate-100" />
+    </div>
+  );
 }
 
-export function EmailDetailPanel({
-  detail,
-  isLoading,
-  showFullBody = false,
-}: Props) {
-  if (isLoading) {
-    return <p className="text-sm text-slate-500">Lade Detail…</p>;
-  }
-  if (!detail) {
-    return <p className="text-sm text-slate-500">Keine Detaildaten.</p>;
-  }
+export function EmailDetailPanel({ detail, isLoading }: Props) {
+  if (isLoading) return <DetailSkeleton />;
 
-  const emailDetail = "body_text" in detail ? detail : undefined;
-  const receivedAt = formatReceivedAt(detail.received_at);
-  const bodyText = emailDetail?.body_text?.trim();
-  const bodyClass = showFullBody
-    ? "max-h-[min(70vh,48rem)] overflow-auto whitespace-pre-wrap rounded border border-slate-200 bg-slate-50 p-3 text-sm leading-relaxed text-slate-800"
-    : "max-h-48 overflow-auto whitespace-pre-wrap rounded bg-slate-50 p-2 text-xs";
+  if (!detail) {
+    return (
+      <p className="text-sm text-slate-400 italic">Keine Detaildaten verfügbar.</p>
+    );
+  }
 
   return (
     <div className="space-y-3 text-sm">
-      <div className="space-y-1 border-b border-slate-100 pb-3">
-        <h3 className="font-medium text-slate-900">{detail.subject || "—"}</h3>
-        <p>
-          <span className="text-slate-500">Von: </span>
-          {detail.from_address || "—"}
-        </p>
-        {emailDetail?.to_addresses?.length ? (
-          <p>
-            <span className="text-slate-500">An: </span>
-            {emailDetail.to_addresses.join(", ")}
-          </p>
-        ) : null}
-        {receivedAt && (
-          <p>
-            <span className="text-slate-500">Empfangen: </span>
-            {receivedAt}
-          </p>
-        )}
-      </div>
-      {detail.booking_number && (
-        <p className="font-semibold text-slate-800">
-          Buchungsnummer: {detail.booking_number}
-        </p>
-      )}
-      <div className="flex flex-wrap gap-2">
+      {/* Meta row */}
+      <div className="flex flex-wrap items-center gap-2">
         <IntentBadge intent={detail.intent} />
-        {emailDetail?.mail_sentiment && (
-          <span className="rounded bg-slate-100 px-2 py-0.5 text-xs">
-            Stimmung: {emailDetail.mail_sentiment}
+        {detail.booking_number && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-slate-200/80">
+            <Hash size={10} />
+            {detail.booking_number}
+          </span>
+        )}
+        {detail.mail_sentiment && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600 ring-1 ring-slate-200/80">
+            <MessageSquare size={10} />
+            {detail.mail_sentiment}
           </span>
         )}
       </div>
-      {emailDetail?.mail_summary && (
-        <p className="rounded bg-slate-50 p-2 text-slate-700">
-          {emailDetail.mail_summary}
-        </p>
-      )}
-      <div>
-        <p className="mb-1 text-xs font-medium uppercase text-slate-500">
-          E-Mail-Inhalt
-        </p>
-        {bodyText ? (
-          <pre className={bodyClass}>{bodyText}</pre>
-        ) : (
-          <p className="text-sm text-slate-500">Kein Mailtext verfügbar.</p>
-        )}
-      </div>
-      {emailDetail?.draft_body && (
-        <div>
-          <p className="text-xs font-medium uppercase text-slate-500">Entwurf</p>
-          <pre className="mt-1 whitespace-pre-wrap rounded border p-2 text-xs">
-            {emailDetail.draft_body}
-          </pre>
+
+      {/* Summary */}
+      {detail.mail_summary && (
+        <div className="rounded-lg border border-slate-100 bg-slate-50 px-3 py-2.5">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+            Zusammenfassung
+          </p>
+          <p className="text-xs leading-relaxed text-slate-700">{detail.mail_summary}</p>
         </div>
       )}
-      {emailDetail?.approved_body && (
-        <div>
-          <p className="text-xs font-medium uppercase text-slate-500">
-            Freigegebene Antwort
+
+      {/* Body */}
+      <div className="rounded-lg border border-slate-100 bg-slate-50">
+        <p className="border-b border-slate-100 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+          E-Mail-Text
+        </p>
+        <pre className="max-h-44 overflow-auto px-3 py-2.5 whitespace-pre-wrap text-xs leading-relaxed text-slate-700">
+          {detail.body_text}
+        </pre>
+      </div>
+
+      {/* Draft */}
+      {detail.draft_body && (
+        <div className="rounded-lg border border-amber-200/80 bg-amber-50/50">
+          <p className="flex items-center gap-1.5 border-b border-amber-100 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wide text-amber-700">
+            <FileText size={11} />
+            Entwurf
           </p>
-          <pre className="mt-1 whitespace-pre-wrap rounded border border-green-200 bg-green-50 p-2 text-xs">
-            {emailDetail.approved_body}
+          <pre className="max-h-40 overflow-auto px-3 py-2.5 whitespace-pre-wrap text-xs leading-relaxed text-amber-900">
+            {detail.draft_body}
           </pre>
         </div>
       )}
