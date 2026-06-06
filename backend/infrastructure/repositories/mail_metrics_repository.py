@@ -6,22 +6,16 @@ from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
 from pymongo.collection import Collection
 
+from backend.infrastructure.repositories._mail_metric_models import (
+    MailMetricRecord as MailMetricRecord,
+)
+from backend.infrastructure.repositories._mail_metric_models import (
+    record_from_doc,
+)
 from backend.infrastructure.repositories.mongo import Db
 from backend.infrastructure.repositories.tenant_scope import with_account_filter
-
-
-class MailMetricRecord(BaseModel):
-    """Kosten-Snapshot einer Mail."""
-
-    correlation_id: str
-    cost_usd: float
-    prompt_tokens: int = 0
-    completion_tokens: int = 0
-    account_id: str | None = None
-    processed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class MailMetricsRepository:
@@ -146,7 +140,7 @@ class MailMetricsRepository:
     def top_expensive(self, limit: int = 10) -> list[MailMetricRecord]:
         """Teuerste Mails."""
         cursor = self._col.find().sort("cost_usd", -1).limit(limit)
-        return [self._record_from_doc(doc) for doc in cursor]
+        return [record_from_doc(doc) for doc in cursor]
 
     def aggregate_platform(
         self,
@@ -276,7 +270,7 @@ class MailMetricsRepository:
             account_id,
         )
         cursor = self._col.find(query).sort("cost_usd", -1).limit(limit)
-        return [self._record_from_doc(doc) for doc in cursor]
+        return [record_from_doc(doc) for doc in cursor]
 
     def latest_for_account(self, account_id: str) -> MailMetricRecord | None:
         """Neuester Metrik-Eintrag eines Mandanten."""
@@ -286,7 +280,7 @@ class MailMetricsRepository:
         )
         if doc is None:
             return None
-        return self._record_from_doc(doc)
+        return record_from_doc(doc)
 
     def has_metric_since(self, since_iso: str, *, account_id: str) -> bool:
         """Ob seit Datum Metriken für den Mandanten existieren."""
@@ -296,15 +290,3 @@ class MailMetricsRepository:
     def has_any_for_account(self, account_id: str) -> bool:
         """Ob jemals Metriken für den Mandanten existieren."""
         return int(self._col.count_documents({"account_id": account_id}, limit=1)) > 0
-
-    @staticmethod
-    def _record_from_doc(doc: dict[str, Any]) -> MailMetricRecord:
-        payload = {k: v for k, v in doc.items() if k != "_id"}
-        if "correlation_id" not in payload:
-            payload["correlation_id"] = str(doc.get("_id", ""))
-        processed = payload.get("processed_at")
-        if isinstance(processed, str):
-            payload["processed_at"] = datetime.fromisoformat(
-                processed.replace("Z", "+00:00")
-            )
-        return MailMetricRecord.model_validate(payload)

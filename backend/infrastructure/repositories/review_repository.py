@@ -5,26 +5,17 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
 from pymongo.collection import Collection
 
 from backend.core.models.response import ReviewStatus
+from backend.infrastructure.repositories._review_models import (
+    ReviewRecord as ReviewRecord,
+)
+from backend.infrastructure.repositories._review_models import (
+    record_to_status,
+)
 from backend.infrastructure.repositories.mongo import Db
 from backend.infrastructure.repositories.tenant_scope import with_account_filter
-
-
-class ReviewRecord(BaseModel):
-    """Gespeicherter Review-Stand für die Web-API."""
-
-    correlation_id: str
-    message_id: str
-    draft_body: str = ""
-    grounding_flag: bool = False
-    review_status: str = "pending"
-    reviewer_note: str | None = None
-    approved_body: str | None = None
-    intent: str | None = None
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class ReviewRepository:
@@ -248,7 +239,7 @@ class ReviewRepository:
         record = self.get(correlation_id, account_id=account_id)
         if record is None:
             return None
-        return _record_to_status(record)
+        return record_to_status(record)
 
     def list_pending_statuses(
         self,
@@ -258,7 +249,7 @@ class ReviewRepository:
     ) -> list[ReviewStatus]:
         """Alias: ausstehende Reviews als ReviewStatus."""
         return [
-            _record_to_status(record)
+            record_to_status(record)
             for record in self.list_pending(limit, account_id=account_id)
         ]
 
@@ -291,12 +282,3 @@ class ReviewRepository:
             account_id=account_id,
             reviewer_note=reason,
         )
-
-
-def _record_to_status(record: ReviewRecord) -> ReviewStatus:
-    return ReviewStatus(
-        correlation_id=record.correlation_id,
-        status=record.review_status,
-        reviewer_note=record.reviewer_note,
-        approved_body=record.approved_body,
-    )
