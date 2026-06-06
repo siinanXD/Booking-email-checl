@@ -97,7 +97,7 @@ export function Sidebar() {
     : [...tenantLinks.slice(0, 8), ...workflowRubrics, ...tenantLinks.slice(8)];
 
   return (
-    <aside className="flex w-56 flex-col" style={{ background: "#0c1222" }}>
+    <aside className="hidden lg:flex w-56 flex-col" style={{ background: "#0c1222" }}>
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5">
         <div
