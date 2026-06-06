@@ -20,6 +20,35 @@ KI-gestützte Verarbeitung eingehender Buchungs-E-Mails mit menschlicher Freigab
 
 ---
 
+## Dashboard (UI)
+
+Das React-Dashboard bündelt Mandanten- und Plattform-Ansichten: KPIs, Mail-Listen,
+Human Review und Admin-Konsole.
+
+| Ansicht | Screenshot |
+|---------|------------|
+| Mandanten-Dashboard (KPIs, Sync) | ![Dashboard](docs/images/screenshots/dashboard.png) |
+| Review-Warteschlange (Entwurf prüfen) | ![Review-Queue](docs/images/screenshots/review-queue.png) |
+| Buchungsliste (Intent-Filter) | ![Buchungen](docs/images/screenshots/bookings.png) |
+| Einstellungen (WhatsApp, Postfach) | ![Einstellungen](docs/images/screenshots/settings.png) |
+| Plattform-Admin (Mandanten & Kosten) | ![Admin-Übersicht](docs/images/screenshots/admin-overview.png) |
+| Login & Registrierung | ![Login](docs/images/screenshots/login.png) · ![Registrierung](docs/images/screenshots/register.png) |
+
+Screenshots neu erzeugen:
+
+```powershell
+# Production (Railway) – ADMIN_EMAIL / ADMIN_PASSWORD aus .env;
+# optional TENANT_EMAIL / TENANT_PASSWORD für Mandanten-Ansichten
+cd frontend
+npm run screenshots:production
+
+# Lokal mit Demo-Daten (ohne Atlas):
+# Terminal 1: .\.venv\Scripts\python scripts\screenshot_demo_server.py
+# Terminal 2: cd frontend && npm run screenshots:demo
+```
+
+---
+
 ## Tech-Stack
 
 | Bereich | Technologie |
@@ -148,8 +177,10 @@ CI läuft bei jedem Push: Ruff, Black, MyPy, Pytest, TypeScript-Build.
 | [`docs/SPEC.md`](docs/SPEC.md) | Fachliche Spezifikation |
 | [`docs/OUTLOOK.md`](docs/OUTLOOK.md) | Microsoft Graph / OAuth Setup |
 | [`docs/LANGFUSE.md`](docs/LANGFUSE.md) | Tracing und Observability |
+| [`docs/GEMINI.md`](docs/GEMINI.md) | Gemini Multimodal (Workflow-Sandbox) |
 | [`docs/ROADMAP.md`](docs/ROADMAP.md) | Geplante Features |
 | [`docs/USER_SETUP.md`](docs/USER_SETUP.md) | Nutzer-Onboarding-Guide |
+| [`docs/images/`](docs/images/) | Architektur-Diagramme und UI-Screenshots |
 | [`CLAUDE.md`](CLAUDE.md) | Projektregeln für KI-Agenten |
 
 ---
