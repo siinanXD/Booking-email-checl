@@ -19,7 +19,7 @@ Db: TypeAlias = Database[dict[str, object]]
 _SLOW_QUERY_THRESHOLD_MS = 100
 
 
-class _SlowQueryLogger(monitoring.CommandListener):  # type: ignore[misc]
+class _SlowQueryLogger(monitoring.CommandListener):
     """Loggt MongoDB-Kommandos die das Schwellenlimit überschreiten."""
 
     def started(self, event: Any) -> None:  # noqa: ANN401

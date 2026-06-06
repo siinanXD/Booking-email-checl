@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
 from backend.ai.services.classification import ClassificationService, LLMClient
 from backend.ai.services.entity_resolution import EntityResolutionService
 from backend.ai.services.extraction import ExtractionService
-from backend.ai.services.gemini_client import GeminiClientProtocol
 from backend.ai.services.gemini_factory import build_gemini_client
 from backend.ai.services.grounding import GroundingService
 from backend.ai.services.indexing import EmbeddingClient, EmbeddingFn, IndexingService
@@ -26,6 +23,7 @@ from backend.ai.workflows.checkpointer import build_checkpointer
 from backend.ai.workflows.email_workflow import EmailWorkflow
 from backend.application.ingestion import IngestionRouter
 from backend.application.review import ReviewRouter
+from backend.core.config.app_context import AppContext as AppContext
 from backend.core.config.settings import Settings, get_settings
 from backend.features.notifications.notification_service import NotificationService
 from backend.infrastructure.observability.alerts import AlertService
@@ -56,7 +54,7 @@ from backend.infrastructure.repositories.mail_metrics_repository import (
 from backend.infrastructure.repositories.mail_summary_repository import (
     MailSummaryRepository,
 )
-from backend.infrastructure.repositories.mongo import Db, get_database
+from backend.infrastructure.repositories.mongo import get_database
 from backend.infrastructure.repositories.notification_repository import (
     NotificationRepository,
 )
@@ -92,38 +90,6 @@ from backend.infrastructure.repositories.tenant_workflow_repository import (
     TenantWorkflowRepository,
 )
 from backend.infrastructure.repositories.user_repository import UserRepository
-
-
-@dataclass
-class AppContext:
-    """Alle verdrahteten Komponenten für API/CLI/Tests."""
-
-    settings: Settings
-    db: Db
-    ingestion_router: IngestionRouter
-    review_router: ReviewRouter
-    workflow: EmailWorkflow
-    email_repo: EmailRepository
-    extraction_repo: ExtractionRepository
-    review_repo: ReviewRepository
-    metrics_repo: MailMetricsRepository
-    user_repo: UserRepository
-    account_repo: AccountRepository
-    revoked_token_repo: RevokedTokenRepository
-    platform_settings_repo: PlatformSettingsRepository
-    property_recipient_repo: PropertyRecipientRepository
-    mail_connection_repo: MailConnectionRepository
-    outlook_oauth_flow_repo: OutlookOAuthFlowRepository
-    platform_llm_config_repo: PlatformLlmConfigRepository
-    platform_llm_prompt_history_repo: PlatformLlmPromptHistoryRepository
-    tenant_workflow_repo: TenantWorkflowRepository
-    admin_audit_log_repo: AdminAuditLogRepository
-    mail_summary_repo: MailSummaryRepository
-    tenant_learned_examples_repo: TenantLearnedExamplesRepository
-    support_ticket_repo: SupportTicketRepository
-    platform_admin_config_repo: PlatformAdminConfigRepository
-    indexing_service: IndexingService | None = None
-    gemini_client: GeminiClientProtocol | None = None
 
 
 def build_app_context(settings: Settings | None = None) -> AppContext:
