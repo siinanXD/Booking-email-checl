@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.15.0 (2026-06-06)
+
+### Features
+
+- Whatsapp host alerts, admin templates, and mobile UI
+  ([`f3712ee`](https://github.com/siinanXD/Booking-email-check/commit/f3712ee01d5dba3c59b32b601dafc7825175884c))
+
+Notify hosts with the status template on new bookings while employees keep cleaning tasks. Let
+  platform admins configure and test all Meta templates. Add an accessible mobile nav drawer, card
+  email lists, and touch-friendly forms.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+
 ## v0.14.4 (2026-06-06)
 
 ### Bug Fixes
