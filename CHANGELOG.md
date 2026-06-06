@@ -1,6 +1,25 @@
 # CHANGELOG
 
 
+## v0.13.1 (2026-06-06)
+
+### Bug Fixes
+
+- Add langgraph-checkpoint-mongodb dependency for production checkpointer
+  ([`1f0b202`](https://github.com/siinanXD/Booking-email-checl/commit/1f0b20204ea3fe545d7f55898001fdbbe3389d51))
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+### Chores
+
+- Add Procfile for Railway deployment
+  ([`d875567`](https://github.com/siinanXD/Booking-email-checl/commit/d875567c556815984c8b584d2c7eba6a4d49cf42))
+
+Gunicorn listens on Railway-injected $PORT (0.0.0.0).
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+
 ## v0.13.0 (2026-06-05)
 
 ### Features
