@@ -79,7 +79,7 @@ def create_app(settings: Settings | None = None) -> Flask:
     if cfg.flask_env == "production":
         static_dir = Path(cfg.frontend_build_dir)
         if not static_dir.is_absolute():
-            static_dir = Path(__file__).resolve().parent.parent / static_dir
+            static_dir = Path(__file__).resolve().parent.parent.parent / static_dir
         if static_dir.is_dir():
 
             @app.route("/", defaults={"path": ""})
