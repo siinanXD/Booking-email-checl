@@ -1,6 +1,22 @@
 # CHANGELOG
 
 
+## v0.17.0 (2026-06-06)
+
+### Features
+
+- Forward WhatsApp replies from cleaning staff to host
+  ([`24a099b`](https://github.com/siinanXD/Booking-email-check/commit/24a099bf26e0ba7b521e672fb71f8ed8b6b818e0))
+
+- New GET /api/whatsapp/webhook — Meta verification endpoint - New POST /api/whatsapp/webhook —
+  receives incoming messages, forwards to host - WhatsAppIncomingService: parses Meta payload, finds
+  host number, sends free-text forward -
+  PlatformSettingsRepository.find_account_by_phone_number_id() for multi-tenant routing - Settings:
+  WHATSAPP_WEBHOOK_VERIFY_TOKEN + WHATSAPP_APP_SECRET
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+
 ## v0.16.1 (2026-06-06)
 
 ### Bug Fixes
