@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.14.4 (2026-06-06)
+
+### Bug Fixes
+
+- Booking list date filter and endclothing spam block
+  ([`46c605e`](https://github.com/siinanXD/Booking-email-check/commit/46c605ec4c4745c3433c47ad34cc92177dbf73bf))
+
+to_date now includes the full calendar day so same-day mails appear in Buchungen. Exclude
+  endclothing newsletters even when the LLM mislabels them as new_booking.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+
 ## v0.14.3 (2026-06-06)
 
 ### Bug Fixes
