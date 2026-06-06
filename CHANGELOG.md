@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.14.1 (2026-06-06)
+
+### Bug Fixes
+
+- Enable mail polling in production (remove dev-only guard)
+  ([`d0f530a`](https://github.com/siinanXD/Booking-email-check/commit/d0f530a75196eb764e5a4b0d10a3604b91c4de85))
+
+### Chores
+
+- Add script to clear stale WhatsApp token from MongoDB
+  ([`b8b54f2`](https://github.com/siinanXD/Booking-email-check/commit/b8b54f2c8fb538249a6ed8dde9b43903a405c4e4))
+
+
 ## v0.14.0 (2026-06-06)
 
 ### Features
