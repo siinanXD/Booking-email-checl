@@ -1,6 +1,27 @@
 # CHANGELOG
 
 
+## v0.14.3 (2026-06-06)
+
+### Bug Fixes
+
+- Align IMAP and CLI Outlook ingest with poll time window
+  ([`0075979`](https://github.com/siinanXD/Booking-email-check/commit/0075979b2a093c0777377876a2980836cb33ed43))
+
+Apply SINCE search for IMAP and resolve_poll_since_for_account in OutlookIngestionRunner so all mail
+  paths use the same recent-mail window logic.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+- Fetch recent inbox mails via Graph receivedDateTime filter
+  ([`b67ab8b`](https://github.com/siinanXD/Booking-email-check/commit/b67ab8b260f6f8256a828499ca55b6555de28d1d))
+
+Microsoft Graph ignores orderby without a matching receivedDateTime filter, so polls returned
+  arbitrary old messages (duplicates=100) and missed new test mails.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+
 ## v0.14.2 (2026-06-06)
 
 ### Bug Fixes
