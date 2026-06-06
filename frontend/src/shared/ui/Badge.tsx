@@ -1,29 +1,48 @@
 const styles: Record<string, string> = {
-  pending: "bg-amber-100 text-amber-800",
-  approved: "bg-green-100 text-green-800",
-  rejected: "bg-red-100 text-red-800",
-  discarded: "bg-slate-100 text-slate-600",
-  booking: "bg-emerald-100 text-emerald-800",
-  cancellation: "bg-red-100 text-red-800",
-  change: "bg-sky-100 text-sky-800",
-  inquiry: "bg-violet-100 text-violet-800",
-  complaint: "bg-orange-100 text-orange-800",
-  payment: "bg-amber-100 text-amber-900",
-  default: "bg-slate-100 text-slate-700",
+  pending: "bg-amber-50 text-amber-700 ring-1 ring-amber-200/80",
+  approved: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/80",
+  rejected: "bg-red-50 text-red-700 ring-1 ring-red-200/80",
+  discarded: "bg-slate-100 text-slate-500 ring-1 ring-slate-200/80",
+  booking: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/80",
+  cancellation: "bg-red-50 text-red-700 ring-1 ring-red-200/80",
+  change: "bg-sky-50 text-sky-700 ring-1 ring-sky-200/80",
+  inquiry: "bg-violet-50 text-violet-700 ring-1 ring-violet-200/80",
+  complaint: "bg-orange-50 text-orange-700 ring-1 ring-orange-200/80",
+  payment: "bg-amber-50 text-amber-800 ring-1 ring-amber-200/80",
+  default: "bg-slate-100 text-slate-600 ring-1 ring-slate-200/80",
+};
+
+const dots: Record<string, string> = {
+  pending: "bg-amber-400",
+  approved: "bg-emerald-500",
+  rejected: "bg-red-500",
+  discarded: "bg-slate-400",
+  booking: "bg-emerald-500",
+  cancellation: "bg-red-500",
+  change: "bg-sky-500",
+  inquiry: "bg-violet-500",
+  complaint: "bg-orange-500",
+  payment: "bg-amber-500",
+  default: "bg-slate-400",
 };
 
 export function Badge({
   label,
   tone = "default",
+  dot = false,
 }: {
   label: string;
   tone?: string;
+  dot?: boolean;
 }) {
   const key = styles[tone] ? tone : "default";
   return (
     <span
-      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[key]}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${styles[key]}`}
     >
+      {dot && (
+        <span className={`h-1.5 w-1.5 rounded-full ${dots[key]}`} />
+      )}
       {label}
     </span>
   );

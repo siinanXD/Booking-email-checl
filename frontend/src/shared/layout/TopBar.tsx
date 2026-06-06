@@ -1,31 +1,94 @@
-import { Link } from "react-router-dom";
-import { LogOut, User } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { LogOut, Settings, Bell } from "lucide-react";
 import { useAuthStore } from "@/features/auth/authStore";
-import { Button } from "@/shared/ui/Button";
+
+function getInitials(email: string): string {
+  const parts = email.split("@")[0].split(/[._-]/);
+  if (parts.length >= 2) {
+    return (parts[0][0] + parts[1][0]).toUpperCase();
+  }
+  return email.slice(0, 2).toUpperCase();
+}
+
+const PAGE_TITLES: Record<string, string> = {
+  "/": "Dashboard",
+  "/bookings": "Buchungen",
+  "/cancellations": "Stornos",
+  "/changes": "Änderungen",
+  "/messages": "Nachrichten",
+  "/properties": "Unterkünfte",
+  "/support": "Support",
+  "/review": "Review-Warteschlange",
+  "/ground-zero": "Ground Zero",
+  "/completed": "Abgeschlossen",
+  "/settings": "Einstellungen",
+  "/costs": "API-Kosten",
+  "/workflows": "Workflows",
+};
 
 export function TopBar() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const isPlatformAdmin = useAuthStore((s) => s.isPlatformAdmin());
   const profileLink = isPlatformAdmin ? "/admin/overview" : "/settings";
+  const initials = user?.email ? getInitials(user.email) : "??";
+  const location = useLocation();
+
+  const pageTitle =
+    PAGE_TITLES[location.pathname] ??
+    (location.pathname.startsWith("/admin") ? "Admin-Konsole" : "AI Mail Platform");
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-slate-200 bg-white px-6">
-      <h1 className="text-lg font-semibold text-slate-800">
-        {isPlatformAdmin ? "Plattform-Administration" : "AI Mail Platform"}
-      </h1>
-      <div className="flex items-center gap-4">
+    <header className="flex h-14 flex-shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6">
+      <div className="flex items-center gap-3">
+        <h1 className="text-base font-bold text-slate-900">{pageTitle}</h1>
+      </div>
+
+      <div className="flex items-center gap-1">
+        {/* Notification bell placeholder */}
+        <button
+          type="button"
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+          title="Benachrichtigungen"
+        >
+          <Bell size={16} />
+        </button>
+
+        <div className="mx-1 h-5 w-px bg-slate-200" />
+
+        {/* User */}
         <Link
           to={profileLink}
-          className="flex items-center gap-2 rounded-lg px-2 py-1 text-sm text-slate-600 transition hover:bg-slate-100 hover:text-slate-900"
+          className="group flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-slate-100"
+          title="Profil & Einstellungen"
+        >
+          <div
+            className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold text-white"
+            style={{ background: "linear-gradient(135deg, #6366f1, #818cf8)" }}
+          >
+            {initials}
+          </div>
+          <span className="max-w-[160px] truncate text-sm font-medium text-slate-700 group-hover:text-slate-900">
+            {user?.email ?? "—"}
+          </span>
+        </Link>
+
+        <Link
+          to={profileLink}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
           title="Einstellungen"
         >
-          <User size={16} />
-          {user?.email ?? "—"}
+          <Settings size={16} />
         </Link>
-        <Button variant="ghost" onClick={logout} title="Abmelden">
-          <LogOut size={18} />
-        </Button>
+
+        <button
+          type="button"
+          onClick={logout}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
+          title="Abmelden"
+        >
+          <LogOut size={16} />
+        </button>
       </div>
     </header>
   );
