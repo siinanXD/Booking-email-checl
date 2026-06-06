@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.14.2 (2026-06-06)
+
+### Bug Fixes
+
+- Restore MongoDBSaver and optimize poll dedup queries
+  ([`9200f00`](https://github.com/siinanXD/Booking-email-check/commit/9200f003e7ccf2117dd92e13382d112f980194e9))
+
+Pin langgraph-checkpoint-mongodb with compatible pymongo, batch duplicate checks during mail
+  polling, and add indexes for poll hot paths.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+
 ## v0.14.1 (2026-06-06)
 
 ### Bug Fixes
