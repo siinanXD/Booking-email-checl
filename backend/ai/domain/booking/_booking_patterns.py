@@ -21,6 +21,7 @@ _NOISE_SENDER_SUBSTRINGS = (
     "linkedin.com",
     "github.com",
     "temu.com",
+    "endclothing",
     "amazon.",
     "haystack",
     "indeed.",
