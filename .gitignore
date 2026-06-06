@@ -17,6 +17,9 @@ build/
 htmlcov/
 .coverage
 
+# Claude Code
+.claude/
+
 # IDE / Cursor (persönlich)
 .cursor/rules/personal.mdc
 
