@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from datetime import datetime
 
 from backend.ai.services.ingestion import IngestResult
 from backend.ai.workflows.email_workflow import EmailWorkflow
@@ -15,7 +16,14 @@ from backend.infrastructure.adapters.outlook.graph import (
     OutlookGraphClient,
     map_graph_message,
 )
+from backend.infrastructure.adapters.outlook.poll_window import (
+    resolve_poll_since_for_account,
+)
+from backend.infrastructure.repositories.account_repository import AccountRepository
 from backend.infrastructure.repositories.email_repository import EmailRepository
+from backend.infrastructure.repositories.mail_connection_repository import (
+    MailConnectionRepository,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +74,8 @@ class OutlookIngestionRunner:
         fetch_max: int = 100,
         fetch_unread_only: bool = False,
         ingest_account_id: str | None = None,
+        mail_connection_repo: MailConnectionRepository | None = None,
+        account_repo: AccountRepository | None = None,
     ) -> None:
         """Initialize the instance with its dependencies."""
         self._graph = graph
@@ -76,6 +86,8 @@ class OutlookIngestionRunner:
         self._fetch_max = fetch_max
         self._fetch_unread_only = fetch_unread_only
         self._ingest_account_id = ingest_account_id
+        self._mail_connection_repo = mail_connection_repo
+        self._account_repo = account_repo
 
     @classmethod
     def from_context(
@@ -94,7 +106,35 @@ class OutlookIngestionRunner:
             fetch_max=settings.outlook_fetch_max,
             fetch_unread_only=settings.outlook_fetch_unread_only,
             ingest_account_id=settings.ingest_account_id,
+            mail_connection_repo=ctx.mail_connection_repo,
+            account_repo=ctx.account_repo,
         )
+
+    def _resolve_poll_since(self) -> tuple[datetime, str | None]:
+        account_id = (self._ingest_account_id or "").strip() or None
+        max_received: str | None = None
+        last_sync_at = None
+        initial_sync = False
+        anchor = None
+        if account_id and self._mail_connection_repo is not None:
+            record = self._mail_connection_repo.get(account_id)
+            if record is not None:
+                last_sync_at = record.last_sync_at
+            max_received = self._email_repo.max_received_at(account_id=account_id)
+            if self._account_repo is not None:
+                account = self._account_repo.get_by_id(account_id)
+                if account is not None:
+                    initial_sync = account.mail_initial_sync_completed_at is None
+                    anchor = account.mail_ingest_anchor_at or account.created_at
+        else:
+            max_received = self._email_repo.max_received_at(account_id=None)
+        since = resolve_poll_since_for_account(
+            max_received_at=max_received,
+            last_sync_at=last_sync_at,
+            initial_sync=initial_sync,
+            ingest_anchor_at=anchor,
+        )
+        return since, max_received
 
     def run(
         self, *, top: int | None = None, unread_only: bool | None = None
@@ -104,15 +144,20 @@ class OutlookIngestionRunner:
         only_unread = (
             unread_only if unread_only is not None else self._fetch_unread_only
         )
+        since, max_received = self._resolve_poll_since()
         messages = self._graph.list_inbox_messages(
             limit,
             unread_only=only_unread,
+            since=since,
         )
         logger.info(
-            "Fetched %s message(s) from inbox (max=%s, unread_only=%s)",
+            "Fetched %s message(s) from inbox (max=%s, unread_only=%s since=%s "
+            "max_received_at=%s)",
             len(messages),
             limit,
             only_unread,
+            since.isoformat(),
+            max_received,
         )
         items: list[PollItemResult] = []
         mapped: list[tuple[str, IncomingEmail]] = []
