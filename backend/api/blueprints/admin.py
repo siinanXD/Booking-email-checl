@@ -210,3 +210,4 @@ def admin_config_public() -> tuple[Any, int]:
 import backend.api.blueprints.admin_account_workflows  # noqa: E402, F401
 import backend.api.blueprints.admin_diagnostics_routes  # noqa: E402, F401
 import backend.api.blueprints.admin_llm_routes  # noqa: E402, F401
+import backend.api.blueprints.admin_user_actions  # noqa: E402, F401

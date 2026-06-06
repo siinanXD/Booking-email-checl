@@ -48,3 +48,21 @@ class AdminMeResponse(BaseModel):
     role: str
     account_id: str | None = None
     mail_onboarding_required: bool = False
+
+
+class AccountExpiryRequest(BaseModel):
+    """Setzt ein Ablaufdatum (ISO-8601) oder None zum Entfernen."""
+
+    expires_at: str | None = Field(default=None)
+
+
+class UserLockRequest(BaseModel):
+    """Sperrt oder entsperrt einen User."""
+
+    locked: bool
+
+
+class UserResetPasswordRequest(BaseModel):
+    """Neues Passwort vom Admin."""
+
+    new_password: str = Field(min_length=8, max_length=128)

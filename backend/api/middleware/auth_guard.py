@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import UTC, datetime
 from functools import wraps
 from typing import Any, TypeVar
 
@@ -35,11 +36,28 @@ def require_auth(fn: F) -> F:
         jti = payload.get("jti")
         if isinstance(jti, str) and is_revoked(jti):
             return jsonify({"error": "Token revoked", "code": 401}), 401
+
+        user_id = payload.get("sub")
         account_id = payload.get("account_id")
+        role = payload.get("role")
+
+        # Check user lock + account expiry (skip for platform_admin)
+        if role != "platform_admin" and isinstance(user_id, str):
+            user = g.ctx.user_repo.get_by_id(user_id)
+            if user is None:
+                return jsonify({"error": "Unauthorized", "code": 401}), 401
+            if user.is_locked:
+                return jsonify({"error": "Account gesperrt", "code": 403}), 403
+            if isinstance(account_id, str):
+                account = g.ctx.account_repo.get_by_id(account_id)
+                if account is not None and account.expires_at is not None:
+                    if account.expires_at < datetime.now(UTC):
+                        return jsonify({"error": "Zugang abgelaufen", "code": 403}), 403
+
         g.current_user = {
-            "id": payload.get("sub"),
+            "id": user_id,
             "email": payload.get("email"),
-            "role": payload.get("role"),
+            "role": role,
             "account_id": account_id if isinstance(account_id, str) else None,
         }
         g.current_account_id = account_id if isinstance(account_id, str) else None

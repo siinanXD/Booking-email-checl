@@ -26,6 +26,7 @@ class AccountRecord(BaseModel):
     contact_email: str
     status: AccountStatus = "pending"
     rejection_reason: str | None = None
+    expires_at: datetime | None = None
     mail_ingest_anchor_at: datetime | None = None
     mail_ingest_lookback_count: int = 50
     mail_initial_sync_completed_at: datetime | None = None
@@ -121,6 +122,23 @@ class AccountRepository:
             update["rejection_reason"] = None
         self._col.update_one({"_id": account_id}, {"$set": update})
         return self.get_by_id(account_id)
+
+    def set_expiry(
+        self, account_id: str, expires_at: datetime | None
+    ) -> AccountRecord | None:
+        """Setzt oder entfernt ein Ablaufdatum für einen Account."""
+        now = datetime.now(UTC)
+        exp_value = expires_at.isoformat() if expires_at else None
+        self._col.update_one(
+            {"_id": account_id},
+            {"$set": {"expires_at": exp_value, "updated_at": now.isoformat()}},
+        )
+        return self.get_by_id(account_id)
+
+    def delete(self, account_id: str) -> bool:
+        """Löscht einen Account unwiderruflich. Gibt True zurück wenn gefunden."""
+        result = self._col.delete_one({"_id": account_id})
+        return result.deleted_count > 0
 
     def mark_initial_sync_completed(self, account_id: str) -> None:
         """Setzt Flag nach erstem Initial-Poll."""

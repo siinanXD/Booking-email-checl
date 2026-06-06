@@ -1,10 +1,29 @@
-import { useQuery } from "@tanstack/react-query";
-import { Link, useParams } from "react-router-dom";
-import { fetchAdminAccountDetail } from "@/lib/api/admin";
+import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import {
+  fetchAdminAccountDetail,
+  suspendAccount, unsuspendAccount,
+  setAccountExpiry, deleteAccount,
+  lockUser, resetUserPassword, deleteUser,
+} from "@/lib/api/admin";
 import { AdminPageIntro } from "@/features/admin/components/AdminPageIntro";
 import { ActivityBadge } from "@/features/admin/components/ActivityBadge";
 import { DbCountsBarChart } from "@/features/admin/components/charts/DbCountsBarChart";
 import { Card } from "@/shared/ui/Card";
+
+const EXPIRY_OPTIONS = [
+  { label: "1 Woche", days: 7 },
+  { label: "1 Monat", days: 30 },
+  { label: "3 Monate", days: 90 },
+  { label: "1 Jahr", days: 365 },
+];
+
+function addDays(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString();
+}
 
 function formatUsd(value: number): string {
   return `$${value.toFixed(4)}`;
@@ -19,12 +38,34 @@ function formatTs(value: string | null | undefined): string {
 
 export function AdminAccountDetailPage() {
   const { accountId } = useParams<{ accountId: string }>();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [resetPw, setResetPw] = useState<{ userId: string; value: string } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin-account-detail", accountId],
     queryFn: () => fetchAdminAccountDetail(accountId!),
     enabled: Boolean(accountId),
   });
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: ["admin-account-detail", accountId] });
+
+  const suspendMut = useMutation({ mutationFn: () => suspendAccount(accountId!), onSuccess: invalidate });
+  const unsuspendMut = useMutation({ mutationFn: () => unsuspendAccount(accountId!), onSuccess: invalidate });
+  const expiryMut = useMutation({ mutationFn: (iso: string | null) => setAccountExpiry(accountId!, iso), onSuccess: invalidate });
+  const deleteMut = useMutation({
+    mutationFn: () => deleteAccount(accountId!),
+    onSuccess: () => navigate("/admin/overview"),
+  });
+  const lockMut = useMutation({ mutationFn: ({ uid, locked }: { uid: string; locked: boolean }) => lockUser(accountId!, uid, locked), onSuccess: invalidate });
+  const resetPwMut = useMutation({
+    mutationFn: ({ uid, pw }: { uid: string; pw: string }) => resetUserPassword(accountId!, uid, pw),
+    onSuccess: () => setResetPw(null),
+  });
+  const deleteUserMut = useMutation({ mutationFn: (uid: string) => deleteUser(accountId!, uid), onSuccess: invalidate });
+
+  const isSuspended = data?.account.status === "suspended";
 
   if (!accountId) {
     return <p className="text-sm text-red-600">Keine Mandanten-ID.</p>;
@@ -92,6 +133,60 @@ export function AdminAccountDetailPage() {
         </Card>
       </div>
 
+      {/* ── Admin Actions ─────────────────────────────────────────── */}
+      <Card className="space-y-4">
+        <h3 className="font-medium text-slate-900">Mandanten-Verwaltung</h3>
+
+        {/* Suspend / Expiry / Delete */}
+        <div className="flex flex-wrap gap-2">
+          {isSuspended ? (
+            <button onClick={() => unsuspendMut.mutate()} disabled={unsuspendMut.isPending}
+              className="rounded-lg bg-emerald-50 px-3 py-1.5 text-sm font-medium text-emerald-700 hover:bg-emerald-100 disabled:opacity-50">
+              ✅ Entsperren
+            </button>
+          ) : (
+            <button onClick={() => suspendMut.mutate()} disabled={suspendMut.isPending}
+              className="rounded-lg bg-amber-50 px-3 py-1.5 text-sm font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-50">
+              ⏸ Sperren
+            </button>
+          )}
+
+          {/* Expiry dropdown */}
+          <select defaultValue=""
+            onChange={(e) => { if (e.target.value) expiryMut.mutate(e.target.value === "remove" ? null : addDays(Number(e.target.value))); e.target.value = ""; }}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
+            <option value="" disabled>⏰ Zugang begrenzen…</option>
+            {EXPIRY_OPTIONS.map((o) => (
+              <option key={o.days} value={o.days}>{o.label}</option>
+            ))}
+            <option value="remove">Begrenzung entfernen</option>
+          </select>
+
+          {data?.account && "expires_at" in data.account && (data.account as { expires_at?: string | null }).expires_at && (
+            <span className="flex items-center rounded-lg bg-orange-50 px-3 py-1.5 text-xs text-orange-700">
+              Läuft ab: {formatTs((data.account as { expires_at?: string | null }).expires_at)}
+            </span>
+          )}
+
+          {/* Delete account */}
+          {!confirmDelete ? (
+            <button onClick={() => setConfirmDelete(true)}
+              className="ml-auto rounded-lg bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100">
+              🗑 Mandant löschen
+            </button>
+          ) : (
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-sm text-red-700">Sicher? Alle Daten werden gelöscht.</span>
+              <button onClick={() => deleteMut.mutate()} disabled={deleteMut.isPending}
+                className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50">
+                Ja, löschen
+              </button>
+              <button onClick={() => setConfirmDelete(false)} className="text-sm text-slate-500 hover:text-slate-700">Abbrechen</button>
+            </div>
+          )}
+        </div>
+      </Card>
+
       <Card className="space-y-3">
         <h3 className="font-medium text-slate-900">Postfach</h3>
         {data.mail_connection ? (
@@ -120,12 +215,52 @@ export function AdminAccountDetailPage() {
         {data.users.length === 0 ? (
           <p className="text-sm text-slate-500">Keine Benutzer.</p>
         ) : (
-          <ul className="space-y-1 text-sm text-slate-700">
-            {data.users.map((u) => (
-              <li key={u.id}>
-                {u.email} <span className="text-slate-400">({u.role})</span>
-              </li>
-            ))}
+          <ul className="divide-y divide-slate-100">
+            {data.users.map((u) => {
+              const isLocked = (u as { is_locked?: boolean }).is_locked ?? false;
+              return (
+                <li key={u.id} className="flex flex-wrap items-center gap-2 py-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-slate-800">{u.email}</p>
+                    <p className="text-xs text-slate-400">{u.role}{isLocked ? " · 🔒 gesperrt" : ""}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {/* Lock / Unlock */}
+                    <button
+                      onClick={() => lockMut.mutate({ uid: u.id, locked: !isLocked })}
+                      disabled={lockMut.isPending}
+                      className={`rounded px-2 py-1 text-xs font-medium disabled:opacity-50 ${isLocked ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "bg-amber-50 text-amber-700 hover:bg-amber-100"}`}>
+                      {isLocked ? "Entsperren" : "Sperren"}
+                    </button>
+                    {/* Reset password */}
+                    {resetPw?.userId === u.id ? (
+                      <div className="flex items-center gap-1">
+                        <input autoFocus type="password" placeholder="Neues Passwort"
+                          value={resetPw.value} onChange={(e) => setResetPw({ userId: u.id, value: e.target.value })}
+                          className="w-36 rounded border border-slate-200 px-2 py-1 text-xs" />
+                        <button onClick={() => resetPwMut.mutate({ uid: u.id, pw: resetPw.value })}
+                          disabled={resetPwMut.isPending || resetPw.value.length < 8}
+                          className="rounded bg-indigo-600 px-2 py-1 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50">
+                          Setzen
+                        </button>
+                        <button onClick={() => setResetPw(null)} className="text-xs text-slate-400">✕</button>
+                      </div>
+                    ) : (
+                      <button onClick={() => setResetPw({ userId: u.id, value: "" })}
+                        className="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-200">
+                        Passwort reset
+                      </button>
+                    )}
+                    {/* Delete user */}
+                    <button onClick={() => { if (confirm(`Benutzer ${u.email} löschen?`)) deleteUserMut.mutate(u.id); }}
+                      disabled={deleteUserMut.isPending}
+                      className="rounded bg-red-50 px-2 py-1 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-50">
+                      Löschen
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </Card>

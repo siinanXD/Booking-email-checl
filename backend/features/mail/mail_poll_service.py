@@ -67,7 +67,16 @@ class MailPollService:
         max_workers > 1 aktiviert paralleles Polling (ThreadPoolExecutor).
         Jeder Account ist per thread_id isoliert; MongoClient ist thread-safe.
         """
-        active_ids = {a.id for a in self._account_repo.list_by_status("active")}
+        now = datetime.now(UTC)
+        active_accounts = self._account_repo.list_by_status("active")
+        active_ids = {
+            a.id for a in active_accounts if a.expires_at is None or a.expires_at > now
+        }
+        for a in active_accounts:
+            if a.expires_at is not None and a.expires_at <= now:
+                logger.info(
+                    "Skip poll for account %s (expired at %s)", a.id, a.expires_at
+                )
         pollable = self._mail_repo.list_pollable()
         if account_ids is not None:
             allowed = set(account_ids)

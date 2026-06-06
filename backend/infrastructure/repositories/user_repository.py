@@ -27,6 +27,7 @@ class UserRecord(BaseModel):
     phone: str | None = None
     whatsapp_phone_e164: str | None = None
     whatsapp_enabled: bool = False
+    is_locked: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
@@ -137,6 +138,21 @@ class UserRepository:
             },
         )
         return self.get_by_id(user_id)
+
+    def set_locked(self, user_id: str, locked: bool) -> UserRecord | None:
+        """Sperrt oder entsperrt einen Benutzer."""
+        self._col.update_one({"_id": user_id}, {"$set": {"is_locked": locked}})
+        return self.get_by_id(user_id)
+
+    def reset_password_hash(self, user_id: str, new_hash: str) -> UserRecord | None:
+        """Setzt den Passwort-Hash zurück (Admin-seitig)."""
+        self._col.update_one({"_id": user_id}, {"$set": {"password_hash": new_hash}})
+        return self.get_by_id(user_id)
+
+    def delete(self, user_id: str) -> bool:
+        """Löscht einen Benutzer. Gibt True zurück wenn gefunden."""
+        result = self._col.delete_one({"_id": user_id})
+        return result.deleted_count > 0
 
     def list_by_account_id(self, account_id: str) -> list[UserRecord]:
         """Alle Benutzer eines Mandanten."""

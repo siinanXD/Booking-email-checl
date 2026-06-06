@@ -53,6 +53,38 @@ export async function rejectAccount(
   });
 }
 
+// ── Account management ─────────────────────────────────────────────────────
+
+export async function suspendAccount(accountId: string): Promise<void> {
+  await apiClient.post(`/api/admin/accounts/${accountId}/suspend`);
+}
+
+export async function unsuspendAccount(accountId: string): Promise<void> {
+  await apiClient.post(`/api/admin/accounts/${accountId}/unsuspend`);
+}
+
+export async function setAccountExpiry(accountId: string, expiresAt: string | null): Promise<void> {
+  await apiClient.post(`/api/admin/accounts/${accountId}/expiry`, { expires_at: expiresAt });
+}
+
+export async function deleteAccount(accountId: string): Promise<void> {
+  await apiClient.delete(`/api/admin/accounts/${accountId}`);
+}
+
+// ── User management ────────────────────────────────────────────────────────
+
+export async function lockUser(accountId: string, userId: string, locked: boolean): Promise<void> {
+  await apiClient.post(`/api/admin/accounts/${accountId}/users/${userId}/lock`, { locked });
+}
+
+export async function resetUserPassword(accountId: string, userId: string, newPassword: string): Promise<void> {
+  await apiClient.post(`/api/admin/accounts/${accountId}/users/${userId}/reset-password`, { new_password: newPassword });
+}
+
+export async function deleteUser(accountId: string, userId: string): Promise<void> {
+  await apiClient.delete(`/api/admin/accounts/${accountId}/users/${userId}`);
+}
+
 export async function fetchAccountMailConnection(
   accountId: string
 ): Promise<MailConnectionResponse> {
