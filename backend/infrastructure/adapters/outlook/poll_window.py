@@ -45,3 +45,30 @@ def compute_poll_since(
         )
         candidates.append(synced - overlap)
     return max(candidates)
+
+
+def format_imap_since_date(dt: datetime) -> str:
+    """IMAP ``SEARCH SINCE`` (engl. Monatskürzel, nur Datum)."""
+    return dt.astimezone(UTC).strftime("%d-%b-%Y")
+
+
+def resolve_poll_since_for_account(
+    *,
+    max_received_at: str | None,
+    last_sync_at: datetime | None,
+    initial_sync: bool = False,
+    ingest_anchor_at: datetime | None = None,
+) -> datetime:
+    """Poll-Untergrenze inkl. Erst-Sync-Fenster (Graph + IMAP)."""
+    since = compute_poll_since(
+        max_received_at=max_received_at,
+        last_sync_at=last_sync_at,
+    )
+    if initial_sync and ingest_anchor_at is not None:
+        anchor_utc = (
+            ingest_anchor_at.astimezone(UTC)
+            if ingest_anchor_at.tzinfo is not None
+            else ingest_anchor_at.replace(tzinfo=UTC)
+        )
+        since = min(since, anchor_utc - timedelta(days=60))
+    return since

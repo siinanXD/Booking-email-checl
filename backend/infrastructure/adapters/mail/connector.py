@@ -13,6 +13,7 @@ from typing import Protocol
 
 from backend.core.config.settings import Settings
 from backend.core.models.email import IncomingEmail
+from backend.infrastructure.adapters.mail.imap_search import build_imap_search_criterion
 from backend.infrastructure.adapters.outlook.graph import (
     OutlookGraphClient,
     map_graph_message,
@@ -200,12 +201,14 @@ class ImapMailConnector:
         unread_only: bool = False,
         since: datetime | None = None,
     ) -> list[IncomingEmail]:
-        _ = since  # IMAP: kein serverseitiges Datumsfilter in MVP
         client = self._connect()
         try:
             client.select("INBOX", readonly=True)
-            criterion = "UNSEEN" if unread_only else "ALL"
-            status, data = client.search(None, criterion)
+            criterion = build_imap_search_criterion(
+                unread_only=unread_only,
+                since=since,
+            )
+            status, data = client.search(None, *criterion)
             if status != "OK" or not data or not data[0]:
                 return []
             ids = data[0].split()

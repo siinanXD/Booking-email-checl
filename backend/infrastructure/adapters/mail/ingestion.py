@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import UTC, timedelta
 
 from backend.ai.workflows.email_workflow import EmailWorkflow
 from backend.core.config.settings import Settings
 from backend.features.mail.ingest_window import filter_messages_for_initial_sync
 from backend.infrastructure.adapters.mail.connector import build_mail_connector
-from backend.infrastructure.adapters.outlook.poll_window import compute_poll_since
+from backend.infrastructure.adapters.outlook.poll_window import (
+    resolve_poll_since_for_account,
+)
 from backend.infrastructure.repositories.account_repository import AccountRepository
 from backend.infrastructure.repositories.email_repository import EmailRepository
 from backend.infrastructure.repositories.mail_connection_repository import (
@@ -81,18 +82,15 @@ class MailIngestionRunner:
                 lookback + self._fetch_max,
             )
         max_received = self._email_repo.max_received_at(account_id=account_id)
-        since = compute_poll_since(
+        anchor = None
+        if account is not None:
+            anchor = account.mail_ingest_anchor_at or account.created_at
+        since = resolve_poll_since_for_account(
             max_received_at=max_received,
             last_sync_at=record.last_sync_at,
+            initial_sync=initial_sync,
+            ingest_anchor_at=anchor,
         )
-        if initial_sync and account is not None:
-            anchor = account.mail_ingest_anchor_at or account.created_at
-            anchor_utc = (
-                anchor.astimezone(UTC)
-                if anchor.tzinfo is not None
-                else anchor.replace(tzinfo=UTC)
-            )
-            since = min(since, anchor_utc - timedelta(days=60))
         connector = build_mail_connector(record, self._settings)
         messages = connector.fetch_messages(
             limit=fetch_limit,
