@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.16.0 (2026-06-06)
+
+### Chores
+
+- Resolve merge conflicts with main — keep UI/UX redesign
+  ([`64e534a`](https://github.com/siinanXD/Booking-email-check/commit/64e534a9709759af4ce48284deffd09c84359f5c))
+
+All 12 conflicting files were frontend UI components. Accepted our version (new design system) over
+  main's older styling.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+
 ## v0.15.0 (2026-06-06)
 
 ### Features
@@ -64,18 +77,74 @@ Co-authored-by: Cursor <cursoragent@cursor.com>
 
 ## v0.14.1 (2026-06-06)
 
+
+## v0.14.0 (2026-06-06)
+
+
+## v0.13.4 (2026-06-06)
+
+
+## v0.13.3 (2026-06-06)
+
+
+## v0.13.2 (2026-06-06)
+
+
+## v0.13.1 (2026-06-06)
+
 ### Bug Fixes
+
+- Add langgraph-checkpoint-mongodb dependency for production checkpointer
+  ([`1f0b202`](https://github.com/siinanXD/Booking-email-check/commit/1f0b20204ea3fe545d7f55898001fdbbe3389d51))
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+- Correct frontend static dir path resolution (3 parent levels)
+  ([`df55e3f`](https://github.com/siinanXD/Booking-email-check/commit/df55e3feb4cb348857b745aa5f0fe9d99a231f8f))
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+- Correct langgraph-checkpoint-mongodb version constraint
+  ([`f1f86e6`](https://github.com/siinanXD/Booking-email-check/commit/f1f86e64dfbce90dd92802fc41b57e8db9e508d0))
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 
 - Enable mail polling in production (remove dev-only guard)
   ([`d0f530a`](https://github.com/siinanXD/Booking-email-check/commit/d0f530a75196eb764e5a4b0d10a3604b91c4de85))
 
+- Remove startCommand from railway.toml, use Procfile instead
+  ([`f303448`](https://github.com/siinanXD/Booking-email-check/commit/f3034483746dc845c9d6eff8976fbc757cc7b9b2))
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+- **ci**: Black formatting für presets.py
+  ([`679003b`](https://github.com/siinanXD/Booking-email-check/commit/679003b59508ccb478df701da8dd0eeaa4bdde7a))
+
+Lange Domain-Listen auf mehrere Zeilen aufgeteilt (black-konform).
+
+https://claude.ai/code/session_01VXKroNAoXGLoFjYfC89wCq
+
 ### Chores
+
+- Add Procfile for Railway deployment
+  ([`d875567`](https://github.com/siinanXD/Booking-email-check/commit/d875567c556815984c8b584d2c7eba6a4d49cf42))
+
+Gunicorn listens on Railway-injected $PORT (0.0.0.0).
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+- Add railway.toml to build frontend and serve via Flask
+  ([`ad5137c`](https://github.com/siinanXD/Booking-email-check/commit/ad5137c090285414c340e5671a2c2532145833ba))
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 
 - Add script to clear stale WhatsApp token from MongoDB
   ([`b8b54f2`](https://github.com/siinanXD/Booking-email-check/commit/b8b54f2c8fb538249a6ed8dde9b43903a405c4e4))
 
+- Update package-lock.json after npm install
+  ([`c2636fd`](https://github.com/siinanXD/Booking-email-check/commit/c2636fd2ea47cfeff66e7d188de81926f51e5c98))
 
-## v0.14.0 (2026-06-06)
+https://claude.ai/code/session_01VXKroNAoXGLoFjYfC89wCq
 
 ### Features
 
@@ -96,6 +165,98 @@ Co-authored-by: Cursor <cursoragent@cursor.com>
 
 Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 
+- Merge UI/UX redesign + fix MongoDBSaver dependency
+  ([`e06d83a`](https://github.com/siinanXD/Booking-email-check/commit/e06d83a4b6afa85ed8c1f810757b279c39dea1ab))
+
+- Merge claude/ui-ux-skill-refactor-E9n71: full visual overhaul, IMAP autodiscovery, WhatsApp
+  locale/template improvements - Add langgraph-checkpoint-mongodb==0.1.4 so LangGraph state persists
+  in MongoDB across restarts (instead of MemorySaver) - Resolve 4 frontend merge conflicts in favour
+  of new design
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+- **mail**: Imap autodiscovery — 15 Anbieter + Mozilla ISPDB Fallback
+  ([`350fb2b`](https://github.com/siinanXD/Booking-email-check/commit/350fb2bea3086802e8991621e5ac8fac3cb91fcd))
+
+Backend: - presets.py: erweitert auf 15 Anbieter (GMX, Web.de, Gmail, T-Online, 1&1/IONOS, Strato,
+  Posteo, mailbox.org, Freenet, Yahoo, iCloud, Zoho, Outlook/Hotmail, Office365, Custom) mit
+  Domain-Index für O(1)-Lookup - autodiscover.py: neues Modul — lokale Presets zuerst, dann Mozilla
+  ISPDB (https://autoconfig.thunderbird.net/v1.1/{domain}), ablehnen von unverschlüsselten
+  Verbindungen (port 143 / kein TLS) - mail.py: GET /api/mail/autodiscover?domain=gmx.de Endpoint
+  (auth required)
+
+Frontend: - mail.ts: autodiscoverImap(domain) Funktion - ConfigStep.tsx: Live-Erkennung beim
+  Eintippen der E-Mail (600ms debounce), Spinner → Checkmark → Fehlermeldung als Feedback,
+  auto-setzt Preset + Username, dunkles Styling passend zum Onboarding-Theme
+
+Sicherheit: Nur die Domain (nie Passwort/Benutzername) wird an ISPDB übermittelt. Unverschlüsselte
+  IMAP-Vorschläge werden verworfen.
+
+https://claude.ai/code/session_01VXKroNAoXGLoFjYfC89wCq
+
+- **ui**: Complete UI/UX redesign with modern SaaS design system
+  ([`3c614c3`](https://github.com/siinanXD/Booking-email-check/commit/3c614c3fcb5fe16b41b5be24bc89e99b31941675))
+
+Applied professional UI/UX skill across all shared components: - Tailwind: extended token system
+  (shadows, animations, gradients, palette) - index.css: CSS custom properties, custom scrollbar,
+  smooth rendering - Sidebar: dark gradient, refined nav states, icon backgrounds, footer - TopBar:
+  frosted glass, user avatar initials, icon action buttons - Button: 5 variants, 3 sizes, focus
+  rings, disabled states - Card: shadow levels, hover lift, variant system - Input: better focus
+  ring, hover, disabled states - Badge: ring border style, optional dot indicator per tone -
+  StatCard: colored icon bg, label uppercase tracking, highlight glow - EmailTable/Row: refined
+  table header, empty state with icon, hover indigo tint - EmailListPage: search with icon, spinner,
+  Button-based pagination - LoginPage: dark branded login with glassmorphism card and bg glow
+  effects
+
+https://claude.ai/code/session_01VXKroNAoXGLoFjYfC89wCq
+
+- **ui**: Dramatic visual overhaul — colors, depth, stat card tones
+  ([`692fd36`](https://github.com/siinanXD/Booking-email-check/commit/692fd364294f42290011cb4b632265895c8498b3))
+
+Sidebar: - Darker bg (#0c1222), indigo gradient logo icon - Active item: indigo-600 bg + white
+  left-bar accent strip - "System aktiv" green dot in footer
+
+TopBar: - Dynamic page title from route - Gradient avatar initials (indigo) - Bell icon for
+  notifications
+
+StatCard: - 4px colored left-border per tone (indigo/success/warning/danger/info) - text-3xl
+  font-extrabold value numbers - Colored icon container that matches tone - Hover scale on icon,
+  hover lift on card - TrendingUp CTA link for navigable cards
+
+Layout: - Dot-grid radial background pattern on main content area - bg-[#f1f5f9] base color
+
+DashboardPage: - Sectioned with "Heute" / "Weitere Metriken" labels - All 8 stat cards use matching
+  tones - Cancellations turn red when > 0
+
+https://claude.ai/code/session_01VXKroNAoXGLoFjYfC89wCq
+
+- **ui**: Redesign remaining pages and components
+  ([`c871597`](https://github.com/siinanXD/Booking-email-check/commit/c87159772ee94265c49257373f3c7971e7031bfc))
+
+Auth: - RegisterPage: dark glassmorphism card matching LoginPage, icon inputs, radio cards for
+  account type, success state with checkmark
+
+Onboarding: - OnboardingPage: animated step indicator (done/active/upcoming), dark theme -
+  ProviderStep: selection cards with icon, custom radio indicator - TestStep: success/error feedback
+  with icons, conditional finish button
+
+Admin: - AdminLayout: underline tab navigation, Shield icon header
+
+Review: - ReviewQueuePage: skeleton loading, inbox empty state, ChevronRight indicator, separate
+  reject zone card, icon buttons
+
+Settings: - SettingsPage: SectionHeader helper, mail status badge with icon, Save icon on button,
+  loading spinner, improved layout - SettingsDangerZone: TriangleAlert icon, confirm code styling
+
+Dashboard: - DashboardPage: Info/AlertTriangle banners, meta row with separators, consistent icon
+  sizes in StatCards - CostsPage: page subtitle, icons on StatCards, chart header with badge
+
+Shared: - EmailDetailPanel: skeleton loader, section headers, draft amber block, meta pill badges
+  with icons - DateRangeFilter: quick preset buttons (7T/30T/90T), Calendar icon, styled single-row
+  layout
+
+https://claude.ai/code/session_01VXKroNAoXGLoFjYfC89wCq
+
 ### Refactoring
 
 - Split 8 files exceeding 300-line CI limit
@@ -105,62 +266,6 @@ Extract constants, models, and helpers into private sub-modules so every source 
   300-line hard limit enforced by CI. Also add pymongo to pre-commit mypy deps so CommandListener
   stubs resolve correctly in the hook's isolated environment. All 320 unit tests pass; ruff, black,
   and mypy remain clean.
-
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
-
-
-## v0.13.4 (2026-06-06)
-
-### Bug Fixes
-
-- Correct frontend static dir path resolution (3 parent levels)
-  ([`df55e3f`](https://github.com/siinanXD/Booking-email-check/commit/df55e3feb4cb348857b745aa5f0fe9d99a231f8f))
-
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
-
-
-## v0.13.3 (2026-06-06)
-
-### Bug Fixes
-
-- Remove startCommand from railway.toml, use Procfile instead
-  ([`f303448`](https://github.com/siinanXD/Booking-email-check/commit/f3034483746dc845c9d6eff8976fbc757cc7b9b2))
-
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
-
-### Chores
-
-- Add railway.toml to build frontend and serve via Flask
-  ([`ad5137c`](https://github.com/siinanXD/Booking-email-check/commit/ad5137c090285414c340e5671a2c2532145833ba))
-
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
-
-
-## v0.13.2 (2026-06-06)
-
-### Bug Fixes
-
-- Correct langgraph-checkpoint-mongodb version constraint
-  ([`f1f86e6`](https://github.com/siinanXD/Booking-email-check/commit/f1f86e64dfbce90dd92802fc41b57e8db9e508d0))
-
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
-
-
-## v0.13.1 (2026-06-06)
-
-### Bug Fixes
-
-- Add langgraph-checkpoint-mongodb dependency for production checkpointer
-  ([`1f0b202`](https://github.com/siinanXD/Booking-email-check/commit/1f0b20204ea3fe545d7f55898001fdbbe3389d51))
-
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
-
-### Chores
-
-- Add Procfile for Railway deployment
-  ([`d875567`](https://github.com/siinanXD/Booking-email-check/commit/d875567c556815984c8b584d2c7eba6a4d49cf42))
-
-Gunicorn listens on Railway-injected $PORT (0.0.0.0).
 
 Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 
