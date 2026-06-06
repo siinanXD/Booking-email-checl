@@ -33,6 +33,22 @@ def test_comigo_newsletter_not_relevant() -> None:
     assert not is_booking_relevant(email, ext)
 
 
+def test_endclothing_newsletter_not_booking_even_if_llm_new_booking() -> None:
+    """Fashion-Newsletter darf nicht als Buchung zählen (LLM-Fehler abfangen)."""
+    email = StoredEmail(
+        message_id="m-end",
+        from_address="news@info.endclothing.com",
+        subject="New arrivals — up to 50% off",
+        body_text="Shop the latest sale at END.",
+        received_at=datetime.now(UTC),
+        correlation_id="c-end",
+    )
+    ext = BookingExtraction(intent=BookingIntent.NEW_BOOKING)
+    assert is_marketing_noise(email)
+    assert not classify_booking_mail(email, ext).is_booking
+    assert not is_booking_relevant(email, ext)
+
+
 def test_temu_not_booking() -> None:
     email = StoredEmail(
         message_id="m-temu",
