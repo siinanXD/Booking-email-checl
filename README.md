@@ -27,6 +27,34 @@ periodisch ab.
 | **Mail-Poll-Worker** | Periodischer Abruf für alle aktiven Mandanten |
 | **MongoDB Atlas** | Dokumente, Vektoren, Review-Status |
 
+## Dashboard (UI)
+
+Das React-Dashboard bündelt Mandanten- und Plattform-Ansichten: KPIs, Mail-Listen,
+Human Review und Admin-Konsole. **Kein Auto-Versand** — jede Antwort landet zuerst in
+der Review-Warteschlange.
+
+| Ansicht | Screenshot |
+|---------|------------|
+| Mandanten-Dashboard (KPIs, Sync) | ![Dashboard](docs/images/screenshots/dashboard.png) |
+| Review-Warteschlange (Entwurf prüfen) | ![Review-Queue](docs/images/screenshots/review-queue.png) |
+| Buchungsliste (Intent-Filter) | ![Buchungen](docs/images/screenshots/bookings.png) |
+| Einstellungen (WhatsApp, Postfach) | ![Einstellungen](docs/images/screenshots/settings.png) |
+| Plattform-Admin (Mandanten & Kosten) | ![Admin-Übersicht](docs/images/screenshots/admin-overview.png) |
+| Login & Registrierung | ![Login](docs/images/screenshots/login.png) · ![Registrierung](docs/images/screenshots/register.png) |
+
+Screenshots neu erzeugen:
+
+```powershell
+# Production (Railway) – ADMIN_EMAIL / ADMIN_PASSWORD aus .env;
+# optional TENANT_EMAIL / TENANT_PASSWORD für Mandanten-Ansichten
+cd frontend
+npm run screenshots:production
+
+# Lokal mit Demo-Daten (ohne Atlas):
+# Terminal 1: .\.venv\Scripts\python scripts\screenshot_demo_server.py
+# Terminal 2: cd frontend && npm run screenshots:demo
+```
+
 ## Was das System tut
 
 Eingehende Mails durchlaufen zwei getrennte Flüsse. Im **Antwort-Fluss** wird
@@ -302,4 +330,4 @@ Mailversand**. DSGVO-Löschung über MongoDB, Vektorindex und Langfuse-Traces.
 | [`docs/OUTLOOK.md`](docs/OUTLOOK.md) | Microsoft Graph / Ingestion |
 | [`docs/LANGFUSE.md`](docs/LANGFUSE.md) | Tracing und Observability |
 | [`docs/GEMINI.md`](docs/GEMINI.md) | Gemini Multimodal (Workflow-Sandbox) |
-| [`docs/images/`](docs/images/) | Architektur-Diagramme für diese README |
+| [`docs/images/`](docs/images/) | Architektur-Diagramme und UI-Screenshots |
