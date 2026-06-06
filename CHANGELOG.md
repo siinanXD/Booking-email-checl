@@ -1,6 +1,23 @@
 # CHANGELOG
 
 
+## v0.13.3 (2026-06-06)
+
+### Bug Fixes
+
+- Remove startCommand from railway.toml, use Procfile instead
+  ([`f303448`](https://github.com/siinanXD/Booking-email-checl/commit/f3034483746dc845c9d6eff8976fbc757cc7b9b2))
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+### Chores
+
+- Add railway.toml to build frontend and serve via Flask
+  ([`ad5137c`](https://github.com/siinanXD/Booking-email-checl/commit/ad5137c090285414c340e5671a2c2532145833ba))
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+
 ## v0.13.2 (2026-06-06)
 
 ### Bug Fixes
