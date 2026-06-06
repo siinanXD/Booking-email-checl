@@ -1,6 +1,48 @@
 # CHANGELOG
 
 
+## v0.18.0 (2026-06-06)
+
+### Chores
+
+- Clean up repo and rewrite README
+  ([`7e24fda`](https://github.com/siinanXD/Booking-email-check/commit/7e24fdae3a4bf4e2933f01332d5d85763d1ddd24))
+
+- Remove internal docs (PR steps, kickoff, verification checklist) - Remove one-time migration
+  scripts (restructure_backend/frontend) - Remove masterprompt, nginx example, code quality report -
+  Add .claude/ to .gitignore - Rewrite README: concise, up-to-date, includes WhatsApp webhook setup
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+- Merge main and resolve README conflict
+  ([`278ed40`](https://github.com/siinanXD/Booking-email-check/commit/278ed40948f205ffd23e34e4dd2b6f7cbc3811ff))
+
+Keep the streamlined main README and integrate the Dashboard UI screenshots section.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+### Documentation
+
+- Add API and prompt engineering comparison table
+  ([`516acdd`](https://github.com/siinanXD/Booking-email-check/commit/516acdd6f3ea599a693fe94c8b50d5ab51d45841))
+
+Documents model experiments (GPT-4o vs GPT-4o-mini vs Gemini), prompt iterations (V1→V3),
+  temperature tuning, and cost analysis.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+### Features
+
+- Fix mobile layout — wire MobileNavDrawer and hamburger button
+  ([`14caa4c`](https://github.com/siinanXD/Booking-email-check/commit/14caa4c630b5d5c79115f9f251f5291058f88924))
+
+- Sidebar: add `hidden lg:flex` so it collapses below lg breakpoint - Layout: import MobileNavDrawer
+  and pass open/close state; reduce main padding to p-4 on mobile (p-6 on md+) - TopBar: accept
+  onMenuOpen prop; add hamburger Menu button (lg:hidden); hide email text on xs screens (sm:block)
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+
 ## v0.17.0 (2026-06-06)
 
 ### Features
@@ -55,106 +97,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 
 ## v0.15.0 (2026-06-06)
 
-### Features
-
-- Whatsapp host alerts, admin templates, and mobile UI
-  ([`f3712ee`](https://github.com/siinanXD/Booking-email-check/commit/f3712ee01d5dba3c59b32b601dafc7825175884c))
-
-Notify hosts with the status template on new bookings while employees keep cleaning tasks. Let
-  platform admins configure and test all Meta templates. Add an accessible mobile nav drawer, card
-  email lists, and touch-friendly forms.
-
-Co-authored-by: Cursor <cursoragent@cursor.com>
-
-
-## v0.14.4 (2026-06-06)
-
 ### Bug Fixes
-
-- Booking list date filter and endclothing spam block
-  ([`46c605e`](https://github.com/siinanXD/Booking-email-check/commit/46c605ec4c4745c3433c47ad34cc92177dbf73bf))
-
-to_date now includes the full calendar day so same-day mails appear in Buchungen. Exclude
-  endclothing newsletters even when the LLM mislabels them as new_booking.
-
-Co-authored-by: Cursor <cursoragent@cursor.com>
-
-
-## v0.14.3 (2026-06-06)
-
-### Bug Fixes
-
-- Align IMAP and CLI Outlook ingest with poll time window
-  ([`0075979`](https://github.com/siinanXD/Booking-email-check/commit/0075979b2a093c0777377876a2980836cb33ed43))
-
-Apply SINCE search for IMAP and resolve_poll_since_for_account in OutlookIngestionRunner so all mail
-  paths use the same recent-mail window logic.
-
-Co-authored-by: Cursor <cursoragent@cursor.com>
-
-- Fetch recent inbox mails via Graph receivedDateTime filter
-  ([`b67ab8b`](https://github.com/siinanXD/Booking-email-check/commit/b67ab8b260f6f8256a828499ca55b6555de28d1d))
-
-Microsoft Graph ignores orderby without a matching receivedDateTime filter, so polls returned
-  arbitrary old messages (duplicates=100) and missed new test mails.
-
-Co-authored-by: Cursor <cursoragent@cursor.com>
-
-
-## v0.14.2 (2026-06-06)
-
-### Bug Fixes
-
-- Restore MongoDBSaver and optimize poll dedup queries
-  ([`9200f00`](https://github.com/siinanXD/Booking-email-check/commit/9200f003e7ccf2117dd92e13382d112f980194e9))
-
-Pin langgraph-checkpoint-mongodb with compatible pymongo, batch duplicate checks during mail
-  polling, and add indexes for poll hot paths.
-
-Co-authored-by: Cursor <cursoragent@cursor.com>
-
-
-## v0.14.1 (2026-06-06)
-
-
-## v0.14.0 (2026-06-06)
-
-
-## v0.13.4 (2026-06-06)
-
-
-## v0.13.3 (2026-06-06)
-
-
-## v0.13.2 (2026-06-06)
-
-
-## v0.13.1 (2026-06-06)
-
-### Bug Fixes
-
-- Add langgraph-checkpoint-mongodb dependency for production checkpointer
-  ([`1f0b202`](https://github.com/siinanXD/Booking-email-check/commit/1f0b20204ea3fe545d7f55898001fdbbe3389d51))
-
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
-
-- Correct frontend static dir path resolution (3 parent levels)
-  ([`df55e3f`](https://github.com/siinanXD/Booking-email-check/commit/df55e3feb4cb348857b745aa5f0fe9d99a231f8f))
-
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
-
-- Correct langgraph-checkpoint-mongodb version constraint
-  ([`f1f86e6`](https://github.com/siinanXD/Booking-email-check/commit/f1f86e64dfbce90dd92802fc41b57e8db9e508d0))
-
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
-
-- Enable mail polling in production (remove dev-only guard)
-  ([`d0f530a`](https://github.com/siinanXD/Booking-email-check/commit/d0f530a75196eb764e5a4b0d10a3604b91c4de85))
-
-- Remove startCommand from railway.toml, use Procfile instead
-  ([`f303448`](https://github.com/siinanXD/Booking-email-check/commit/f3034483746dc845c9d6eff8976fbc757cc7b9b2))
-
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 
 - **ci**: Black formatting für presets.py
   ([`679003b`](https://github.com/siinanXD/Booking-email-check/commit/679003b59508ccb478df701da8dd0eeaa4bdde7a))
@@ -165,44 +108,22 @@ https://claude.ai/code/session_01VXKroNAoXGLoFjYfC89wCq
 
 ### Chores
 
-- Add Procfile for Railway deployment
-  ([`d875567`](https://github.com/siinanXD/Booking-email-check/commit/d875567c556815984c8b584d2c7eba6a4d49cf42))
-
-Gunicorn listens on Railway-injected $PORT (0.0.0.0).
-
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
-
-- Add railway.toml to build frontend and serve via Flask
-  ([`ad5137c`](https://github.com/siinanXD/Booking-email-check/commit/ad5137c090285414c340e5671a2c2532145833ba))
-
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
-
-- Add script to clear stale WhatsApp token from MongoDB
-  ([`b8b54f2`](https://github.com/siinanXD/Booking-email-check/commit/b8b54f2c8fb538249a6ed8dde9b43903a405c4e4))
-
 - Update package-lock.json after npm install
   ([`c2636fd`](https://github.com/siinanXD/Booking-email-check/commit/c2636fd2ea47cfeff66e7d188de81926f51e5c98))
 
 https://claude.ai/code/session_01VXKroNAoXGLoFjYfC89wCq
 
+### Documentation
+
+- Add UI screenshots to README with capture tooling
+  ([`6095508`](https://github.com/siinanXD/Booking-email-check/commit/6095508d283f343c19e98930a2b4d525adddc493))
+
+Embed production dashboard screenshots and add Playwright scripts to regenerate them from Railway or
+  a local demo server.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
 ### Features
-
-- Fix WhatsApp tenant credentials, add property suggestions to list
-  ([`6cc8a5c`](https://github.com/siinanXD/Booking-email-check/commit/6cc8a5c15844dc0a53d2ad011e44c87ecba38968))
-
-- WhatsApp test endpoints now always return HTTP 200 with success/error in body — prevents axios
-  from swallowing the actual error message - platform_from_env no longer copies
-  access_token/phone_number_id to tenant DB records; credentials always fall back to current env
-  values - display_platform_settings uses env directly as fallback for credentials so the UI
-  correctly shows platform-configured values - Frontend: remove access token and phone number ID
-  fields from tenant settings UI (credentials are managed centrally via env) - Properties page:
-  KI-Vorschläge now have '+ Zur Liste' button to add suggestion directly to Mitarbeiter-Empfänger
-  form without navigating - Extract PropertySuggestionsCard component to stay under 300-line limit -
-  Add migration script to clear stale tenant credential copies from DB - docs: add Railway
-  deployment section to README - chore: expand .env.example with structured sections and required
-  markers
-
-Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 
 - Merge UI/UX redesign + fix MongoDBSaver dependency
   ([`e06d83a`](https://github.com/siinanXD/Booking-email-check/commit/e06d83a4b6afa85ed8c1f810757b279c39dea1ab))
@@ -213,6 +134,15 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
   of new design
 
 Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+- Whatsapp host alerts, admin templates, and mobile UI
+  ([`f3712ee`](https://github.com/siinanXD/Booking-email-check/commit/f3712ee01d5dba3c59b32b601dafc7825175884c))
+
+Notify hosts with the status template on new bookings while employees keep cleaning tasks. Let
+  platform admins configure and test all Meta templates. Add an accessible mobile nav drawer, card
+  email lists, and touch-friendly forms.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
 
 - **mail**: Imap autodiscovery — 15 Anbieter + Mozilla ISPDB Fallback
   ([`350fb2b`](https://github.com/siinanXD/Booking-email-check/commit/350fb2bea3086802e8991621e5ac8fac3cb91fcd))
@@ -296,6 +226,88 @@ Shared: - EmailDetailPanel: skeleton loader, section headers, draft amber block,
 
 https://claude.ai/code/session_01VXKroNAoXGLoFjYfC89wCq
 
+
+## v0.14.4 (2026-06-06)
+
+### Bug Fixes
+
+- Booking list date filter and endclothing spam block
+  ([`46c605e`](https://github.com/siinanXD/Booking-email-check/commit/46c605ec4c4745c3433c47ad34cc92177dbf73bf))
+
+to_date now includes the full calendar day so same-day mails appear in Buchungen. Exclude
+  endclothing newsletters even when the LLM mislabels them as new_booking.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+
+## v0.14.3 (2026-06-06)
+
+### Bug Fixes
+
+- Align IMAP and CLI Outlook ingest with poll time window
+  ([`0075979`](https://github.com/siinanXD/Booking-email-check/commit/0075979b2a093c0777377876a2980836cb33ed43))
+
+Apply SINCE search for IMAP and resolve_poll_since_for_account in OutlookIngestionRunner so all mail
+  paths use the same recent-mail window logic.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+- Fetch recent inbox mails via Graph receivedDateTime filter
+  ([`b67ab8b`](https://github.com/siinanXD/Booking-email-check/commit/b67ab8b260f6f8256a828499ca55b6555de28d1d))
+
+Microsoft Graph ignores orderby without a matching receivedDateTime filter, so polls returned
+  arbitrary old messages (duplicates=100) and missed new test mails.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+
+## v0.14.2 (2026-06-06)
+
+### Bug Fixes
+
+- Restore MongoDBSaver and optimize poll dedup queries
+  ([`9200f00`](https://github.com/siinanXD/Booking-email-check/commit/9200f003e7ccf2117dd92e13382d112f980194e9))
+
+Pin langgraph-checkpoint-mongodb with compatible pymongo, batch duplicate checks during mail
+  polling, and add indexes for poll hot paths.
+
+Co-authored-by: Cursor <cursoragent@cursor.com>
+
+
+## v0.14.1 (2026-06-06)
+
+### Bug Fixes
+
+- Enable mail polling in production (remove dev-only guard)
+  ([`d0f530a`](https://github.com/siinanXD/Booking-email-check/commit/d0f530a75196eb764e5a4b0d10a3604b91c4de85))
+
+### Chores
+
+- Add script to clear stale WhatsApp token from MongoDB
+  ([`b8b54f2`](https://github.com/siinanXD/Booking-email-check/commit/b8b54f2c8fb538249a6ed8dde9b43903a405c4e4))
+
+
+## v0.14.0 (2026-06-06)
+
+### Features
+
+- Fix WhatsApp tenant credentials, add property suggestions to list
+  ([`6cc8a5c`](https://github.com/siinanXD/Booking-email-check/commit/6cc8a5c15844dc0a53d2ad011e44c87ecba38968))
+
+- WhatsApp test endpoints now always return HTTP 200 with success/error in body — prevents axios
+  from swallowing the actual error message - platform_from_env no longer copies
+  access_token/phone_number_id to tenant DB records; credentials always fall back to current env
+  values - display_platform_settings uses env directly as fallback for credentials so the UI
+  correctly shows platform-configured values - Frontend: remove access token and phone number ID
+  fields from tenant settings UI (credentials are managed centrally via env) - Properties page:
+  KI-Vorschläge now have '+ Zur Liste' button to add suggestion directly to Mitarbeiter-Empfänger
+  form without navigating - Extract PropertySuggestionsCard component to stay under 300-line limit -
+  Add migration script to clear stale tenant credential copies from DB - docs: add Railway
+  deployment section to README - chore: expand .env.example with structured sections and required
+  markers
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
 ### Refactoring
 
 - Split 8 files exceeding 300-line CI limit
@@ -305,6 +317,62 @@ Extract constants, models, and helpers into private sub-modules so every source 
   300-line hard limit enforced by CI. Also add pymongo to pre-commit mypy deps so CommandListener
   stubs resolve correctly in the hook's isolated environment. All 320 unit tests pass; ruff, black,
   and mypy remain clean.
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+
+## v0.13.4 (2026-06-06)
+
+### Bug Fixes
+
+- Correct frontend static dir path resolution (3 parent levels)
+  ([`df55e3f`](https://github.com/siinanXD/Booking-email-check/commit/df55e3feb4cb348857b745aa5f0fe9d99a231f8f))
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+
+## v0.13.3 (2026-06-06)
+
+### Bug Fixes
+
+- Remove startCommand from railway.toml, use Procfile instead
+  ([`f303448`](https://github.com/siinanXD/Booking-email-check/commit/f3034483746dc845c9d6eff8976fbc757cc7b9b2))
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+### Chores
+
+- Add railway.toml to build frontend and serve via Flask
+  ([`ad5137c`](https://github.com/siinanXD/Booking-email-check/commit/ad5137c090285414c340e5671a2c2532145833ba))
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+
+## v0.13.2 (2026-06-06)
+
+### Bug Fixes
+
+- Correct langgraph-checkpoint-mongodb version constraint
+  ([`f1f86e6`](https://github.com/siinanXD/Booking-email-check/commit/f1f86e64dfbce90dd92802fc41b57e8db9e508d0))
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+
+## v0.13.1 (2026-06-06)
+
+### Bug Fixes
+
+- Add langgraph-checkpoint-mongodb dependency for production checkpointer
+  ([`1f0b202`](https://github.com/siinanXD/Booking-email-check/commit/1f0b20204ea3fe545d7f55898001fdbbe3389d51))
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+### Chores
+
+- Add Procfile for Railway deployment
+  ([`d875567`](https://github.com/siinanXD/Booking-email-check/commit/d875567c556815984c8b584d2c7eba6a4d49cf42))
+
+Gunicorn listens on Railway-injected $PORT (0.0.0.0).
 
 Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
 
