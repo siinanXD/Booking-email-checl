@@ -1,6 +1,21 @@
 # CHANGELOG
 
 
+## v0.19.0 (2026-06-06)
+
+### Features
+
+- Add AOL Mail IMAP preset and dynamic app-password warnings
+  ([`d858374`](https://github.com/siinanXD/Booking-email-check/commit/d858374c54e6ee275ce0eaf06ba92789a49c8018))
+
+- presets.py: add 'aol' preset (imap.aol.com:993) with domains aol.com, aol.de, aol.co.uk, aol.at,
+  aol.com.au, aim.com - ImapConfigFields.tsx: replace static GMX-only hint with APP_PASSWORD_HINTS
+  map covering Gmail, Yahoo, AOL, iCloud, GMX, Web.de — shows amber warning with direct link when
+  preset requires an app password
+
+Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>
+
+
 ## v0.18.0 (2026-06-06)
 
 ### Chores
