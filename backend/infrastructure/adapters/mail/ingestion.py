@@ -9,6 +9,9 @@ from backend.ai.workflows.email_workflow import EmailWorkflow
 from backend.core.config.settings import Settings
 from backend.features.mail.ingest_window import filter_messages_for_initial_sync
 from backend.infrastructure.adapters.mail.connector import build_mail_connector
+from backend.infrastructure.adapters.outlook.poll_window import (
+    resolve_poll_since_for_account,
+)
 from backend.infrastructure.repositories.account_repository import AccountRepository
 from backend.infrastructure.repositories.email_repository import EmailRepository
 from backend.infrastructure.repositories.mail_connection_repository import (
@@ -78,11 +81,43 @@ class MailIngestionRunner:
                 self._settings.mail_ingest_initial_fetch_cap,
                 lookback + self._fetch_max,
             )
+        max_received = self._email_repo.max_received_at(account_id=account_id)
+        anchor = None
+        if account is not None:
+            anchor = account.mail_ingest_anchor_at or account.created_at
+        since = resolve_poll_since_for_account(
+            max_received_at=max_received,
+            last_sync_at=record.last_sync_at,
+            initial_sync=initial_sync,
+            ingest_anchor_at=anchor,
+        )
         connector = build_mail_connector(record, self._settings)
         messages = connector.fetch_messages(
             limit=fetch_limit,
             unread_only=self._fetch_unread_only,
+            since=since,
         )
+        logger.info(
+            "Poll fetch account=%s since=%s max_received_at=%s fetched=%s "
+            "unread_only=%s initial_sync=%s",
+            account_id,
+            since.isoformat(),
+            max_received,
+            len(messages),
+            self._fetch_unread_only,
+            initial_sync,
+        )
+        if messages:
+            newest = max(
+                (m.received_at for m in messages if m.received_at is not None),
+                default=None,
+            )
+            if newest is not None:
+                logger.info(
+                    "Poll fetch account=%s newest_received_at=%s",
+                    account_id,
+                    newest.isoformat(),
+                )
         if initial_sync and account is not None:
             anchor = account.mail_ingest_anchor_at or account.created_at
             lookback = account.mail_ingest_lookback_count or (
@@ -97,12 +132,12 @@ class MailIngestionRunner:
                 anchor.isoformat(),
             )
         items: list[MailPollItemResult] = []
+        existing_ids = self._email_repo.find_existing_message_ids(
+            [payload.message_id for payload in messages],
+            account_id=account_id,
+        )
         for payload in messages:
-            existing = self._email_repo.get_by_message_id(
-                payload.message_id,
-                account_id=account_id,
-            )
-            if existing is not None:
+            if payload.message_id in existing_ids:
                 items.append(
                     MailPollItemResult(
                         message_id=payload.message_id,
@@ -132,6 +167,14 @@ class MailIngestionRunner:
                     )
                 )
         processed = sum(1 for item in items if item.ingested)
+        duplicates = sum(1 for item in items if item.duplicate)
+        if duplicates == len(items) and len(items) > 0 and self._fetch_unread_only:
+            logger.warning(
+                "Poll account=%s: all %s mails duplicates with unread_only=true — "
+                "gelesene Test-Mails werden von Graph nicht geliefert",
+                account_id,
+                len(items),
+            )
         return MailPollRunResult(processed=processed, items=items)
 
     def run_all_pollable(
