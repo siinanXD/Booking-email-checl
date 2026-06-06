@@ -43,6 +43,29 @@ export async function syncMailConnection(
   return data;
 }
 
+export interface AutodiscoverResult {
+  preset_id: string;
+  label?: string;
+  host?: string;
+  port?: number;
+  use_ssl?: boolean;
+  source: "local" | "ispdb" | "unknown";
+}
+
+export async function autodiscoverImap(
+  domain: string
+): Promise<AutodiscoverResult | null> {
+  try {
+    const { data } = await apiClient.get<AutodiscoverResult>(
+      "/api/mail/autodiscover",
+      { params: { domain } }
+    );
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchOutlookAuthorizeUrl(
   returnTo = "/onboarding",
   frontendOrigin?: string

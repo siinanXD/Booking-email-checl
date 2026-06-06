@@ -1,38 +1,24 @@
-import { useEffect, useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
-import { MobileNavDrawer } from "@/shared/layout/MobileNavDrawer";
+import { Outlet } from "react-router-dom";
 import { Sidebar } from "@/shared/layout/Sidebar";
 import { TopBar } from "@/shared/layout/TopBar";
 
 export function Layout() {
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
-  const location = useLocation();
-
-  useEffect(() => {
-    setMobileNavOpen(false);
-  }, [location.pathname]);
-
   return (
-    <div className="flex min-h-screen min-h-[100dvh]">
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-slate-900 focus:shadow-lg focus:outline focus:outline-2 focus:outline-indigo-600"
-      >
-        Zum Inhalt springen
-      </a>
+    <div className="flex min-h-screen" style={{ background: "#f1f5f9" }}>
       <Sidebar />
-      <MobileNavDrawer
-        open={mobileNavOpen}
-        onClose={() => setMobileNavOpen(false)}
-      />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar onOpenMenu={() => setMobileNavOpen(true)} menuOpen={mobileNavOpen} />
+        <TopBar />
+        {/* Dot-grid background only visible in large empty spaces */}
         <main
-          id="main-content"
-          tabIndex={-1}
-          className="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 pb-[max(1rem,env(safe-area-inset-bottom))]"
+          className="relative flex-1 overflow-auto p-6"
+          style={{
+            backgroundImage: "radial-gradient(circle, #cbd5e1 1px, transparent 1px)",
+            backgroundSize: "24px 24px",
+          }}
         >
-          <Outlet />
+          <div className="relative mx-auto max-w-7xl animate-fade-in">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

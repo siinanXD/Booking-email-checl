@@ -125,6 +125,10 @@ class Settings(BaseSettings):
         alias="WEB_USE_MEMORY_CHECKPOINTER",
     )
 
+    whatsapp_webhook_verify_token: str = Field(
+        default="", alias="WHATSAPP_WEBHOOK_VERIFY_TOKEN"
+    )
+    whatsapp_app_secret: str = Field(default="", alias="WHATSAPP_APP_SECRET")
     whatsapp_enabled: bool = Field(default=False, alias="WHATSAPP_ENABLED")
     whatsapp_access_token: str = Field(default="", alias="WHATSAPP_ACCESS_TOKEN")
     whatsapp_phone_number_id: str = Field(default="", alias="WHATSAPP_PHONE_NUMBER_ID")

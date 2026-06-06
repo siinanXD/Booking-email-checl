@@ -1,23 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { Save, Shield } from "lucide-react";
 import { useAuthStore } from "@/features/auth/authStore";
-import {
-  fetchMailConnection,
-  testMailConnection,
-} from "@/lib/api/mail";
-import {
-  fetchSettings,
-  saveSettings,
-  testWhatsApp,
-  wipeAllData,
-} from "@/lib/api/settings";
+import { fetchMailConnection, testMailConnection } from "@/lib/api/mail";
+import { fetchSettings, saveSettings, testWhatsApp, wipeAllData } from "@/lib/api/settings";
 import { SettingsDangerZone } from "@/features/settings/SettingsDangerZone";
+import { SettingsMailCard } from "@/features/settings/SettingsMailCard";
 import { SettingsWhatsAppCard } from "@/features/settings/SettingsWhatsAppCard";
 import { SettingsWhatsAppRecipientsCard } from "@/features/settings/SettingsWhatsAppRecipientsCard";
 import { Button } from "@/shared/ui/Button";
 import { Card } from "@/shared/ui/Card";
 import { Input } from "@/shared/ui/Input";
+
+function SectionHeader({ title }: { title: string }) {
+  return <h3 className="text-sm font-semibold text-slate-800">{title}</h3>;
+}
 
 export function SettingsPage() {
   const isPlatformAdmin = useAuthStore((s) => s.isPlatformAdmin());
@@ -116,59 +114,77 @@ export function SettingsPage() {
     return (
       <div className="mx-auto max-w-3xl space-y-6">
         <div>
-          <h2 className="text-xl font-semibold text-slate-800">Einstellungen</h2>
-          <p className="mt-1 text-sm text-slate-600">
+          <h2 className="text-xl font-bold text-slate-900">Einstellungen</h2>
+          <p className="mt-0.5 text-sm text-slate-500">
             Als Plattform-Administrator verwaltest du Mandanten über die{" "}
             <Link to="/admin/overview" className="text-indigo-600 hover:underline">
               Admin-Konsole
             </Link>
-            . Postfach- und WhatsApp-Verbindungen richten Mandanten selbst ein.
+            .
           </p>
         </div>
-        <Card className="space-y-2">
-          <h3 className="font-medium text-slate-800">Plattform-Administration</h3>
-          <p className="text-sm text-slate-600">
-            Verbindungstests pro Mandant folgen unter Admin → Diagnose (Phase 2).
-          </p>
+        <Card>
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-100 text-indigo-600">
+              <Shield size={18} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-slate-800">Plattform-Administration</p>
+              <p className="text-xs text-slate-500">
+                Verbindungstests pro Mandant unter Admin → Diagnose.
+              </p>
+            </div>
+          </div>
         </Card>
       </div>
     );
   }
 
   if (isLoading) {
-    return <p className="text-slate-500">Einstellungen werden geladen…</p>;
+    return (
+      <div className="flex items-center gap-2 py-10 text-slate-500">
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-300 border-t-indigo-500" />
+        <span className="text-sm">Einstellungen werden geladen…</span>
+      </div>
+    );
   }
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-slate-800">Einstellungen</h2>
-        <p className="mt-1 text-sm text-slate-600">
-          Werte aus der <code className="text-xs">.env</code> werden automatisch
-          vorausgefüllt. Nach dem Speichern gelten die Einträge dauerhaft in der
-          Datenbank.
+        <h2 className="text-xl font-bold text-slate-900">Einstellungen</h2>
+        <p className="mt-0.5 text-sm text-slate-500">
+          Werte aus der <code className="rounded bg-slate-100 px-1 py-0.5 text-xs">.env</code> werden
+          automatisch vorausgefüllt. Nach dem Speichern gelten die Einträge dauerhaft in der Datenbank.
         </p>
       </div>
 
-      <Card className="space-y-4">
-        <h3 className="font-medium text-slate-800">Mein Profil (Host)</h3>
-        <label className="block text-sm text-slate-600">
-          Meine WhatsApp-Nummer (E.164, z. B. +491701234567)
-          <Input
-            className="mt-1"
-            value={userPhone}
-            onChange={(e) => setUserPhone(e.target.value)}
-            placeholder="+491701234567"
-          />
-        </label>
-        <label className="flex items-center gap-2 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            checked={userWhatsappEnabled}
-            onChange={(e) => setUserWhatsappEnabled(e.target.checked)}
-          />
-          WhatsApp-Benachrichtigungen für mich aktiv (z. B. „Neue Buchung“)
-        </label>
+      {/* Profile */}
+      <Card>
+        <div className="space-y-4">
+          <SectionHeader title="Mein Profil (Host)" />
+          <div className="space-y-1.5">
+            <label className="block text-xs font-medium text-slate-600">
+              Meine WhatsApp-Nummer (E.164, z. B. +491701234567)
+            </label>
+            <Input
+              value={userPhone}
+              onChange={(e) => setUserPhone(e.target.value)}
+              placeholder="+491701234567"
+            />
+          </div>
+          <label className="flex cursor-pointer items-center gap-2.5">
+            <input
+              type="checkbox"
+              className="h-4 w-4 rounded border-slate-300 accent-indigo-600"
+              checked={userWhatsappEnabled}
+              onChange={(e) => setUserWhatsappEnabled(e.target.checked)}
+            />
+            <span className="text-sm text-slate-700">
+              WhatsApp-Benachrichtigungen für mich aktiv
+            </span>
+          </label>
+        </div>
       </Card>
 
       <SettingsWhatsAppRecipientsCard />
@@ -186,71 +202,29 @@ export function SettingsPage() {
         testMessage={testMessage}
       />
 
-      <Card className="space-y-4">
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="font-medium text-slate-800">Postfach</h3>
-          <Link
-            to="/onboarding?edit=1"
-            className="text-sm text-indigo-600 hover:underline"
+      {/* Mail connection */}
+      <SettingsMailCard
+        mailData={mailData}
+        testPending={mailTestMut.isPending}
+        onTest={() => mailTestMut.mutate()}
+      />
+
+      {/* Save */}
+      <div className="flex flex-wrap items-center gap-3">
+        <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
+          <Save size={15} />
+          {saveMut.isPending ? "Speichern…" : "Einstellungen speichern"}
+        </Button>
+        {saveMessage && (
+          <p
+            className={`text-sm ${
+              saveMessage.includes("fehlgeschlagen") ? "text-red-600" : "text-emerald-700"
+            }`}
           >
-            Bearbeiten
-          </Link>
-        </div>
-        {mailData ? (
-          <>
-            <p className="text-sm text-slate-600">
-              {mailData.provider === "outlook" ? "Microsoft Outlook" : "IMAP"} ·{" "}
-              {mailData.email_address || "—"}
-            </p>
-            <p className="text-sm text-slate-500">
-              Status:{" "}
-              <span
-                className={
-                  mailData.status === "connected"
-                    ? "text-green-700"
-                    : mailData.status === "error"
-                      ? "text-red-600"
-                      : "text-slate-600"
-                }
-              >
-                {mailData.status}
-              </span>
-              {mailData.last_sync_at && (
-                <span className="block text-xs text-slate-500">
-                  Letzter Sync:{" "}
-                  {new Date(mailData.last_sync_at).toLocaleString("de-DE")}
-                </span>
-              )}
-              {mailData.last_error && (
-                <span className="block text-xs text-red-600">
-                  {mailData.last_error}
-                </span>
-              )}
-            </p>
-            <Button
-              variant="secondary"
-              onClick={() => mailTestMut.mutate()}
-              disabled={mailTestMut.isPending}
-            >
-              Postfach-Verbindung testen
-            </Button>
-          </>
-        ) : (
-          <p className="text-sm text-slate-500">
-            Noch kein Postfach verbunden.{" "}
-            <Link to="/onboarding?edit=1" className="text-indigo-600 hover:underline">
-              Jetzt einrichten
-            </Link>
+            {saveMessage}
           </p>
         )}
-      </Card>
-
-      <div className="flex flex-wrap gap-3">
-        <Button onClick={() => saveMut.mutate()} disabled={saveMut.isPending}>
-          Einstellungen speichern
-        </Button>
       </div>
-      {saveMessage && <p className="text-sm text-slate-700">{saveMessage}</p>}
 
       <SettingsDangerZone
         wipeConfirm={wipeConfirm}

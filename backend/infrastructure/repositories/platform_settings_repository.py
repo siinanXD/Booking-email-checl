@@ -65,6 +65,13 @@ class PlatformSettingsRepository:
         self._col.replace_one({"_id": account_id}, doc, upsert=True)
         return record
 
+    def find_account_by_phone_number_id(self, phone_number_id: str) -> str | None:
+        """Gibt account_id zurück die diese WhatsApp phone_number_id nutzt."""
+        doc = self._col.find_one({"whatsapp_phone_number_id": phone_number_id})
+        if doc:
+            return str(doc.get("_id", "")) or None
+        return None
+
     def reset(self, account_id: str) -> None:
         """Löscht gespeicherte Einstellungen eines Accounts."""
         self._col.delete_one({"_id": account_id})
