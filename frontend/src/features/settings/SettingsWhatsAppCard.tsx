@@ -2,6 +2,7 @@ import type { PlatformSettingsResponse } from "@/lib/types/api";
 import { Button } from "@/shared/ui/Button";
 import { Card } from "@/shared/ui/Card";
 import { Input } from "@/shared/ui/Input";
+import { WhatsAppErrorHint } from "@/shared/ui/WhatsAppErrorHint";
 
 export interface SettingsWhatsAppCardProps {
   data: PlatformSettingsResponse | undefined;
@@ -73,6 +74,9 @@ export function SettingsWhatsAppCard({
         >
           {testMessage}
         </p>
+      )}
+      {!testMessage?.startsWith("Test erfolgreich") && (
+        <WhatsAppErrorHint errorText={testMessage} />
       )}
     </Card>
   );

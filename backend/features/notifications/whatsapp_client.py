@@ -237,6 +237,31 @@ def build_whatsapp_client(settings: Settings) -> WhatsAppClient:
     return MetaCloudWhatsAppClient(settings)
 
 
+# Klartext-Hinweise für bekannte Meta-Fehlercodes (Handlungsanweisung für Nutzer).
+_META_ERROR_HINTS: dict[int, str] = {
+    131030: (
+        "Die Empfängernummer ist nicht in Metas Freigabeliste. Dein WhatsApp-"
+        "Business-Konto ist noch im Testmodus und darf nur an bis zu 5 manuell "
+        "freigegebene Nummern senden. Füge die Zielnummer im Meta-Dashboard "
+        "unter WhatsApp → API Setup → Recipient hinzu (per SMS-Code bestätigen) "
+        "oder schalte das Business-Konto live, um an beliebige Nummern zu senden."
+    ),
+    131026: (
+        "Die Nachricht konnte nicht zugestellt werden – der Empfänger nutzt "
+        "möglicherweise kein WhatsApp oder hat die Nummer im falschen Format. "
+        "Prüfe die Rufnummer im E.164-Format (z. B. +491701234567)."
+    ),
+    190: (
+        "Der Zugriffstoken ist abgelaufen oder ungültig. Erzeuge im Meta-"
+        "Dashboard einen neuen WHATSAPP_ACCESS_TOKEN und trage ihn ein."
+    ),
+    133010: (
+        "Die Telefonnummer ist nicht für die Cloud API registriert. Registriere "
+        "sie im Meta-Dashboard unter WhatsApp → API Setup."
+    ),
+}
+
+
 def _meta_api_error(exc: httpx.HTTPStatusError) -> str:
     """Lesbare Meta-Graph-Fehlermeldung (z. B. abgelaufener Token)."""
     try:
@@ -245,10 +270,13 @@ def _meta_api_error(exc: httpx.HTTPStatusError) -> str:
         if isinstance(err, dict):
             message = err.get("message") or err.get("error_user_msg")
             code = err.get("code")
+            hint = _META_ERROR_HINTS.get(code) if isinstance(code, int) else None
             if message and code:
-                return f"Meta API ({exc.response.status_code}, code {code}): {message}"
+                base = f"Meta API ({exc.response.status_code}, code {code}): {message}"
+                return f"{base} — {hint}" if hint else base
             if message:
-                return f"Meta API ({exc.response.status_code}): {message}"
+                base = f"Meta API ({exc.response.status_code}): {message}"
+                return f"{base} — {hint}" if hint else base
     except Exception:
         pass
     return str(exc)

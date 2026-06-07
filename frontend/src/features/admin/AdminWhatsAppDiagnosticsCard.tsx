@@ -11,6 +11,7 @@ import type {
 import { Button } from "@/shared/ui/Button";
 import { Card } from "@/shared/ui/Card";
 import { Input } from "@/shared/ui/Input";
+import { WhatsAppErrorHint } from "@/shared/ui/WhatsAppErrorHint";
 
 const TEMPLATE_OPTIONS: { value: AdminWhatsAppTestTemplate; label: string }[] = [
   { value: "hello_world", label: "hello_world (Meta-Standard)" },
@@ -188,6 +189,7 @@ export function AdminWhatsAppDiagnosticsCard({
               {waResult}
             </p>
           )}
+          {!waResult?.startsWith("OK") && <WhatsAppErrorHint errorText={waResult} />}
         </>
       )}
     </Card>
