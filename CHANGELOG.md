@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.21.0 (2026-06-07)
+
+### Features
+
+- Erkläre Meta-WhatsApp-Fehlercodes im UI
+  ([`c062b71`](https://github.com/siinanXD/Booking-email-check/commit/c062b716e552570f18160906cb775c16af5cb8ad))
+
+Bekannte Meta Cloud API Fehlercodes (131030 allowed-list/Testmodus, 131026, 190, 133010) werden nun
+  mit deutscher Handlungsanweisung versehen - im Backend an die Fehlermeldung angehängt und im
+  Frontend als hervorgehobene Callout-Box in Admin-Diagnose und Settings.
+
+Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>
+
+
 ## v0.20.0 (2026-06-06)
 
 ### Features
